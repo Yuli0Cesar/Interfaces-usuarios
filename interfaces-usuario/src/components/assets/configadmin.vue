@@ -1,2103 +1,1806 @@
 <template>
-    <div class="config-bar">
-        <h3 class="config-title">Panel de Configuración</h3>
-        <div class="config-actions">
-            <button class="config-btn" id="openConfigsModalBtn" title="Ver todos los presets guardados">
-                <i class="fas fa-list-alt"></i> Presets
-            </button>
-            <button class="config-btn" id="saveConfigBtn">
-                <i class="fas fa-save"></i> Guardar
-            </button>
-            <button class="config-btn" id="exportConfigBtn">
-                <i class="fas fa-download"></i> Exportar
-            </button>
-            <a href="index.html" class="config-btn back-to-home">
-                <i class="fa fa-arrow-left"></i> Volver al Inicio
-            </a>
-        </div>
-    </div>
-  
-    <div class="preview-container">
-        <div class="preview-card texto-personalizable">
-            <div class="preview-header">
-                <h1 class="preview-main-title">Título</h1>
-                <p class="preview-subtitle">Subtítulo descriptivo de la página</p>
+  <section class="admin-section">
+    <div class="container">
+      <div class="admin-header">
+        <h1>🛠️ Panel de Configuración</h1>
+        <p class="admin-subtitle">Personaliza la apariencia de tu sitio JDM Tuning</p>
+        <button @click="$emit('back-to-main')" class="back-btn">← Volver al sitio principal</button>
+      </div>
+
+      <div class="config-layout">
+        <!-- Sidebar izquierdo (Personalización) -->
+        <div class="color-sidebar">
+          <h4 class="sidebar-title">Personalizar Colores</h4>
+          
+          <div class="color-control">
+            <div class="color-label">
+              <span class="color-sample" :style="{backgroundColor: color1}"></span>
+              Color 1
             </div>
-            <div class="preview-body">
-                <!-- Sección de contenido principal -->
-                <div class="preview-section">
-                    <h2 class="preview-section-title">Sección Principal</h2>
-                    <p class="preview-paragraph">Este es un párrafo de ejemplo que muestra cómo se verá el texto en tu página. Puedes ajustar el tamaño, color y fuente según tus preferencias.</p>
-                    <p class="preview-paragraph">Otro párrafo para demostrar la consistencia en el estilo de texto. Observa cómo se aplican las configuraciones de color y tipografía.</p>
-                </div>
-  
-                <!-- Sección de características -->
-                <div class="preview-section">
-                    <h3 class="preview-section-subtitle">Características Destacadas</h3>
-                    <ul class="preview-list">
-                        <li class="preview-list-item">Elemento de lista número uno</li>
-                        <li class="preview-list-item">Segundo elemento de la lista</li>
-                        <li class="preview-list-item">Tercer elemento demostrativo</li>
-                    </ul>
-                </div>
-  
-                <!-- Sección de botones -->
-                <div class="preview-section">
-                    <h4 class="preview-section-subtitle">Ejemplos de Botones</h4>
-                    <div class="preview-buttons">
-                        <button class="preview-btn primary">Botón Principal</button>
-                        <button class="preview-btn secondary">Botón Secundario</button>
-                        <a href="#" class="preview-link">Enlace de ejemplo</a>
-                    </div>
-                </div>
-  
-                <!-- Sección de formulario de ejemplo -->
-                <div class="preview-section">
-                    <h4 class="preview-section-subtitle">Formulario de Ejemplo</h4>
-                    <div class="preview-form">
-                        <div class="preview-form-group">
-                            <label class="preview-label">Nombre completo</label>
-                            <input type="text" class="preview-input" placeholder="Ingresa tu nombre">
-                        </div>
-                        <div class="preview-form-group">
-                            <label class="preview-label">Correo electrónico</label>
-                            <input type="email" class="preview-input" placeholder="ejemplo@correo.com">
-                        </div>
-                        <div class="preview-form-group">
-                            <label class="preview-label">
-                                <input type="checkbox" class="preview-checkbox">
-                                Acepto los términos y condiciones
-                            </label>
-                        </div>
-                    </div>
-                </div>
-  
-                <!-- Sección de tarjetas -->
-                <div class="preview-section">
-                    <h3 class="preview-section-subtitle">Tarjetas de Contenido</h3>
-                    <div class="preview-cards">
-                        <div class="preview-card-item">
-                            <h5 class="preview-card-title">Tarjeta 1</h5>
-                            <p class="preview-card-text">Contenido de la primera tarjeta demostrativa.</p>
-                        </div>
-                        <div class="preview-card-item">
-                            <h5 class="preview-card-title">Tarjeta 2</h5>
-                            <p class="preview-card-text">Segunda tarjeta con contenido de ejemplo.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-  
-    <!-- Sidebar izquierdo (Personalización) - CON dos sliders de tamaño -->
-    <div class="color-sidebar">
-        <h4 class="sidebar-title">Personalizar Apariencia</h4>
-        
-        <div class="color-control">
-            <div class="color-label">Color 1</div>
-            <input type="color" class="color-input" id="headerColor" value="#28a745">
+            <input type="color" class="color-input" id="color1" v-model="color1">
             <div class="color-preview">
-                <div id="headerPreview" style="width: 30px; height: 30px; background-color: #28a745; border-radius: 6px;"></div>
-                <div class="color-hex" id="headerHex">#28a745</div>
+              <div class="color-preview-box" :style="{backgroundColor: color1}"></div>
+              <div class="color-hex">{{ color1 }}</div>
             </div>
-        </div>
-        
-        <div class="color-control">
-            <div class="color-label">Color 2</div>
-            <input type="color" class="color-input" id="buttonColor" value="#198754">
-            <div class="color-preview">
-                <div id="buttonPreview" style="width: 30px; height: 30px; background-color: #198754; border-radius: 6px;"></div>
-                <div class="color-hex" id="buttonHex">#198754</div>
-            </div>
-        </div>
-        
-        <div class="color-control">
-            <div class="color-label">Color 3</div>
-            <input type="color" class="color-input" id="bgColor" value="#f8f9fa">
-            <div class="color-preview">
-                <div id="bgPreview" style="width: 30px; height: 30px; background-color: #f8f9fa; border-radius: 6px; border: 1px solid #ddd;"></div>
-                <div class="color-hex" id="bgHex">#f8f9fa</div>
-            </div>
-        </div>
-        
-        <div class="color-control">
-            <div class="color-label">Color 4</div>
-            <input type="color" class="color-input" id="textColor" value="#333333">
-            <div class="color-preview">
-                <div id="textPreview" style="width: 30px; height: 30px; background-color: #333333; border-radius: 6px;"></div>
-                <div class="color-hex" id="textHex">#333333</div>
-            </div>
-        </div>
-        
-        <div class="color-control">
-            <div class="color-label">Color 5</div>
-            <input type="color" class="color-input" id="titleColor" value="#212529">
-            <div class="color-preview">
-                <div id="titlePreview" style="width: 30px; height: 30px; background-color: #212529; border-radius: 6px;"></div>
-                <div class="color-hex" id="titleHex">#212529</div>
-            </div>
-        </div>
-  
-        <!-- Sección de Accesibilidad para Daltonismo -->
-        <div class="color-control" id="accessibilitySection">
-            <div class="color-label">Accesibilidad para Daltonismo</div>
-            <div class="accessibility-controls">
-                <select class="option-select" id="colorblindType">
-                    <option value="none">Sin ajuste</option>
-                    <option value="protanopia">Protanopia (rojo-verde)</option>
-                    <option value="deuteranopia">Deuteranopia (rojo-verde)</option>
-                    <option value="tritanopia">Tritanopia (azul-amarillo)</option>
-                </select>
-                <div class="accessibility-info">
-                    <div class="contrast-info" id="contrastInfo">
-                        <span>Contraste texto/fondo: </span>
-                        <strong id="contrastRatio">--:1</strong>
-                        <span class="contrast-status" id="contrastStatus"></span>
-                    </div>
-                    <div class="contrast-details" id="contrastDetails">
-                        <!-- Aquí se mostrarán los detalles de contraste para cada color -->
-                    </div>
-                </div>
-                <button class="config-management-btn secondary" id="applyAccessibility">
-                    Aplicar Ajuste
-                </button>
-                <div class="accessibility-note">
-                    <small>El ajuste se aplicará a toda la vista previa central</small>
-                </div>
-            </div>
-        </div>
-        
-        <h4 class="sidebar-title mt-4">Personalizar Texto</h4>
-        <div class="additional-options" style="border-top: none; margin-top: 0; padding-top: 0;">
-            <div class="option-group">
-                <label class="option-label">Tamaño de Párrafos y Subtítulos (1-100px)</label>
-                <input type="range" class="form-range" id="paragraphFontSizeRange" min="1" max="100" value="16">
-                <span id="paragraphFontSizeValue">16px</span>
-            </div>
-            
-            <div class="option-group">
-                <label class="option-label">Tamaño de Títulos (1-100px)</label>
-                <input type="range" class="form-range" id="titleFontSizeRange" min="1" max="100" value="24">
-                <span id="titleFontSizeValue">24px</span>
-            </div>
-            
-            <div class="option-group">
-                <label class="option-label">Fuente Principal (Párrafos)</label>
-                <select class="option-select" id="primaryFontSelect">
-                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" selected>Segoe UI (Defecto)</option>
-                    <option value="Roboto, sans-serif">Roboto</option>
-                    <option value="Arial, sans-serif">Arial</option>
-                    <option value="Georgia, serif">Georgia</option>
-                    <option value="'Courier New', monospace">Courier New</option>
-                </select>
-            </div>
-            
-            <div class="option-group">
-                <label class="option-label">Fuente Secundaria (Títulos)</label>
-                <select class="option-select" id="secondaryFontSelect">
-                    <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" selected>Segoe UI (Defecto)</option>
-                    <option value="Roboto, sans-serif">Roboto</option>
-                    <option value="Arial, sans-serif">Arial</option>
-                    <option value="Georgia, serif">Georgia</option>
-                    <option value="'Courier New', monospace">Courier New</option>
-                </select>
-            </div>
-        </div>
-  
-        <!-- Agregar esto en el color-sidebar, después de los selects de fuentes existentes -->
-      <div class="option-group">
-          <label class="option-label">Agregar Fuente Personalizada</label>
-          <input type="file" class="option-input" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2" style="display: none;">
-          <button class="config-management-btn secondary" id="openFontFileInput" style="width: 100%; margin-bottom: 10px;">
-              <i class="fas fa-upload"></i> Seleccionar Archivo .ttf
-          </button>
-          <input type="text" class="modal-input" id="customFontName" placeholder="Nombre de la fuente" style="margin-bottom: 10px;">
-          <button class="config-management-btn success" id="addCustomFont" style="width: 100%;" disabled>
-              <i class="fas fa-plus"></i> Agregar Fuente
-          </button>
-          <div id="fontPreview" style="margin-top: 10px; padding: 10px; border: 1px dashed #ddd; border-radius: 5px; display: none;">
-              <div style="font-size: 16px; margin-bottom: 5px;">Vista previa:</div>
-              <div id="fontPreviewText" style="font-size: 18px; font-weight: bold;">AaBbCc 123</div>
+            <div class="color-description">Header, Footer, Títulos principales</div>
           </div>
-      </div>
-  
-      <!-- Lista de fuentes personalizadas agregadas -->
-      <div class="option-group" id="customFontsGroup" style="display: none;">
-          <label class="option-label">Fuentes Personalizadas</label>
-          <div id="customFontsList" class="custom-fonts-list"></div>
-      </div>
-        
-        <button class="reset-btn" id="resetAll">
+
+          <div class="color-control">
+            <div class="color-label">
+              <span class="color-sample" :style="{backgroundColor: color2}"></span>
+              Color 2
+            </div>
+            <input type="color" class="color-input" id="color2" v-model="color2">
+            <div class="color-preview">
+              <div class="color-preview-box" :style="{backgroundColor: color2}"></div>
+              <div class="color-hex">{{ color2 }}</div>
+            </div>
+            <div class="color-description">Botones, Enlaces, Elementos destacados</div>
+          </div>
+
+          <div class="color-control">
+            <div class="color-label">
+              <span class="color-sample" :style="{backgroundColor: color3}"></span>
+              Color 3
+            </div>
+            <input type="color" class="color-input" id="color3" v-model="color3">
+            <div class="color-preview">
+              <div class="color-preview-box" :style="{backgroundColor: color3}"></div>
+              <div class="color-hex">{{ color3 }}</div>
+            </div>
+            <div class="color-description">Fondo principal de la página</div>
+          </div>
+
+          <div class="color-control">
+            <div class="color-label">
+              <span class="color-sample" :style="{backgroundColor: color4}"></span>
+              Color 4
+            </div>
+            <input type="color" class="color-input" id="color4" v-model="color4">
+            <div class="color-preview">
+              <div class="color-preview-box" :style="{backgroundColor: color4}"></div>
+              <div class="color-hex">{{ color4 }}</div>
+            </div>
+            <div class="color-description">Texto de párrafos, contenido y header</div>
+          </div>
+
+          <div class="color-control">
+            <div class="color-label">
+              <span class="color-sample" :style="{backgroundColor: color5}"></span>
+              Color 5
+            </div>
+            <input type="color" class="color-input" id="color5" v-model="color5">
+            <div class="color-preview">
+              <div class="color-preview-box" :style="{backgroundColor: color5}"></div>
+              <div class="color-hex">{{ color5 }}</div>
+            </div>
+            <div class="color-description">Fondos secundarios, Tarjetas, Estadísticas</div>
+          </div>
+
+          <h4 class="sidebar-title mt-4">Personalizar Texto</h4>
+          <div class="additional-options">
+            <div class="option-group">
+              <label class="option-label">Tamaño de Texto (12-24px)</label>
+              <input type="range" class="form-range" id="paragraphFontSizeRange" min="12" max="24" v-model="paragraphSize">
+              <span id="paragraphFontSizeValue">{{ paragraphSize }}px</span>
+            </div>
+            
+            <div class="option-group">
+              <label class="option-label">Tamaño de Títulos (18-36px)</label>
+              <input type="range" class="form-range" id="titleFontSizeRange" min="18" max="36" v-model="titleSize">
+              <span id="titleFontSizeValue">{{ titleSize }}px</span>
+            </div>
+            
+            <div class="option-group">
+              <label class="option-label">Fuente Principal</label>
+              <select class="option-select" id="primaryFontSelect" v-model="selectedFont">
+                <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Segoe UI</option>
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Courier New', monospace">Courier New</option>
+              </select>
+            </div>
+
+            <div class="option-group">
+              <label class="option-label">Fuente Secundaria</label>
+              <select class="option-select" id="secondaryFontSelect" v-model="selectedSecondaryFont">
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Segoe UI</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="'Courier New', monospace">Courier New</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+              </select>
+            </div>
+          </div>
+
+          <h4 class="sidebar-title mt-4">Accesibilidad</h4>
+          <div class="additional-options">
+            <div class="option-group">
+              <label class="option-label">Simular Daltonismo</label>
+              <select class="option-select" id="colorBlindMode" v-model="colorBlindMode">
+                <option value="none">Visión Normal</option>
+                <option value="protanopia">Protanopia (Rojo)</option>
+                <option value="deuteranopia">Deuteranopia (Verde)</option>
+                <option value="tritanopia">Tritanopia (Azul)</option>
+                <option value="achromatopsia">Achromatopsia (Monocromático)</option>
+              </select>
+              <div class="mode-description" v-if="colorBlindMode !== 'none'">
+                <small>Vista simulada: {{ getColorBlindModeDescription() }}</small>
+              </div>
+            </div>
+            
+            <div class="option-group">
+              <label class="option-label">Contraste Alto</label>
+              <div class="toggle-switch">
+                <input type="checkbox" id="highContrast" v-model="highContrast">
+                <label for="highContrast" class="toggle-label">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="option-group">
+              <label class="option-label">Tamaño de Texto Grande</label>
+              <div class="toggle-switch">
+                <input type="checkbox" id="largeText" v-model="largeText">
+                <label for="largeText" class="toggle-label">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <button class="reset-btn" id="resetAll" @click="resetAll">
             <i class="fas fa-undo"></i> Restablecer Todo
-        </button>
-    </div>
-  
-    <!-- Nuevo Sidebar Derecho (Configuraciones Guardadas) -->
-    <div class="config-sidebar">
-        <h4 class="sidebar-title">Configuraciones Guardadas</h4>
-        
-        <div class="config-management">
-            <h5 class="config-management-title">Gestión de Configuraciones</h5>
-            <div class="config-management-buttons">
-                <button class="config-management-btn success" id="saveAsConfigBtn">
-                    <i class="fas fa-save"></i> Guardar Como...
-                </button>
-            </div>
-            
-            <div class="configs-header">
-                <h6 class="configs-title">Mis Configuraciones</h6>
-                <span class="configs-count" id="configsCount">0 guardadas</span>
-            </div>
-            
-            <div class="search-box">
-                <input type="text" class="search-input" id="searchConfigs" placeholder="Buscar configuraciones...">
-            </div>
-            
-            <div class="configs-list" id="configsList">
-                <div class="empty-configs">No hay configuraciones guardadas</div>
-            </div>
+          </button>
         </div>
-    </div>
-  
-    <div class="modal-overlay" id="saveModal">
-        <div class="modal-content">
-            <h3 class="modal-title">Guardar Configuración</h3>
-            <input type="text" class="modal-input" id="configName" placeholder="Nombre de la configuración" maxlength="30">
-            <div class="modal-actions">
-                <button class="modal-btn secondary" id="cancelSave">Cancelar</button>
-                <button class="modal-btn primary" id="confirmSave">Guardar</button>
-            </div>
-        </div>
-    </div>
-  
-    <div class="modal-overlay" id="configsModal">
-        <div class="modal-content" style="max-width: 650px;">
-            <h3 class="modal-title">Presets de Apariencia Guardados</h3>
-            
-            <div class="configs-header">
-                <h6 class="configs-title">Mis Configuraciones Guardadas</h6>
-                <span class="configs-count" id="modalConfigsCount">0 guardadas</span>
-            </div>
-            
-            <div class="search-box">
-                <input type="text" class="search-input" id="searchModalConfigs" placeholder="Buscar configuraciones...">
-            </div>
-            
-            <div class="configs-list" id="modalConfigsList" style="max-height: 400px; padding: 0;">
-                <div class="empty-configs">No hay configuraciones guardadas</div>
-            </div>
-            
-            <div class="modal-actions" style="margin-top: 20px;">
-                <button class="modal-btn secondary" id="closeConfigsModal">Cerrar</button>
-            </div>
-        </div>
-    </div>
-  
-    <!-- Modal de confirmación para eliminar -->
-    <div class="modal-overlay" id="deleteModal">
-        <div class="modal-content">
-            <div class="modal-icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <h3 class="modal-title">Confirmar Eliminación</h3>
-            <p class="modal-message" id="deleteModalMessage">¿Estás seguro de que quieres eliminar esta configuración?</p>
-            <div class="modal-actions">
-                <button class="modal-btn secondary" id="cancelDelete">Cancelar</button>
-                <button class="modal-btn danger" id="confirmDelete">Eliminar</button>
-            </div>
-        </div>
-    </div>
-  
-    <div class="context-menu" id="contextMenu">
-        <div class="context-menu-item" id="contextMenuLoad">
-            <i class="fas fa-arrow-alt-circle-right"></i> Cargar
-        </div>
-        <div class="context-menu-item delete" id="contextMenuDelete">
-            <i class="fas fa-trash"></i> Eliminar
-        </div>
-    </div>
-  
-    <div id="notification" class="notification"></div>
-  </template>
-  
-  <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // --- VARIABLES Y ELEMENTOS DE COLOR ---
-            const defaultColors = {
-                header: '#28a745',
-                button: '#198754',
-                bg: '#f8f9fa',
-                text: '#333333',
-                title: '#212529'
-            };
-  
-            const colorInputs = {
-                header: document.getElementById('headerColor'),
-                button: document.getElementById('buttonColor'),
-                bg: document.getElementById('bgColor'),
-                text: document.getElementById('textColor'),
-                title: document.getElementById('titleColor')
-            };
-  
-            const colorPreviews = {
-                header: document.getElementById('headerPreview'),
-                button: document.getElementById('buttonPreview'),
-                bg: document.getElementById('bgPreview'),
-                text: document.getElementById('textPreview'),
-                title: document.getElementById('titlePreview')
-            };
-            
-            const colorHexes = {
-                header: document.getElementById('headerHex'),
-                button: document.getElementById('buttonHex'),
-                bg: document.getElementById('bgHex'),
-                text: document.getElementById('textHex'),
-                title: document.getElementById('titleHex')
-            };
-  
-            const resetBtn = document.getElementById('resetAll');
-            const rootElement = document.documentElement;
-  
-            // --- VARIABLES Y ELEMENTOS DE TEXTO ---
-            const paragraphFontSizeRange = document.getElementById('paragraphFontSizeRange');
-            const titleFontSizeRange = document.getElementById('titleFontSizeRange');
-            const primaryFontSelect = document.getElementById('primaryFontSelect');
-            const secondaryFontSelect = document.getElementById('secondaryFontSelect');
-            const paragraphFontSizeValue = document.getElementById('paragraphFontSizeValue');
-            const titleFontSizeValue = document.getElementById('titleFontSizeValue');
-  
-            // --- ELEMENTOS DE GESTIÓN DE CONFIGURACIONES ---
-            const saveConfigBtn = document.getElementById('saveConfigBtn');
-            const saveAsConfigBtn = document.getElementById('saveAsConfigBtn');
-            const exportConfigBtn = document.getElementById('exportConfigBtn');
-            const notification = document.getElementById('notification');
-            
-            // --- ELEMENTOS DE LA LISTA DE CONFIGURACIONES EN SIDEBAR DERECHO ---
-            const configsList = document.getElementById('configsList');
-            const configsCount = document.getElementById('configsCount');
-            const searchConfigs = document.getElementById('searchConfigs');
-            
-            // --- ELEMENTOS DEL MODAL DE GUARDAR ---
-            const saveModal = document.getElementById('saveModal');
-            const configName = document.getElementById('configName');
-            const cancelSave = document.getElementById('cancelSave');
-            const confirmSave = document.getElementById('confirmSave');
-            
-            // --- ELEMENTOS DEL NUEVO MODAL DE PRESETS (SOLICITADO) ---
-            const openConfigsModalBtn = document.getElementById('openConfigsModalBtn');
-            const configsModal = document.getElementById('configsModal');
-            const closeConfigsModal = document.getElementById('closeConfigsModal');
-            const modalConfigsList = document.getElementById('modalConfigsList');
-            const modalConfigsCount = document.getElementById('modalConfigsCount');
-            const searchModalConfigs = document.getElementById('searchModalConfigs');
-            
-            // --- ELEMENTOS DEL MENÚ CONTEXTUAL (REVERTIDO) ---
-            const contextMenu = document.getElementById('contextMenu');
-            const contextMenuLoad = document.getElementById('contextMenuLoad');
-            const contextMenuDelete = document.getElementById('contextMenuDelete');
-            
-            // --- ELEMENTOS DEL MODAL DE ELIMINACIÓN ---
-            const deleteModal = document.getElementById('deleteModal');
-            const deleteModalMessage = document.getElementById('deleteModalMessage');
-            const cancelDelete = document.getElementById('cancelDelete');
-            const confirmDelete = document.getElementById('confirmDelete');
-            
-            // --- ELEMENTOS DE ACCESIBILIDAD ---
-            const colorblindType = document.getElementById('colorblindType');
-            const applyAccessibility = document.getElementById('applyAccessibility');
-            const contrastInfo = document.getElementById('contrastInfo');
-            const contrastRatio = document.getElementById('contrastRatio');
-            const contrastStatus = document.getElementById('contrastStatus');
-            const contrastDetails = document.getElementById('contrastDetails');
-            
-            // --- VARIABLES GLOBALES ---
-            let savedConfigs = [];
-            let currentConfigId = null;
-            let selectedConfigId = null;
-            let configToDelete = null;
-  
-            // --- FUNCIONES DE UTILIDAD ---
-            function showNotification(message, type = 'success') {
-                notification.textContent = message;
-                notification.className = `notification ${type} show`;
+
+        <!-- Vista Previa Central -->
+        <div class="preview-container">
+          <div class="preview-site" :style="previewStyles">
+            <!-- Filtros SVG para simular daltonismo -->
+            <svg style="position: absolute; width: 0; height: 0;" aria-hidden="true">
+              <defs>
+                <filter id="protanopia">
+                  <feColorMatrix type="matrix" values="0.567, 0.433, 0,     0, 0
+                                                       0.558, 0.442, 0,     0, 0
+                                                       0,     0.242, 0.758, 0, 0
+                                                       0,     0,     0,     1, 0"/>
+                </filter>
                 
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                }, 3000);
-            }
-  
-            function getCurrentConfig() {
-                return {
-                    id: currentConfigId || Date.now().toString(),
-                    name: "Configuración Actual",
-                    colors: {
-                        header: colorInputs.header.value,
-                        button: colorInputs.button.value,
-                        bg: colorInputs.bg.value,
-                        text: colorInputs.text.value,
-                        title: colorInputs.title.value
-                    },
-                    text: {
-                        paragraphFontSize: paragraphFontSizeRange.value,
-                        titleFontSize: titleFontSizeRange.value,
-                        primaryFontFamily: primaryFontSelect.value,
-                        secondaryFontFamily: secondaryFontSelect.value
-                    },
-                    timestamp: new Date().toISOString()
-                };
-            }
-  
-            function applyConfig(config) {
-                // Aplicar colores
-                for (const key in config.colors) {
-                    if (colorInputs[key]) {
-                        colorInputs[key].value = config.colors[key];
-                    }
-                }
+                <filter id="deuteranopia">
+                  <feColorMatrix type="matrix" values="0.625, 0.375, 0,   0, 0
+                                                       0.7,   0.3,   0,   0, 0
+                                                       0,     0.3,   0.7, 0, 0
+                                                       0,     0,     0,   1, 0"/>
+                </filter>
                 
-                // Aplicar configuración de texto
-                if (config.text) {
-                    paragraphFontSizeRange.value = config.text.paragraphFontSize || 16;
-                    titleFontSizeRange.value = config.text.titleFontSize || 24;
-                    primaryFontSelect.value = config.text.primaryFontFamily || "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-                    secondaryFontSelect.value = config.text.secondaryFontFamily || "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-                }
-                
-                // Actualizar la vista
-                updateColors();
-                updateTextStyles();
-                
-                // Actualizar el ID actual
-                currentConfigId = config.id;
-            }
-  
-            // --- FUNCIONES PRINCIPALES ---
-            function updateColors() {
-                // Actualizar variables CSS de Color
-                rootElement.style.setProperty('--header-color', colorInputs.header.value);
-                rootElement.style.setProperty('--button-color', colorInputs.button.value);
-                rootElement.style.setProperty('--bg-color', colorInputs.bg.value);
-                rootElement.style.setProperty('--text-color', colorInputs.text.value);
-                rootElement.style.setProperty('--title-color', colorInputs.title.value);
-                
-                // Aplicar color de fondo a toda la ventana
-                document.body.style.backgroundColor = colorInputs.bg.value;
-                
-                // Actualizar vistas previas y códigos hexadecimales
-                for (const key in colorInputs) {
-                    const value = colorInputs[key].value;
-                    colorPreviews[key].style.backgroundColor = value;
-                    colorHexes[key].textContent = value;
-                }
-                
-                // Verificar contraste después de actualizar colores
-                setTimeout(() => {
-                    checkColorContrast();
-                }, 100);
-            }
-            
-            function updateTextStyles() {
-                const paragraphSize = parseInt(paragraphFontSizeRange.value) + 'px';
-                const titleSize = parseInt(titleFontSizeRange.value) + 'px';
-                const primaryFamily = primaryFontSelect.value;
-                const secondaryFamily = secondaryFontSelect.value;
-                
-                // Actualizar valores mostrados
-                paragraphFontSizeValue.textContent = paragraphSize;
-                titleFontSizeValue.textContent = titleSize;
-  
-                // Establecer variables CSS de Texto (SOLO para texto, no para botones/inputs)
-                rootElement.style.setProperty('--paragraph-font-size', paragraphSize);
-                rootElement.style.setProperty('--title-font-size', titleSize);
-                rootElement.style.setProperty('--local-font-family', primaryFamily);
-                rootElement.style.setProperty('--local-title-font-family', secondaryFamily);
-            }
-  
-            function saveConfigsToStorage() {
-                localStorage.setItem('zayShopConfigs', JSON.stringify(savedConfigs));
-            }
-  
-            function loadConfigsFromStorage() {
-                const saved = localStorage.getItem('zayShopConfigs');
-                if (saved) {
-                    try {
-                        savedConfigs = JSON.parse(saved);
-                        renderConfigsList();
-                    } catch (e) {
-                        console.error('Error al cargar configuraciones:', e);
-                        savedConfigs = [];
-                    }
-                }
-            }
-  
-            function saveCurrentConfig(name) {
-                const config = getCurrentConfig();
-                config.name = name || `Configuración ${new Date().toLocaleDateString()}`;
-                config.timestamp = new Date().toISOString();
-                
-                // Verificar si ya existe una configuración con este ID
-                const existingIndex = savedConfigs.findIndex(c => c.id === currentConfigId);
-                
-                if (existingIndex !== -1 && currentConfigId) {
-                    // Actualizar configuración existente si tiene un ID
-                    savedConfigs[existingIndex] = config;
-                    showNotification('Configuración actualizada', 'success');
-                } else {
-                    // Generar un nuevo ID si se guarda como nueva
-                    config.id = Date.now().toString(); 
-                    savedConfigs.push(config);
-                    showNotification('Configuración guardada', 'success');
-                }
-                
-                saveConfigsToStorage();
-                renderConfigsList();
-                closeSaveModal();
-            }
-  
-            function saveAsCurrentConfig() {
-                openSaveModal();
-            }
-  
-            function openSaveModal() {
-                saveModal.classList.add('show');
-                configName.value = '';
-                configName.focus();
-            }
-  
-            function closeSaveModal() {
-                saveModal.classList.remove('show');
-            }
-  
-            function loadConfig(configId) {
-                const config = savedConfigs.find(c => c.id === configId);
-                if (config) {
-                    applyConfig(config);
-                    showNotification(`Configuración "${config.name}" cargada`, 'success');
-                }
-            }
-  
-            function deleteConfig(configId) {
-                const config = savedConfigs.find(c => c.id === configId);
-                if (config) {
-                    configToDelete = configId;
-                    deleteModalMessage.textContent = `¿Estás seguro de que quieres eliminar la configuración "${config.name}"? Esta acción no se puede deshacer.`;
-                    openDeleteModal();
-                }
-            }
-  
-            function confirmDeleteConfig() {
-                if (configToDelete) {
-                    savedConfigs = savedConfigs.filter(c => c.id !== configToDelete);
-                    saveConfigsToStorage();
-                    renderConfigsList();
-                    showNotification('Configuración eliminada', 'info');
-                    closeDeleteModal();
-                    configToDelete = null;
-                }
-            }
-  
-            function openDeleteModal() {
-                deleteModal.classList.add('show');
-            }
-  
-            function closeDeleteModal() {
-                deleteModal.classList.remove('show');
-                configToDelete = null;
-            }
-  
-            function getFontFamilyName(fontFamilyValue) {
-                const fontMap = {
-                    "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif": "Segoe UI",
-                    "Roboto, sans-serif": "Roboto",
-                    "Arial, sans-serif": "Arial",
-                    "Georgia, serif": "Georgia",
-                    "'Courier New', monospace": "Courier New"
-                };
-                
-                return fontMap[fontFamilyValue] || fontFamilyValue;
-            }
-  
-            function renderConfigsList() {
-                
-                // Obtener filtros de ambos campos de búsqueda
-                const sidebarFilter = searchConfigs.value.toLowerCase();
-                const modalFilter = searchModalConfigs.value.toLowerCase();
-                
-                // Ordenar por fecha (más reciente primero)
-                const sortedConfigs = savedConfigs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                
-                // Listas de elementos a actualizar: [ [elemento_lista_html, elemento_contador_html, filtro_aplicar] ]
-                const listsToUpdate = [
-                    [configsList, configsCount, sidebarFilter], 
-                    [modalConfigsList, modalConfigsCount, modalFilter]
-                ];
-                
-                listsToUpdate.forEach(([targetList, targetCount, currentFilter]) => {
-                    const currentFiltered = sortedConfigs.filter(config => 
-                        config.name.toLowerCase().includes(currentFilter)
-                    );
-  
-                    if (currentFiltered.length === 0) {
-                        targetList.innerHTML = '<div class="empty-configs">No hay configuraciones guardadas</div>';
-                        targetCount.textContent = '0 guardadas';
-                        return;
-                    }
-                    
-                    targetList.innerHTML = '';
-                    currentFiltered.forEach(config => {
-                        const configItem = document.createElement('div');
-                        configItem.className = 'config-item';
-                        configItem.dataset.id = config.id;
-                        
-                        // Crear mini vista previa de colores (primeros 5)
-                        const colorValues = Object.values(config.colors);
-                        const colorsPreview = colorValues.map(color => 
-                            `<div class="color-dot" style="background-color: ${color}"></div>`
-                        ).join('');
-                        
-                        const date = new Date(config.timestamp);
-                        const formattedDate = date.toLocaleDateString('es-ES', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        });
-                        
-                        // Obtener los nombres amigables de las fuentes
-                        const primaryFontName = getFontFamilyName(config.text.primaryFontFamily);
-                        const secondaryFontName = getFontFamilyName(config.text.secondaryFontFamily);
-  
-                        // Generar el HTML con información de tamaños
-                        configItem.innerHTML = `
-                            <div class="config-item-info">
-                                <div class="config-item-colors">${colorsPreview}</div>
-                                <div class="config-item-content">
-                                    <div class="config-item-main">
-                                        <div class="config-item-name">${config.name}</div>
-                                    </div>
-                                    <div class="config-item-date">${formattedDate}</div>
-                                    <div class="font-preview">
-                                        <span style="font-family: ${config.text.primaryFontFamily}">
-                                            Principal: ${primaryFontName} - ${config.text.paragraphFontSize}px
-                                        </span>
-                                        | 
-                                        <span style="font-family: ${config.text.secondaryFontFamily}">
-                                            Secundaria: ${secondaryFontName} - ${config.text.titleFontSize}px
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        
-                        targetList.appendChild(configItem);
-                        
-                        // Agregar eventos para clic izquierdo (cargar) y clic derecho (menú contextual)
-                        configItem.addEventListener('click', function(e) {
-                            if (e.button === 0) { // Solo clic izquierdo
-                                loadConfig(this.dataset.id);
-                                configsModal.classList.remove('show'); // Cerrar el modal si se carga desde él
-                            }
-                        });
-                        
-                        configItem.addEventListener('contextmenu', function(e) {
-                            e.preventDefault();
-                            selectedConfigId = this.dataset.id; // Almacenar ID del preset
-                            
-                            // Mostrar opción de Cargar (solo para presets)
-                            contextMenu.querySelector('#contextMenuLoad').style.display = 'block'; 
-                            showContextMenu(e.clientX, e.clientY);
-                        });
-                    });
-                    
-                    targetCount.textContent = `${currentFiltered.length} guardada${currentFiltered.length !== 1 ? 's' : ''}`;
-                });
-            }
-  
-            function showContextMenu(x, y) {
-                // Asegurarse de que el menú no salga de los límites de la pantalla
-                const maxX = window.innerWidth - contextMenu.offsetWidth;
-                const maxY = window.innerHeight - contextMenu.offsetHeight;
-  
-                contextMenu.style.left = Math.min(x, maxX) + 'px';
-                contextMenu.style.top = Math.min(y, maxY) + 'px';
-                contextMenu.classList.add('show');
-            }
-  
-            function hideContextMenu() {
-                contextMenu.classList.remove('show');
-                selectedConfigId = null; 
-            }
-  
-            function exportConfig() {
-                const config = getCurrentConfig();
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
-                const downloadAnchorNode = document.createElement('a');
-                downloadAnchorNode.setAttribute("href", dataStr);
-                downloadAnchorNode.setAttribute("download", `zayshop-config-${new Date().getTime()}.json`);
-                document.body.appendChild(downloadAnchorNode);
-                downloadAnchorNode.click();
-                downloadAnchorNode.remove();
-                showNotification('Configuración exportada', 'success');
-            }
-  
-            function resetAll() {
-                if (confirm('¿Estás seguro de que quieres restablecer todos los valores a los predeterminados?')) {
-                    // Restablecer colores
-                    colorInputs.header.value = defaultColors.header;
-                    colorInputs.button.value = defaultColors.button;
-                    colorInputs.bg.value = defaultColors.bg;
-                    colorInputs.text.value = defaultColors.text;
-                    colorInputs.title.value = defaultColors.title;
-                    
-                    // Restablecer texto
-                    paragraphFontSizeRange.value = 16;
-                    titleFontSizeRange.value = 24;
-                    primaryFontSelect.value = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-                    secondaryFontSelect.value = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-                    
-                    // Remover filtro de daltonismo
-                    removeColorblindFilter();
-                    colorblindType.value = 'none';
-                    
-                    // Actualizar la vista
-                    updateColors();
-                    updateTextStyles();
-                    
-                    showNotification('Configuración restablecida', 'info');
-                }
-            }
-  
-            // --- FUNCIONES PARA ACCESIBILIDAD DE DALTONISMO ---
-            function getColorblindFilter(type) {
-                // Usar filtros CSS para simular daltonismo
-                const filters = {
-                    protanopia: 'sepia(0.3) hue-rotate(-50deg) saturate(1.2)',
-                    deuteranopia: 'sepia(0.3) hue-rotate(50deg) saturate(1.2)',
-                    tritanopia: 'sepia(0.2) hue-rotate(180deg) saturate(0.8)'
-                };
-                
-                return filters[type] || 'none';
-            }
-  
-            function applyColorblindAdjustment() {
-                const type = colorblindType.value;
-                const previewContainer = document.querySelector('.preview-container');
-                
-                if (type === 'none') {
-                    removeColorblindFilter();
-                    showNotification('Filtro de daltonismo removido', 'info');
-                    return;
-                }
-                
-                const filter = getColorblindFilter(type);
-                previewContainer.style.filter = filter;
-                
-                // Guardar configuración
-                saveAccessibilitySettings(type);
-                
-                showNotification(`Ajuste aplicado para ${getColorblindTypeName(type)}`, 'success');
-            }
-  
-            function removeColorblindFilter() {
-                const previewContainer = document.querySelector('.preview-container');
-                previewContainer.style.filter = 'none';
-                
-                // Remover configuración guardada
-                localStorage.removeItem('zayShopAccessibility');
-            }
-  
-            function getColorblindTypeName(type) {
-                const names = {
-                    protanopia: 'Protanopia (rojo-verde)',
-                    deuteranopia: 'Deuteranopia (rojo-verde)',
-                    tritanopia: 'Tritanopia (azul-amarillo)'
-                };
-                
-                return names[type] || 'Daltonismo';
-            }
-  
-            function saveAccessibilitySettings(type) {
-                const settings = {
-                    type: type,
-                    applied: true
-                };
-                localStorage.setItem('zayShopAccessibility', JSON.stringify(settings));
-            }
-  
-            function loadAccessibilitySettings() {
-                const saved = localStorage.getItem('zayShopAccessibility');
-                if (saved) {
-                    try {
-                        const settings = JSON.parse(saved);
-                        if (settings.applied && settings.type !== 'none') {
-                            // Aplicar el filtro guardado
-                            colorblindType.value = settings.type;
-                            applyColorblindAdjustment();
-                        }
-                    } catch (e) {
-                        console.error('Error al cargar configuración de accesibilidad:', e);
-                    }
-                }
-            }
-  
-            function checkColorContrast() {
-                const bgColor = colorInputs.bg.value;
-                
-                // Verificar contraste de todos los colores contra el fondo
-                const contrasts = {
-                    text: getContrastRatio(colorInputs.text.value, bgColor),
-                    title: getContrastRatio(colorInputs.title.value, bgColor),
-                    button: getContrastRatio(colorInputs.button.value, bgColor),
-                    header: getContrastRatio(colorInputs.header.value, bgColor)
-                };
-                
-                // Encontrar el peor contraste (el más bajo)
-                const worstContrast = Math.min(...Object.values(contrasts));
-                
-                // Actualizar información de contraste principal
-                contrastRatio.textContent = `${worstContrast.toFixed(2)}:1`;
-                
-                // Evaluar según estándares WCAG
-                if (worstContrast >= 7) {
-                    contrastStatus.textContent = '✓ Excelente (AAA)';
-                    contrastStatus.className = 'contrast-status excellent';
-                } else if (worstContrast >= 4.5) {
-                    contrastStatus.textContent = '✓ Bueno (AA)';
-                    contrastStatus.className = 'contrast-status good';
-                } else if (worstContrast >= 3) {
-                    contrastStatus.textContent = '⚠ Regular (AA Large)';
-                    contrastStatus.className = 'contrast-status warning';
-                } else {
-                    contrastStatus.textContent = '✗ Bajo';
-                    contrastStatus.className = 'contrast-status poor';
-                }
-                
-                // Mostrar detalles de contraste para cada color
-                updateContrastDetails(contrasts);
-                
-                return worstContrast;
-            }
-  
-            function updateContrastDetails(contrasts) {
-                const colorNames = {
-                    text: 'Texto',
-                    title: 'Títulos', 
-                    button: 'Botones',
-                    header: 'Encabezado'
-                };
-                
-                let detailsHTML = '';
-                
-                for (const [colorKey, contrast] of Object.entries(contrasts)) {
-                    let statusClass = '';
-                    let statusText = '';
-                    
-                    if (contrast >= 7) {
-                        statusClass = 'excellent';
-                        statusText = 'AAA';
-                    } else if (contrast >= 4.5) {
-                        statusClass = 'good';
-                        statusText = 'AA';
-                    } else if (contrast >= 3) {
-                        statusClass = 'warning';
-                        statusText = 'AA Large';
-                    } else {
-                        statusClass = 'poor';
-                        statusText = 'Bajo';
-                    }
-                    
-                    detailsHTML += `
-                        <div class="contrast-detail">
-                            <span class="contrast-detail-label">${colorNames[colorKey]}:</span>
-                            <span class="contrast-detail-value">${contrast.toFixed(2)}:1</span>
-                            <span class="contrast-detail-status ${statusClass}">${statusText}</span>
+                <filter id="tritanopia">
+                  <feColorMatrix type="matrix" values="0.95, 0.05,  0,     0, 0
+                                                       0,    0.433, 0.567, 0, 0
+                                                       0,    0.475, 0.525, 0, 0
+                                                       0,    0,     0,     1, 0"/>
+                </filter>
+              </defs>
+            </svg>
+
+            <!-- Header de ejemplo -->
+            <header class="preview-header">
+              <nav class="preview-nav">
+                <a href="#" class="preview-logo">JDM TUNING</a>
+                <div class="preview-nav-links">
+                  <a href="#" class="preview-nav-link active">Inicio</a>
+                  <a href="#" class="preview-nav-link">Acerca de</a>
+                  <a href="#" class="preview-nav-link">Galería</a>
+                  <a href="#" class="preview-nav-link">Contacto</a>
+                </div>
+              </nav>
+            </header>
+
+            <!-- Hero Section -->
+            <section class="preview-hero">
+              <div class="preview-hero-content">
+                <h1 class="preview-hero-title">Cultura JDM Tuning</h1>
+                <p class="preview-hero-subtitle">Explora el fascinante mundo del tuning japonés</p>
+              </div>
+            </section>
+
+            <!-- Contenido Principal -->
+            <main class="preview-main">
+              <!-- Sección About -->
+              <section class="preview-section">
+                <div class="preview-container-section">
+                  <h2 class="preview-section-title">Acerca del Tuning Japonés</h2>
+                  <div class="preview-about-content">
+                    <div class="preview-about-text">
+                      <p class="preview-paragraph">El tuning japonés, conocido mundialmente como JDM, es mucho más que modificar coches. Es una cultura que combina la precisión de la ingeniería japonesa con la expresión personal.</p>
+                      
+                      <div class="preview-stats">
+                        <div class="preview-stat-item">
+                          <h4>40+</h4>
+                          <p>Años de Historia</p>
                         </div>
-                    `;
-                }
-                
-                contrastDetails.innerHTML = detailsHTML;
-            }
-  
-            function getContrastRatio(color1, color2) {
-                // Convertir hex a RGB
-                const rgb1 = hexToRgb(color1);
-                const rgb2 = hexToRgb(color2);
-                
-                if (!rgb1 || !rgb2) return 21; // Máximo contraste si no se puede calcular
-                
-                // Calcular luminosidad relativa
-                const l1 = getRelativeLuminance(rgb1);
-                const l2 = getRelativeLuminance(rgb2);
-                
-                // Calcular ratio de contraste
-                const lighter = Math.max(l1, l2);
-                const darker = Math.min(l1, l2);
-                
-                return (lighter + 0.05) / (darker + 0.05);
-            }
-  
-            function hexToRgb(hex) {
-                // Expandir formato corto (#RGB a #RRGGBB)
-                const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-                hex = hex.replace(shorthandRegex, function(m, r, g, b) {
-                    return r + r + g + g + b + b;
-                });
-  
-                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-                return result ? {
-                    r: parseInt(result[1], 16),
-                    g: parseInt(result[2], 16),
-                    b: parseInt(result[3], 16)
-                } : null;
-            }
-  
-            function getRelativeLuminance(rgb) {
-                const [r, g, b] = [rgb.r / 255, rgb.g / 255, rgb.b / 255].map(c => 
-                    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
-                );
-                return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-            }
-  
-            // --- EVENT LISTENERS ---
-            // Eventos para colores
-            for (const key in colorInputs) {
-                colorInputs[key].addEventListener('input', updateColors);
-            }
+                        <div class="preview-stat-item">
+                          <h4>1000+</h4>
+                          <p>Eventos Anuales</p>
+                        </div>
+                        <div class="preview-stat-item">
+                          <h4>50K+</h4>
+                          <p>Enthusiasts</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Sección Features -->
+              <section class="preview-section preview-features">
+                <div class="preview-container-section">
+                  <h2 class="preview-section-title">Estilos de Tuning</h2>
+                  <div class="preview-features-grid">
+                    <div class="preview-feature-card">
+                      <div class="preview-feature-icon">⚡</div>
+                      <h3>Bosozoku</h3>
+                      <p>Estilo extremo con modificaciones exageradas</p>
+                    </div>
+                    <div class="preview-feature-card">
+                      <div class="preview-feature-icon">🏁</div>
+                      <h3>Kaido Racer</h3>
+                      <p>Inspirado en corredores de montaña</p>
+                    </div>
+                    <div class="preview-feature-card">
+                      <div class="preview-feature-icon">👑</div>
+                      <h3>VIP Style</h3>
+                      <p>Lujo y elegancia aplicados</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Sección Brands -->
+              <section class="preview-section">
+                <div class="preview-container-section">
+                  <h2 class="preview-section-title">Marcas Legendarias</h2>
+                  <div class="preview-brands-grid">
+                    <button class="preview-brand-btn">
+                      <span class="preview-brand-name">Nissan</span>
+                    </button>
+                    <button class="preview-brand-btn">
+                      <span class="preview-brand-name">Toyota</span>
+                    </button>
+                    <button class="preview-brand-btn">
+                      <span class="preview-brand-name">Honda</span>
+                    </button>
+                    <button class="preview-brand-btn">
+                      <span class="preview-brand-name">Mazda</span>
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Botones de autenticación -->
+              <section class="preview-section">
+                <div class="preview-container-section">
+                  <h3 class="preview-section-subtitle">Interacción de Usuario</h3>
+                  <div class="preview-auth-buttons">
+                    <button class="preview-login-btn">Iniciar Sesión</button>
+                    <button class="preview-register-btn">Registrarse</button>
+                  </div>
+                </div>
+              </section>
+            </main>
+
+            <!-- Footer -->
+            <footer class="preview-footer">
+              <div class="preview-footer-content">
+                <p>&copy; 2023 JDM Tuning Culture. Todos los derechos reservados.</p>
+                <div class="preview-social-links">
+                  <a href="#">FB</a>
+                  <a href="#">IG</a>
+                  <a href="#">YT</a>
+                </div>
+              </div>
+            </footer>
+          </div>
+        </div>
+
+        <!-- Sidebar Derecho (Configuraciones Guardadas) -->
+        <div class="config-sidebar">
+          <h4 class="sidebar-title">Configuraciones Guardadas</h4>
+          
+          <div class="config-management">
+            <div class="config-management-buttons">
+              <button class="config-management-btn success" @click="openSaveModal">
+                <i class="fas fa-save"></i> Guardar Como...
+              </button>
+            </div>
             
-            // Eventos para texto
-            paragraphFontSizeRange.addEventListener('input', updateTextStyles);
-            titleFontSizeRange.addEventListener('input', updateTextStyles);
-            primaryFontSelect.addEventListener('change', updateTextStyles);
-            secondaryFontSelect.addEventListener('change', updateTextStyles);
+            <div class="configs-header">
+              <h6 class="configs-title">Mis Configuraciones</h6>
+              <span class="configs-count">{{ savedConfigs.length }} guardada{{ savedConfigs.length !== 1 ? 's' : '' }}</span>
+            </div>
             
-            // Eventos para gestión de configuraciones
-            saveConfigBtn.addEventListener('click', () => saveCurrentConfig(null));
-            saveAsConfigBtn.addEventListener('click', saveAsCurrentConfig);
-            exportConfigBtn.addEventListener('click', exportConfig);
-            resetBtn.addEventListener('click', resetAll);
+            <div class="search-box">
+              <input type="text" class="search-input" v-model="searchTerm" placeholder="Buscar configuraciones...">
+            </div>
             
-            // Eventos del modal de guardar
-            cancelSave.addEventListener('click', closeSaveModal);
-            confirmSave.addEventListener('click', () => {
-                if (configName.value.trim()) {
-                    saveCurrentConfig(configName.value.trim());
-                } else {
-                    showNotification('Por favor, ingresa un nombre para la configuración', 'error');
-                }
-            });
-            
-            // Eventos del NUEVO modal de presets
-            openConfigsModalBtn.addEventListener('click', () => {
-                renderConfigsList(); 
-                configsModal.classList.add('show');
-                searchModalConfigs.focus();
-            });
+            <div class="configs-list">
+              <div v-if="filteredConfigs.length === 0" class="empty-configs">
+                No hay configuraciones guardadas
+              </div>
+              <div v-else>
+                <div v-for="config in filteredConfigs" :key="config.id" 
+                     class="config-item" @click="loadConfig(config.id)" @contextmenu.prevent="deleteConfig(config.id)">
+                  <div class="config-item-info">
+                    <div class="config-item-colors">
+                      <div v-for="color in Object.values(config.colors).slice(0, 5)" :key="color" 
+                           class="color-dot" :style="{backgroundColor: color}"></div>
+                    </div>
+                    <div class="config-item-content">
+                      <div class="config-item-name">{{ config.name }}</div>
+                      <div class="config-item-date">{{ formatDate(config.timestamp) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <h4 class="sidebar-title">Acciones Rápidas</h4>
+            <div class="quick-buttons">
+              <button class="quick-btn" @click="generateRandomTheme">
+                <i class="fas fa-palette"></i> Tema Aleatorio
+              </button>
+              <button class="quick-btn" @click="applyAccessibilityPreset">
+                <i class="fas fa-universal-access"></i> Accesibilidad
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de guardar -->
+    <div class="modal-overlay" v-if="showSaveModal" @click="closeSaveModal">
+      <div class="modal-content" @click.stop>
+        <h3 class="modal-title">Guardar Configuración</h3>
+        <input type="text" class="modal-input" v-model="configName" placeholder="Nombre de la configuración" maxlength="30" @keypress.enter="saveCurrentConfig">
+        <div class="modal-actions">
+          <button class="modal-btn secondary" @click="closeSaveModal">Cancelar</button>
+          <button class="modal-btn primary" @click="saveCurrentConfig">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="notification" class="notification" :class="notificationClass" v-if="showNotification">
+      {{ notificationMessage }}
+    </div>
+  </section>
+</template>
+
+<script>
+export default {
+  name: 'ConfigAdmin',
+  props: {
+    user: {
+      type: Object,
+      required: true
+    }
+  },
+  data() {
+    return {
+      // Colores configurables
+      color1: '#D50000',
+      color2: '#FFD600',
+      color3: '#1C1C1C',
+      color4: '#FFFFFF',
+      color5: '#2B2B2B',
+      
+      // Configuración de texto
+      paragraphSize: 16,
+      titleSize: 24,
+      selectedFont: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+      selectedSecondaryFont: "Arial, sans-serif",
+      
+      // Accesibilidad
+      colorBlindMode: 'none',
+      highContrast: false,
+      largeText: false,
+      
+      // Efectos y bordes
+      borderRadius: 8,
+      shadowIntensity: 5,
+      
+      // Gestión de configuraciones
+      savedConfigs: [],
+      searchTerm: '',
+      showSaveModal: false,
+      configName: '',
+      
+      // Notificaciones
+      showNotification: false,
+      notificationMessage: '',
+      notificationClass: 'success'
+    }
+  },
+  computed: {
+    // Estilos para la vista previa
+    previewStyles() {
+      return {
+        '--preview-primary': this.color1,
+        '--preview-secondary': this.color2,
+        '--preview-background': this.color3,
+        '--preview-text': this.color4,
+        '--preview-accent': this.color5,
+        '--preview-paragraph-size': this.paragraphSize + 'px',
+        '--preview-title-size': this.titleSize + 'px',
+        '--preview-font-family': this.selectedFont,
+        '--preview-secondary-font': this.selectedSecondaryFont,
+        '--preview-border-radius': this.borderRadius + 'px',
+        '--preview-shadow': `0 ${this.shadowIntensity}px ${this.shadowIntensity * 2}px rgba(0,0,0,0.1)`,
+        '--preview-high-contrast': this.highContrast ? '1' : '0',
+        '--preview-large-text': this.largeText ? '1.2' : '1',
+        '--preview-color-blind-filter': this.getColorBlindFilter()
+      }
+    },
+    
+    // Filtro de configuraciones
+    filteredConfigs() {
+      if (!this.searchTerm) return this.savedConfigs;
+      return this.savedConfigs.filter(config =>
+        config.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+      );
+    }
+  },
+  mounted() {
+    this.loadConfigsFromStorage();
+    this.loadGlobalStyles(); // Cargar estilos guardados al iniciar
+    this.applyStylesToGlobal(); // Aplicar estilos al cargar
+  },
+  watch: {
+    // Observar cambios en todas las propiedades de configuración
+    color1: 'applyStylesToGlobal',
+    color2: 'applyStylesToGlobal',
+    color3: 'applyStylesToGlobal',
+    color4: 'applyStylesToGlobal',
+    color5: 'applyStylesToGlobal',
+    paragraphSize: 'applyStylesToGlobal',
+    titleSize: 'applyStylesToGlobal',
+    selectedFont: 'applyStylesToGlobal',
+    selectedSecondaryFont: 'applyStylesToGlobal',
+    colorBlindMode: 'applyStylesToGlobal',
+    highContrast: 'applyStylesToGlobal',
+    largeText: 'applyStylesToGlobal',
+    borderRadius: 'applyStylesToGlobal',
+    shadowIntensity: 'applyStylesToGlobal'
+  },
+  methods: {
+    // Método para aplicar estilos globalmente
+    applyStylesToGlobal() {
+      const styles = this.getGlobalStyles();
+      
+      // Aplicar al documento
+      this.updateGlobalCSS(styles);
+      
+      // Guardar en localStorage para persistencia
+      this.saveGlobalStyles(styles);
+    },
+    
+    getGlobalStyles() {
+      return {
+        '--primary': this.color1,
+        '--secondary': this.color2,
+        '--background': this.color3,
+        '--text': this.color4,
+        '--accent': this.color5,
+        '--paragraph-size': this.paragraphSize + 'px',
+        '--title-size': this.titleSize + 'px',
+        '--font-family': this.selectedFont,
+        '--secondary-font': this.selectedSecondaryFont,
+        '--border-radius': this.borderRadius + 'px',
+        '--shadow': `0 ${this.shadowIntensity}px ${this.shadowIntensity * 2}px rgba(0,0,0,0.1)`,
+        '--high-contrast': this.highContrast ? '1' : '0',
+        '--large-text': this.largeText ? '1.2' : '1',
+        '--color-blind-filter': this.getColorBlindFilter()
+      };
+    },
+    
+    updateGlobalCSS(styles) {
+      // Crear o actualizar la hoja de estilos global
+      let styleElement = document.getElementById('jdm-global-styles');
+      
+      if (!styleElement) {
+        styleElement = document.createElement('style');
+        styleElement.id = 'jdm-global-styles';
+        document.head.appendChild(styleElement);
+      }
+      
+      // Generar CSS con las variables
+      let css = ':root {\n';
+      Object.entries(styles).forEach(([key, value]) => {
+        css += `  ${key}: ${value};\n`;
+      });
+      css += '}\n\n';
+      
+      // Aplicar filtro de daltonismo al body si es necesario
+      if (this.colorBlindMode !== 'none') {
+        css += `body { filter: ${this.getColorBlindFilter()}; }\n`;
+      } else {
+        css += `body { filter: none; }\n`;
+      }
+      
+      // Aplicar alto contraste
+      if (this.highContrast) {
+        css += `
+          * {
+            contrast: calc(1 + var(--high-contrast) * 10);
+          }
+        `;
+      }
+      
+      styleElement.textContent = css;
+    },
+    
+    saveGlobalStyles(styles) {
+      localStorage.setItem('jdmGlobalStyles', JSON.stringify({
+        styles,
+        timestamp: new Date().toISOString()
+      }));
+    },
+    
+    loadGlobalStyles() {
+      const saved = localStorage.getItem('jdmGlobalStyles');
+      if (saved) {
+        try {
+          const { styles } = JSON.parse(saved);
+          
+          // Aplicar los estilos guardados
+          this.color1 = styles['--primary'] || this.color1;
+          this.color2 = styles['--secondary'] || this.color2;
+          this.color3 = styles['--background'] || this.color3;
+          this.color4 = styles['--text'] || this.color4;
+          this.color5 = styles['--accent'] || this.color5;
+          this.paragraphSize = parseInt(styles['--paragraph-size']) || this.paragraphSize;
+          this.titleSize = parseInt(styles['--title-size']) || this.titleSize;
+          this.selectedFont = styles['--font-family'] || this.selectedFont;
+          this.selectedSecondaryFont = styles['--secondary-font'] || this.selectedSecondaryFont;
+          this.borderRadius = parseInt(styles['--border-radius']) || this.borderRadius;
+          this.highContrast = styles['--high-contrast'] === '1';
+          this.largeText = styles['--large-text'] === '1.2';
+          
+          // Aplicar los estilos inmediatamente
+          this.applyStylesToGlobal();
+          
+        } catch (e) {
+          console.error('Error al cargar estilos globales:', e);
+        }
+      }
+    },
+    
+    getCurrentConfig() {
+      return {
+        id: Date.now().toString(),
+        name: this.configName || `Configuración ${new Date().toLocaleDateString()}`,
+        colors: {
+          color1: this.color1,
+          color2: this.color2,
+          color3: this.color3,
+          color4: this.color4,
+          color5: this.color5
+        },
+        text: {
+          paragraphFontSize: this.paragraphSize,
+          titleFontSize: this.titleSize,
+          primaryFontFamily: this.selectedFont,
+          secondaryFontFamily: this.selectedSecondaryFont
+        },
+        accessibility: {
+          colorBlindMode: this.colorBlindMode,
+          highContrast: this.highContrast,
+          largeText: this.largeText
+        },
+        effects: {
+          borderRadius: this.borderRadius,
+          shadowIntensity: this.shadowIntensity
+        },
+        timestamp: new Date().toISOString()
+      };
+    },
+    
+    saveCurrentConfig() {
+      if (!this.configName.trim()) {
+        this.showNotification('Por favor, ingresa un nombre para la configuración', 'error');
+        return;
+      }
+      
+      const config = this.getCurrentConfig();
+      this.savedConfigs.unshift(config);
+      this.saveConfigsToStorage();
+      this.showNotification('Configuración guardada correctamente', 'success');
+      this.closeSaveModal();
+    },
+    
+    loadConfig(configId) {
+      const config = this.savedConfigs.find(c => c.id === configId);
+      if (config) {
+        this.color1 = config.colors.color1;
+        this.color2 = config.colors.color2;
+        this.color3 = config.colors.color3;
+        this.color4 = config.colors.color4;
+        this.color5 = config.colors.color5;
+        this.paragraphSize = config.text.paragraphFontSize;
+        this.titleSize = config.text.titleFontSize;
+        this.selectedFont = config.text.primaryFontFamily;
+        this.selectedSecondaryFont = config.text.secondaryFontFamily || "Arial, sans-serif";
+        this.colorBlindMode = config.accessibility?.colorBlindMode || 'none';
+        this.highContrast = config.accessibility?.highContrast || false;
+        this.largeText = config.accessibility?.largeText || false;
+        this.borderRadius = config.effects?.borderRadius || 8;
+        this.shadowIntensity = config.effects?.shadowIntensity || 5;
+        
+        // Aplicar cambios globalmente
+        this.applyStylesToGlobal();
+        this.showNotification(`Configuración "${config.name}" cargada`, 'success');
+      }
+    },
+    
+    deleteConfig(configId) {
+      if (confirm('¿Estás seguro de que quieres eliminar esta configuración?')) {
+        this.savedConfigs = this.savedConfigs.filter(c => c.id !== configId);
+        this.saveConfigsToStorage();
+        this.showNotification('Configuración eliminada', 'info');
+      }
+    },
+    
+    openSaveModal() {
+      this.showSaveModal = true;
+      this.configName = '';
+    },
+    
+    closeSaveModal() {
+      this.showSaveModal = false;
+      this.configName = '';
+    },
+    
+    resetAll() {
+      if (confirm('¿Restablecer todos los valores a los predeterminados?')) {
+        this.color1 = '#D50000';
+        this.color2 = '#FFD600';
+        this.color3 = '#1C1C1C';
+        this.color4 = '#FFFFFF';
+        this.color5 = '#2B2B2B';
+        this.paragraphSize = 16;
+        this.titleSize = 24;
+        this.selectedFont = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        this.selectedSecondaryFont = "Arial, sans-serif";
+        this.colorBlindMode = 'none';
+        this.highContrast = false;
+        this.largeText = false;
+        this.borderRadius = 8;
+        this.shadowIntensity = 5;
+        
+        // Aplicar cambios globalmente
+        this.applyStylesToGlobal();
+        this.showNotification('Configuración restablecida', 'info');
+      }
+    },
+
+    // Métodos de accesibilidad
+    getColorBlindFilter() {
+      switch (this.colorBlindMode) {
+        case 'protanopia': return 'url(#protanopia)';
+        case 'deuteranopia': return 'url(#deuteranopia)';
+        case 'tritanopia': return 'url(#tritanopia)';
+        case 'achromatopsia': return 'grayscale(100%)';
+        default: return 'none';
+      }
+    },
+
+    getColorBlindModeDescription() {
+      const descriptions = {
+        'protanopia': 'Protanopia (dificultad para distinguir rojos)',
+        'deuteranopia': 'Deuteranopia (dificultad para distinguir verdes)',
+        'tritanopia': 'Tritanopia (dificultad para distinguir azules)',
+        'achromatopsia': 'Achromatopsia (visión monocromática)'
+      };
+      return descriptions[this.colorBlindMode] || 'Visión Normal';
+    },
+
+    applyAccessibilityPreset() {
+      this.highContrast = true;
+      this.largeText = true;
+      this.showNotification('Configuración de accesibilidad aplicada', 'success');
+    },
+
+    generateRandomTheme() {
+      const colors = [
+        '#2c3e50', '#34495e', '#16a085', '#27ae60', '#2980b9',
+        '#8e44ad', '#2c3e50', '#f39c12', '#d35400', '#c0392b',
+        '#7f8c8d', '#1abc9c', '#3498db', '#9b59b6', '#e74c3c'
+      ];
+      
+      this.color1 = colors[Math.floor(Math.random() * colors.length)];
+      this.color2 = colors[Math.floor(Math.random() * colors.length)];
+      this.color3 = colors[Math.floor(Math.random() * colors.length)];
+      this.color4 = colors[Math.floor(Math.random() * colors.length)];
+      this.color5 = colors[Math.floor(Math.random() * colors.length)];
+      
+      this.showNotification('Tema aleatorio generado', 'success');
+    },
+    
+    showNotification(message, type = 'success') {
+      this.notificationMessage = message;
+      this.notificationClass = type;
+      this.showNotification = true;
+      
+      setTimeout(() => {
+        this.showNotification = false;
+      }, 3000);
+    },
+    
+    saveConfigsToStorage() {
+      localStorage.setItem('jdmTuningConfigs', JSON.stringify(this.savedConfigs));
+    },
+    
+    loadConfigsFromStorage() {
+      const saved = localStorage.getItem('jdmTuningConfigs');
+      if (saved) {
+        try {
+          this.savedConfigs = JSON.parse(saved);
+        } catch (e) {
+          console.error('Error al cargar configuraciones:', e);
+          this.savedConfigs = [];
+        }
+      }
+    },
+    
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    },
+    
+    exportConfig() {
+      const config = this.getCurrentConfig();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `jdmtuning-config-${new Date().getTime()}.json`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+      this.showNotification('Configuración exportada', 'success');
+    }
+  }
+}
+</script>
+
+<style scoped>
+/* ===== ESTILOS PRINCIPALES CON VARIABLES GLOBALES ===== */
+
+.admin-section {
+  padding: 2rem 0;
+  background: var(--background, #ecf0f1);
+  min-height: 100vh;
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+  color: var(--text, #2c3e50);
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.admin-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.admin-header h1 {
+  color: var(--primary, #2c3e50);
+  margin-bottom: 0.5rem;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.admin-subtitle {
+  color: var(--text, #2c3e50);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  opacity: 0.8;
+}
+
+.back-btn {
+  background: var(--secondary, #e74c3c);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.back-btn:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.config-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr 320px;
+  gap: 25px;
+  align-items: start;
+}
+
+/* ===== SIDEBARS CON ESTILO DE ABOUT.VUE ===== */
+.color-sidebar,
+.config-sidebar {
+  background: var(--accent, #ffffff);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  height: fit-content;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.sidebar-title {
+  color: var(--primary, #2c3e50);
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  border-bottom: 3px solid var(--secondary, #e74c3c);
+  padding-bottom: 0.75rem;
+  font-family: inherit;
+}
+
+/* ===== CONTROLES DE COLOR MEJORADOS ===== */
+.color-control {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: var(--background, #f8f9fa);
+  border-radius: 10px;
+  border-left: 5px solid var(--secondary, #e74c3c);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.color-control:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+
+.color-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: var(--primary, #2c3e50);
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.color-sample {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 2px solid #ddd;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.color-input {
+  width: 100%;
+  height: 45px;
+  border: 2px solid var(--accent, #ddd);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.color-input:hover {
+  border-color: var(--secondary, #e74c3c);
+  transform: scale(1.02);
+}
+
+.color-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.color-preview-box {
+  width: 35px;
+  height: 35px;
+  border-radius: 6px;
+  border: 2px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.color-hex {
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  color: var(--text, #7f8c8d);
+  font-weight: 600;
+}
+
+.color-description {
+  font-size: 0.85rem;
+  color: var(--text, #7f8c8d);
+  margin-top: 0.5rem;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+/* ===== OPCIONES ADICIONALES ===== */
+.additional-options {
+  margin-top: 1.5rem;
+}
+
+.option-group {
+  margin-bottom: 1.25rem;
+  padding: 1rem;
+  background: var(--background, #f8f9fa);
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.option-label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: var(--primary, #2c3e50);
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.form-range {
+  width: 100%;
+  margin-bottom: 0.75rem;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--accent, #ddd);
+  outline: none;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--secondary, #e74c3c);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.option-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--accent, #ddd);
+  border-radius: 6px;
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.option-select:focus {
+  border-color: var(--secondary, #e74c3c);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+/* ===== TOGGLE SWITCHES MEJORADOS ===== */
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toggle-label {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 28px;
+}
+
+.toggle-label input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 28px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--secondary, #e74c3c);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(32px);
+}
+
+.mode-description {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: rgba(33, 150, 243, 0.1);
+  border-radius: 6px;
+  border-left: 4px solid #2196f3;
+}
+
+.mode-description small {
+  color: #1976d2;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* ===== BOTONES MEJORADOS ===== */
+.reset-btn {
+  width: 100%;
+  background: var(--secondary, #e74c3c);
+  color: white;
+  border: none;
+  padding: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reset-btn:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3);
+}
+
+/* ===== VISTA PREVIA ===== */
+.preview-container {
+  background: var(--accent, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.05);
+  transform: scale(0.7);
+  transform-origin: top center;
+  width: 142.857%;
+  margin-left: -21.4285%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.preview-site {
+  /* Variables CSS para la vista previa */
+  --preview-primary: #2c3e50;
+  --preview-secondary: #e74c3c;
+  --preview-background: #ecf0f1;
+  --preview-text: #2c3e50;
+  --preview-accent: #ffffff;
+  --preview-paragraph-size: 16px;
+  --preview-title-size: 24px;
+  --preview-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --preview-secondary-font: Arial, sans-serif;
+  --preview-border-radius: 8px;
+  --preview-shadow: 0 5px 10px rgba(0,0,0,0.1);
+  --preview-high-contrast: 0;
+  --preview-large-text: 1;
+  --preview-color-blind-filter: none;
   
-            closeConfigsModal.addEventListener('click', () => {
-                configsModal.classList.remove('show');
-            });
+  /* Aplicar filtro de daltonismo a toda la vista previa */
+  filter: var(--preview-color-blind-filter);
+}
+
+/* ===== GESTIÓN DE CONFIGURACIONES ===== */
+.config-management {
+  margin-bottom: 2rem;
+}
+
+.config-management-buttons {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.config-management-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.config-management-btn.success {
+  background: var(--secondary, #e74c3c);
+  color: white;
+}
+
+.config-management-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.configs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--background, #ecf0f1);
+}
+
+.configs-title {
+  margin: 0;
+  color: var(--primary, #2c3e50);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.configs-count {
+  background: var(--background, #ecf0f1);
+  color: var(--text, #7f8c8d);
+  padding: 0.3rem 0.75rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.search-box {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--accent, #ddd);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: var(--secondary, #e74c3c);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.configs-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.config-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--background, #ecf0f1);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--accent, #ffffff);
+}
+
+.config-item:hover {
+  background: var(--background, #f8f9fa);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: var(--secondary, #e74c3c);
+}
+
+.config-item-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.config-item-colors {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.config-item-content {
+  flex: 1;
+}
+
+.config-item-name {
+  font-weight: 600;
+  color: var(--primary, #2c3e50);
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.config-item-date {
+  font-size: 0.8rem;
+  color: var(--text, #7f8c8d);
+  opacity: 0.7;
+}
+
+.empty-configs {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text, #7f8c8d);
+  font-style: italic;
+}
+
+/* ===== ACCIONES RÁPIDAS ===== */
+.quick-actions {
+  margin-top: 2rem;
+}
+
+.quick-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.quick-btn {
+  padding: 0.85rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  transition: all 0.3s ease;
+  background: var(--secondary, #e74c3c);
+  color: white;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.quick-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3);
+  background: #c0392b;
+}
+
+/* ===== MODALES ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--accent, #ffffff);
+  padding: 2.5rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.modal-title {
+  margin-bottom: 1.5rem;
+  color: var(--primary, #2c3e50);
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid var(--accent, #ddd);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-family: inherit;
+  font-size: 1rem;
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+  transition: all 0.3s ease;
+}
+
+.modal-input:focus {
+  border-color: var(--secondary, #e74c3c);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.modal-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  min-width: 120px;
+}
+
+.modal-btn.primary {
+  background: var(--secondary, #e74c3c);
+  color: white;
+}
+
+.modal-btn.secondary {
+  background: var(--text, #7f8c8d);
+  color: white;
+}
+
+.modal-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* ===== NOTIFICACIÓN ===== */
+.notification {
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  padding: 1.25rem 1.75rem;
+  border-radius: 8px;
+  color: white;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  font-family: inherit;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.notification.success {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+}
+
+.notification.error {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+.notification.info {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.notification.warning {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .config-layout {
+    grid-template-columns: 300px 1fr 300px;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 992px) {
+  .config-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
   
-            // Evento para búsqueda en el modal
-            searchModalConfigs.addEventListener('input', function() {
-                renderConfigsList(); 
-            });
-            
-            // Evento para búsqueda en el sidebar
-            searchConfigs.addEventListener('input', function() {
-                renderConfigsList();
-            });
-            
-            // Eventos del menú contextual (Cargar y Eliminar)
-            contextMenuLoad.addEventListener('click', () => {
-                if (selectedConfigId) {
-                    loadConfig(selectedConfigId);
-                    configsModal.classList.remove('show'); // Cerrar el modal al cargar si se abrió desde allí
-                }
-                hideContextMenu();
-            });
+  .color-sidebar,
+  .config-sidebar {
+    max-height: none;
+  }
   
-            contextMenuDelete.addEventListener('click', () => {
-                if (selectedConfigId) {
-                    deleteConfig(selectedConfigId);
-                }
-                hideContextMenu();
-            });
-            
-            // Eventos del modal de eliminación
-            cancelDelete.addEventListener('click', closeDeleteModal);
-            confirmDelete.addEventListener('click', confirmDeleteConfig);
-            
-            // Eventos de accesibilidad
-            applyAccessibility.addEventListener('click', applyColorblindAdjustment);
-            
-            // Cerrar menú contextual y limpiar variables al hacer clic en otra parte
-            document.addEventListener('click', hideContextMenu);
-            document.addEventListener('contextmenu', (e) => {
-                if (!e.target.closest('.config-item')) {
-                    hideContextMenu();
-                }
-            });
+  .preview-container {
+    transform: scale(1);
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
   
-            // Cerrar modales al hacer clic fuera de ellos
-            saveModal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeSaveModal();
-                }
-            });
-            configsModal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    configsModal.classList.remove('show');
-                }
-            });
-            deleteModal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeDeleteModal();
-                }
-            });
-            
-            // Evento para la tecla Enter en el modal de guardar
-            configName.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    confirmSave.click();
-                }
-            });
-            
-            // --- INICIALIZACIÓN ---
-            updateColors();
-            updateTextStyles();
-            loadConfigsFromStorage();
-            loadAccessibilitySettings(); // Cargar configuración de accesibilidad
-        });
-  </script>
+  .admin-header h1 {
+    font-size: 2rem;
+  }
   
-  <style>
-        /* Variables CSS (Actualizadas con los nuevos sliders) */
-        :root {
-            --header-color: #28a745;
-            --button-color: #198754;
-            --bg-color: #f8f9fa;
-            --text-color: #333333;
-            --title-color: #212529;
-            /* Nuevas variables para tamaños de fuente */
-            --paragraph-font-size: 16px;
-            --title-font-size: 24px;
-            --local-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            --local-title-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--bg-color); /* Color de fondo aplicado a toda la ventana */
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            transition: all 0.3s ease;
-        }
-        
-        /* Aplicar color de texto y fuente a todos los elementos */
-        .preview-container * {
-            color: var(--text-color);
-        }
+  .config-layout {
+    gap: 15px;
+  }
   
-        /* Barra de configuración superior - FUENTE FIJA */
-        .config-bar {
-            background-color: white;
-            padding: 10px 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e9ecef;
-            position: fixed; /* Asegura que la barra superior se quede fija */
-            width: 100%;
-            top: 0;
-            left: 0;
-            z-index: 1100; /* Alto z-index para estar sobre el sidebar */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        }
+  .preview-stats,
+  .preview-features-grid,
+  .preview-brands-grid {
+    grid-template-columns: 1fr;
+  }
   
-        .config-bar * {
-            color: #333333 !important;
-        }
-        
-        .config-title {
-            font-weight: 600;
-            margin: 0;
-            font-size: 1.2rem !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-            color: #333333 !important;
-        }
-        
-        .config-actions {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .config-btn {
-            background: none;
-            border: 1px solid #dee2e6;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 1rem !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        }
-        
-        .config-btn:hover {
-            background-color: #f8f9fa;
-        }
-        
-        /* Contenedor principal de Vista Previa */
-        .preview-container {
-            min-height: calc(100vh - 60px); 
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 80px 20px 20px;
-            /* Margin para compensar ambos sidebars */
-            margin-left: 380px; 
-            margin-right: 380px;
-            width: calc(100% - 760px);
-            transition: filter 0.3s ease;
-        }
-        
-        .preview-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            overflow: hidden;
-            width: 100%;
-            max-width: 900px;
-        }
-        
-        .preview-header {
-            background-color: white;
-            padding: 40px 40px 20px;
-            text-align: center;
-            transition: background-color 0.3s ease;
-            border-bottom: 5px solid var(--header-color); 
-        }
-        
-        .preview-main-title {
-            color: var(--title-color) !important;
-            font-family: var(--local-title-font-family) !important;
-            font-size: var(--title-font-size) !important;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        
-        .preview-subtitle {
-            color: var(--text-color);
-            font-family: var(--local-font-family) !important;
-            font-size: var(--paragraph-font-size) !important;
-            opacity: 0.8;
-        }
-        
-        .preview-body {
-            padding: 40px;
-        }
-        
-        .preview-section {
-            margin-bottom: 40px;
-        }
-        
-        .preview-section-title {
-            color: var(--title-color) !important;
-            font-family: var(--local-title-font-family) !important;
-            font-size: var(--title-font-size) !important;
-            margin-bottom: 20px;
-            border-bottom: 2px solid var(--header-color);
-            padding-bottom: 10px;
-        }
-        
-        .preview-section-subtitle {
-            color: var(--title-color) !important;
-            font-family: var(--local-title-font-family) !important;
-            font-size: calc(var(--title-font-size) * 0.8) !important;
-            margin-bottom: 15px;
-        }
-        
-        .preview-paragraph {
-            color: var(--text-color);
-            font-family: var(--local-font-family) !important;
-            font-size: var(--paragraph-font-size) !important;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-        
-        .preview-list {
-            color: var(--text-color);
-            font-family: var(--local-font-family) !important;
-            font-size: var(--paragraph-font-size) !important;
-            padding-left: 20px;
-        }
-        
-        .preview-list-item {
-            margin-bottom: 8px;
-        }
-        
-        .preview-buttons {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .preview-btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 5px;
-            font-family: var(--local-font-family) !important;
-            font-size: 16px !important; /* Tamaño fijo para botones */
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .preview-btn.primary {
-            background-color: var(--button-color);
-            color: white;
-        }
-        
-        .preview-btn.secondary {
-            background-color: #6c757d;
-            color: white;
-        }
-        
-        .preview-btn:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-        
-        .preview-link {
-            color: var(--header-color);
-            font-family: var(--local-font-family) !important;
-            font-size: var(--paragraph-font-size) !important;
-            text-decoration: none;
-        }
-        
-        .preview-link:hover {
-            text-decoration: underline;
-        }
-        
-        .preview-form {
-            max-width: 500px;
-        }
-        
-        .preview-form-group {
-            margin-bottom: 20px;
-        }
-        
-        .preview-label {
-            display: block;
-            color: var(--text-color);
-            font-family: var(--local-font-family) !important;
-            font-size: var(--paragraph-font-size) !important;
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-        
-        .preview-input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            font-family: var(--local-font-family) !important;
-            font-size: 16px !important; /* Tamaño fijo para inputs */
-            transition: border-color 0.3s;
-        }
-        
-        .preview-input:focus {
-            outline: none;
-            border-color: var(--header-color);
-        }
-        
-        .preview-checkbox {
-            margin-right: 8px;
-        }
-        
-        .preview-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-        
-        .preview-card-item {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .preview-card-title {
-            color: var(--title-color) !important;
-            font-family: var(--local-title-font-family) !important;
-            font-size: calc(var(--title-font-size) * 0.7) !important;
-            margin-bottom: 10px;
-        }
-        
-        .preview-card-text {
-            color: var(--text-color);
-            font-family: var(--local-font-family) !important;
-            font-size: var(--paragraph-font-size) !important;
-        }
-        
-        /* Sidebar Izquierdo Muy Extendido (Posición Fija a la Izquierda) - FUENTE FIJA */
-        .color-sidebar {
-            position: fixed;
-            top: 60px; /* Debajo de la barra de configuración */
-            left: 0;
-            bottom: 0;
-            height: calc(100vh - 60px);
-            background: white;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            padding: 30px;
-            z-index: 1000;
-            width: 380px;
-            overflow-y: auto;
-            font-size: 1rem !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        }
-        
-        .color-sidebar * {
-            font-size: 1rem !important;
-            color: #333333 !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        }
+  .preview-auth-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
   
-        .color-sidebar h4 {
-            font-size: 1.4rem !important;
-        }
-        
-        /* Nuevo Sidebar Derecho para Configuraciones Guardadas */
-        .config-sidebar {
-            position: fixed;
-            top: 60px; /* Debajo de la barra de configuración */
-            right: 0;
-            bottom: 0;
-            height: calc(100vh - 60px);
-            background: white;
-            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
-            padding: 30px;
-            z-index: 1000;
-            width: 380px;
-            overflow-y: auto;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        }
-        
-        .config-sidebar * {
-            font-size: 1rem !important;
-            color: #333333 !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        }
+  .preview-nav {
+    flex-direction: column;
+    gap: 1rem;
+  }
   
-        .config-sidebar h4 {
-          font-size: 1.4rem !important;
-        }
-        
-        .color-control {
-            margin-bottom: 25px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .color-label {
-            font-size: 16px;
-            margin-bottom: 12px;
-            font-weight: 600;
-        }
-        
-        .color-input {
-            width: 100%;
-            height: 50px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-        
-        .color-preview {
-            display: flex;
-            margin-top: 12px;
-            font-size: 14px;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .color-hex {
-            font-weight: 600;
-            font-size: 15px;
-        }
-        
-        .back-to-home {
-            /* Usa la variable de color del header */
-            color: var(--header-color) !important; 
-            text-decoration: none;
-            font-weight: 500;
-        }
-        
-        .back-to-home:hover {
-            text-decoration: underline;
-        }
-        
-        .reset-btn {
-            background-color: #6c757d;
-            color: white !important;
-            border: none;
-            padding: 15px;
-            border-radius: 8px;
-            width: 100%;
-            margin-top: 20px;
-            transition: background-color 0.3s;
-            font-weight: 600;
-            font-size: 16px;
-        }
-        
-        .reset-btn:hover {
-            background-color: #5a6268;
-            transform: translateY(-2px);
-        }
-        
-        .sidebar-title {
-            text-align: center;
-            margin-bottom: 30px;
-            font-weight: 700;
-            border-bottom: 3px solid #eee;
-            padding-bottom: 20px;
-            font-size: 1.5rem;
-            /* Aseguramos que el color del título aplique aquí */
-            color: var(--title-color) !important;
-        }
-        
-        .option-group {
-            margin-bottom: 20px;
-        }
-        
-        .option-label {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            display: block;
-        }
-        
-        .option-select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            background: white;
-        }
-        
-        /* Estilos para la gestión de configuraciones (ahora en sidebar derecho) */
-        .config-management {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-        }
-        
-        .config-management-title {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-        
-        .config-management-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .config-management-btn {
-            background-color: #007bff;
-            color: white !important;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            font-weight: 500;
-        }
-        
-        .config-management-btn:hover {
-            background-color: #0069d9;
-        }
-        
-        .config-management-btn.secondary {
-            background-color: #6c757d;
-        }
-        
-        .config-management-btn.secondary:hover {
-            background-color: #5a6268;
-        }
-        
-        .config-management-btn.success {
-            background-color: #28a745;
-        }
-        
-        .config-management-btn.success:hover {
-            background-color: #218838;
-        }
-        
-        /* Estilos para controles de accesibilidad de daltonismo */
-        .accessibility-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+  .preview-nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
   
-        .accessibility-info {
-            font-size: 12px;
-            color: #666;
-        }
+  .modal-content {
+    padding: 2rem;
+    margin: 1rem;
+  }
   
-        .contrast-info {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            flex-wrap: wrap;
-            margin-bottom: 8px;
-        }
+  .modal-actions {
+    flex-direction: column;
+  }
   
-        .contrast-status {
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-weight: bold;
-        }
-  
-        .contrast-status.excellent {
-            background-color: #28a745;
-            color: white;
-        }
-  
-        .contrast-status.good {
-            background-color: #17a2b8;
-            color: white;
-        }
-  
-        .contrast-status.warning {
-            background-color: #ffc107;
-            color: black;
-        }
-  
-        .contrast-status.poor {
-            background-color: #dc3545;
-            color: white;
-        }
-  
-        .contrast-details {
-            font-size: 11px;
-            margin-top: 8px;
-        }
-  
-        .contrast-detail {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-            padding: 2px 0;
-        }
-  
-        .contrast-detail-label {
-            flex: 1;
-            color: #666;
-        }
-  
-        .contrast-detail-value {
-            flex: 0 0 40px;
-            text-align: right;
-            font-weight: 600;
-            margin-right: 8px;
-        }
-  
-        .contrast-detail-status {
-            flex: 0 0 50px;
-            text-align: center;
-            font-size: 9px;
-            padding: 1px 4px;
-            border-radius: 2px;
-            font-weight: bold;
-        }
-  
-        .contrast-detail-status.excellent {
-            background-color: #28a745;
-            color: white;
-        }
-  
-        .contrast-detail-status.good {
-            background-color: #17a2b8;
-            color: white;
-        }
-  
-        .contrast-detail-status.warning {
-            background-color: #ffc107;
-            color: black;
-        }
-  
-        .contrast-detail-status.poor {
-            background-color: #dc3545;
-            color: white;
-        }
-  
-        .accessibility-note {
-            font-size: 11px;
-            color: #6c757d;
-            text-align: center;
-            font-style: italic;
-        }
-  
-        .accessibility-controls select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            background: white;
-        }
-        
-        /* Estilos para notificaciones */
-        .notification {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 5px;
-            color: white;
-            font-weight: 500;
-            z-index: 1200;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-        }
-        
-        .notification.show {
-            transform: translateX(0);
-        }
-        
-        .notification.success {
-            background-color: #28a745;
-            color: white !important;
-        }
-        
-        .notification.error {
-            background-color: #dc3545;
-            color: white !important;
-        }
-        
-        .notification.info {
-            background-color: #17a2b8;
-        }
-        
-        /* Estilos para la lista de configuraciones */
-        .configs-list {
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 10px;
-        }
-        
-        .config-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #f1f1f1;
-            transition: background-color 0.2s;
-            cursor: pointer; /* Cursor de puntero para indicar interactividad */
-        }
-        
-        .config-item:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .config-item:last-child {
-            border-bottom: none;
-        }
-        
-        .config-item-info {
-            flex-grow: 1;
-            display: flex;
-            align-items: flex-start; /* Alineación cambiada para mejor flujo */
-            gap: 10px;
-        }
-        
-        .config-item-colors {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-right: 10px;
-            margin-top: 5px;
-        }
-        
-        .color-dot {
-            width: 10px; /* Reducido para mejor vista en lista */
-            height: 10px; /* Reducido para mejor vista en lista */
-            border-radius: 50%;
-            border: 1px solid #ddd;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .config-item-name {
-            font-weight: 600;
-            margin-bottom: 3px;
-            font-size: 15px;
-        }
-        
-        .config-item-date {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-        
-        .empty-configs {
-            text-align: center;
-            padding: 20px;
-            color: #6c757d;
-            font-style: italic;
-        }
-        
-        .search-box {
-            margin-bottom: 15px;
-        }
-        
-        .search-input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-        }
-        
-        .configs-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .configs-title {
-            font-size: 1.react;
-            font-weight: 600;
-            margin: 0;
-        }
-        
-        .configs-count {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-        
-        /* MODALES - ESTILOS FIJOS QUE NO SE AFECTAN POR LAS CONFIGURACIONES */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5) !important; /* Fondo oscuro fijo */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1300;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-        
-        .modal-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .modal-content {
-            background: white !important; /* Fondo blanco fijo */
-            border-radius: 10px;
-            padding: 25px;
-            width: 90%;
-            max-width: 400px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            transform: translateY(-20px);
-            transition: transform 0.3s;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important; /* Fuente fija */
-        }
-  
-        /* Estilos específicos para el modal de configuraciones guardadas (más ancho) */
-        #configsModal .modal-content {
-            max-width: 650px !important; /* Ancho fijo para el modal de configuraciones */
-            background: white !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        }
-        
-        .modal-overlay.show .modal-content {
-            transform: translateY(0);
-        }
-        
-        .modal-title {
-            margin-top: 0;
-            margin-bottom: 15px;
-            font-size: 1.3rem !important;
-            color: #333333 !important; /* Color fijo */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important; /* Fuente fija */
-            font-weight: 600;
-        }
-        
-        .modal-message {
-            margin-bottom: 20px;
-            color: #666666 !important; /* Color fijo */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important; /* Fuente fija */
-            font-size: 14px !important;
-            line-height: 1.5;
-        }
-        
-        .modal-icon {
-            text-align: center;
-            margin-bottom: 15px;
-            font-size: 3rem;
-            color: #ffc107 !important; /* Color amarillo de advertencia fijo */
-        }
-        
-        .modal-input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #dee2e6 !important; /* Borde fijo */
-            border-radius: 5px;
-            margin-bottom: 15px;
-            color: #333333 !important; /* Color fijo */
-            font-size: 14px !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important; /* Fuente fija */
-            background: white !important; /* Fondo fijo */
-        }
-        
-        .modal-input:focus {
-            outline: none;
-            border-color: #007bff !important; /* Color de focus fijo */
-        }
-        
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-        
-        .modal-btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 500;
-            color: white !important;
-            font-size: 14px !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important; /* Fuente fija */
-            transition: background-color 0.3s;
-        }
-        
-        .modal-btn.primary {
-            background-color: #007bff !important; /* Color fijo */
-        }
-        
-        .modal-btn.primary:hover {
-            background-color: #0069d9 !important; /* Color fijo */
-        }
-        
-        .modal-btn.secondary {
-            background-color: #6c757d !important; /* Color fijo */
-        }
-        
-        .modal-btn.secondary:hover {
-            background-color: #5a6268 !important; /* Color fijo */
-        }
-        
-        .modal-btn.danger {
-            background-color: #dc3545 !important; /* Color fijo */
-        }
-        
-        .modal-btn.danger:hover {
-            background-color: #c82333 !important; /* Color fijo */
-        }
-        
-         /* ESTILOS FIJOS PARA EL CONTENIDO DEL MODAL DE CONFIGURACIONES GUARDADAS */
-        #configsModal .configs-header,
-        #configsModal .configs-title,
-        #configsModal .configs-count,
-        #configsModal .search-box,
-        #configsModal .search-input,
-        #configsModal .configs-list,
-        #configsModal .config-item,
-        #configsModal .config-item-info,
-        #configsModal .config-item-name,
-        #configsModal .config-item-date,
-        #configsModal .font-preview,
-        #configsModal .empty-configs {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-            color: #333333 !important;
-            background: white !important;
-        }
-  
-        #configsModal .search-input {
-            border: 1px solid #dee2e6 !important;
-            background: white !important;
-            color: #333333 !important;
-        }
-  
-        #configsModal .search-input:focus {
-            border-color: #007bff !important;
-            outline: none;
-        }
-  
-        #configsModal .configs-list {
-            border: 1px solid #e9ecef !important;
-            background: white !important;
-        }
-  
-        #configsModal .config-item:hover {
-            background-color: #f8f9fa !important;
-        }
-  
-        #configsModal .config-item-date,
-        #configsModal .font-preview {
-            color: #6c757d !important;
-        }
-  
-        #configsModal .empty-configs {
-            color: #6c757d !important;
-            font-style: italic;
-        }
-  
-        .notification {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 5px;
-            color: white;
-            font-weight: 500;
-            z-index: 1200;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-            font-size: 16px !important;
-        }
-  
-        .notification.show {
-            transform: translateX(0);
-        }
-  
-        .notification.success {
-            background-color: #28a745;
-        }
-  
-        .notification.error {
-            background-color: #dc3545;
-        }
-  
-        .notification.info {
-            background-color: #17a2b8;
-        }
-  
-        .config-item-content {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-        
-        .config-item-main {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-        }
-        
-        .font-preview {
-            font-size: 0.8rem;
-            color: #6c757d;
-            margin-top: 2px;
-        }
-        
-        /* Menú contextual */
-        .context-menu {
-            position: fixed;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1400;
-            min-width: 150px;
-            display: none;
-            border: 1px solid #ddd;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-            font-size: 14px !important;
-        }
-        
-        .context-menu.show {
-            display: block;
-        }
-        
-        .context-menu-item {
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            white-space: nowrap;
-            color: #333333 !important;
-            font-size: 14px !important;
-        }
-        
-        .context-menu-item:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .context-menu-item.delete {
-            color: #dc3545;
-            border-top: 1px solid #eee;
-        }
-        
-        .context-menu-item i {
-            margin-right: 8px;
-            width: 16px;
-        }
-  
-        /* Estilos para fuentes personalizadas */
-        .custom-fonts-list {
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-  
-        .custom-font-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px;
-            border-bottom: 1px solid #f1f1f1;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        }
-  
-        .custom-font-item:last-child {
-            border-bottom: none;
-        }
-  
-        .custom-font-name {
-            font-weight: 600;
-            flex-grow: 1;
-        }
-  
-        .custom-font-remove {
-            background: none;
-            border: none;
-            color: #dc3545;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 12px !important;
-        }
-  
-        .custom-font-remove:hover {
-            background-color: #f8d7da;
-        }
-  
-        .font-preview-active {
-            font-family: inherit !important;
-        }
-  </style>
+  .modal-btn {
+    min-width: auto;
+  }
+}
+
+/* ===== ESTILOS DE LA VISTA PREVIA (se mantienen igual) ===== */
+.preview-header {
+  background-color: var(--preview-primary);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--preview-shadow);
+  filter: contrast(calc(1 + var(--preview-high-contrast) * 10));
+}
+
+.preview-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+}
+
+.preview-logo {
+  font-size: calc(1.5rem * var(--preview-large-text));
+  font-weight: bold;
+  color: var(--preview-text);
+  text-decoration: none;
+  font-family: var(--preview-font-family);
+}
+
+.preview-nav-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.preview-nav-link {
+  color: var(--preview-text);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+  font-family: var(--preview-secondary-font);
+  font-size: calc(var(--preview-paragraph-size) * var(--preview-large-text));
+}
+
+.preview-nav-link:hover,
+.preview-nav-link.active {
+  color: var(--preview-secondary);
+}
+
+.preview-hero {
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+              url('https://www.motor1.com/news/661782/2000-nissan-r34-skyline-gt-r-auction-paul-walker-driven-fast-and-furious/');
+  background-size: cover;
+  background-position: center;
+  height: 30vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 20px;
+  filter: contrast(calc(1 + var(--preview-high-contrast) * 10));
+}
+
+.preview-hero-title {
+  color: white;
+  font-family: var(--preview-font-family);
+  font-size: calc(var(--preview-title-size) * var(--preview-large-text));
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.preview-hero-subtitle {
+  color: white;
+  font-family: var(--preview-secondary-font);
+  font-size: calc(var(--preview-paragraph-size) * var(--preview-large-text));
+  opacity: 0.9;
+}
+
+.preview-main {
+  background: var(--preview-background);
+  filter: contrast(calc(1 + var(--preview-high-contrast) * 10));
+}
+
+.preview-section {
+  padding: 2rem 0;
+}
+
+.preview-container-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.preview-section-title {
+  color: var(--preview-primary);
+  font-family: var(--preview-font-family);
+  font-size: calc(var(--preview-title-size) * var(--preview-large-text));
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid var(--preview-secondary);
+  padding-bottom: 0.5rem;
+}
+
+.preview-section-subtitle {
+  color: var(--preview-primary);
+  font-family: var(--preview-secondary-font);
+  font-size: calc(var(--preview-title-size) * 0.8 * var(--preview-large-text));
+  margin-bottom: 1rem;
+}
+
+.preview-paragraph {
+  color: var(--preview-text);
+  font-family: var(--preview-secondary-font);
+  font-size: calc(var(--preview-paragraph-size) * var(--preview-large-text));
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.preview-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.preview-stat-item {
+  text-align: center;
+  padding: 1rem;
+  background-color: var(--preview-accent);
+  border-radius: var(--preview-border-radius);
+  box-shadow: var(--preview-shadow);
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+.preview-stat-item h4 {
+  color: var(--preview-secondary);
+  font-family: var(--preview-font-family);
+  font-size: calc(var(--preview-title-size) * 0.9 * var(--preview-large-text));
+  margin-bottom: 0.5rem;
+}
+
+.preview-stat-item p {
+  color: var(--preview-text);
+  font-family: var(--preview-secondary-font);
+  font-size: calc(var(--preview-paragraph-size) * 0.9 * var(--preview-large-text));
+}
+
+.preview-features {
+  background-color: var(--preview-accent);
+}
+
+.preview-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.preview-feature-card {
+  background-color: var(--preview-background);
+  padding: 1.5rem;
+  border-radius: var(--preview-border-radius);
+  text-align: center;
+  transition: transform 0.3s, box-shadow 0.3s;
+  border-left: 4px solid var(--preview-primary);
+  box-shadow: var(--preview-shadow);
+}
+
+.preview-feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.preview-feature-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.preview-feature-card h3 {
+  color: var(--preview-primary);
+  font-family: var(--preview-font-family);
+  font-size: calc(var(--preview-title-size) * 0.8 * var(--preview-large-text));
+  margin-bottom: 0.5rem;
+}
+
+.preview-feature-card p {
+  color: var(--preview-text);
+  font-family: var(--preview-secondary-font);
+  font-size: calc(var(--preview-paragraph-size) * var(--preview-large-text));
+}
+
+.preview-brands-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.preview-brand-btn {
+  background-color: var(--preview-accent);
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: var(--preview-border-radius);
+  color: var(--preview-text);
+  cursor: pointer;
+  font-weight: bold;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--preview-shadow);
+  font-family: var(--preview-secondary-font);
+  font-size: calc(1rem * var(--preview-large-text));
+}
+
+.preview-brand-btn:hover {
+  transform: translateY(-3px);
+  background-color: var(--preview-primary);
+  color: var(--preview-text);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.preview-auth-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.preview-login-btn {
+  background: transparent;
+  border: 1px solid var(--preview-primary);
+  color: var(--preview-primary);
+  padding: 0.5rem 1rem;
+  border-radius: var(--preview-border-radius);
+  cursor: pointer;
+  font-family: var(--preview-secondary-font);
+  font-size: calc(var(--preview-paragraph-size) * var(--preview-large-text));
+  transition: all 0.3s;
+}
+
+.preview-register-btn {
+  background: var(--preview-secondary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--preview-border-radius);
+  cursor: pointer;
+  font-family: var(--preview-secondary-font);
+  font-size: calc(var(--preview-paragraph-size) * var(--preview-large-text));
+  transition: all 0.3s;
+}
+
+.preview-login-btn:hover,
+.preview-register-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.preview-footer {
+  background-color: var(--preview-primary);
+  padding: 2rem 0;
+  text-align: center;
+  filter: contrast(calc(1 + var(--preview-high-contrast) * 10));
+}
+
+.preview-footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.preview-footer-content p {
+  color: var(--preview-text);
+  font-family: var(--preview-secondary-font);
+  font-size: calc(var(--preview-paragraph-size) * var(--preview-large-text));
+}
+
+.preview-social-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.preview-social-links a {
+  color: var(--preview-text);
+  font-size: calc(1.2rem * var(--preview-large-text));
+  transition: color 0.3s;
+  font-family: var(--preview-secondary-font);
+}
+
+.preview-social-links a:hover {
+  color: var(--preview-secondary);
+}
+</style>

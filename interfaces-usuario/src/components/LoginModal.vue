@@ -200,13 +200,13 @@ export default {
 }
 
 .login-content {
-  background: var(--secondary);
+  background: var(--accent, var(--secondary, #ffffff));
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: var(--border-radius, 12px);
   width: 90%;
   max-width: 400px;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow, 0 10px 30px rgba(0, 0, 0, 0.3));
 }
 
 .close-btn {
@@ -216,7 +216,7 @@ export default {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: var(--text);
+  color: var(--text, #333333);
   cursor: pointer;
   padding: 0;
   width: 30px;
@@ -227,13 +227,15 @@ export default {
 }
 
 .close-btn:hover {
-  color: var(--highlight);
+  color: var(--secondary, #FFD600);
 }
 
 h2 {
   text-align: center;
   margin-bottom: 1.5rem;
-  color: var(--text);
+  color: var(--text, #333333);
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+  font-size: var(--title-size, 24px);
 }
 
 .form-group {
@@ -243,26 +245,29 @@ h2 {
 label {
   display: block;
   margin-bottom: 0.5rem;
-  color: var(--text);
+  color: var(--text, #333333);
   font-weight: 500;
+  font-family: var(--secondary-font, Arial, sans-serif);
+  font-size: var(--paragraph-size, 16px);
 }
 
 input[type="email"],
 input[type="password"] {
   width: 100%;
   padding: 0.75rem;
-  border: 2px solid var(--accent);
-  border-radius: 6px;
-  background: var(--secondary);
-  color: var(--text);
-  font-size: 1rem;
+  border: 2px solid var(--accent, #e0e0e0);
+  border-radius: var(--border-radius, 6px);
+  background: var(--accent, #ffffff);
+  color: var(--text, #333333);
+  font-size: var(--paragraph-size, 16px);
+  font-family: var(--secondary-font, Arial, sans-serif);
   transition: border-color 0.3s;
 }
 
 input[type="email"]:focus,
 input[type="password"]:focus {
   outline: none;
-  border-color: var(--highlight);
+  border-color: var(--secondary, #FFD600);
 }
 
 input[type="checkbox"] {
@@ -272,19 +277,20 @@ input[type="checkbox"] {
 .submit-btn {
   width: 100%;
   padding: 0.75rem;
-  background: var(--primary);
+  background: var(--primary, #D50000);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 1rem;
+  border-radius: var(--border-radius, 6px);
+  font-size: var(--paragraph-size, 16px);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s;
   margin-top: 1rem;
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: var(--highlight);
+  background: var(--secondary, #FFD600);
 }
 
 .submit-btn:disabled {
@@ -296,12 +302,19 @@ input[type="checkbox"] {
   text-align: center;
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--accent);
+  border-top: 1px solid var(--accent, #e0e0e0);
+}
+
+.switch-mode p {
+  color: var(--text, #333333);
+  font-family: var(--secondary-font, Arial, sans-serif);
+  font-size: var(--paragraph-size, 16px);
 }
 
 .switch-mode a {
-  color: var(--highlight);
+  color: var(--secondary, #FFD600);
   text-decoration: none;
+  font-weight: 600;
 }
 
 .switch-mode a:hover {
@@ -312,10 +325,11 @@ input[type="checkbox"] {
   background: #ff4444;
   color: white;
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--border-radius, 6px);
   margin-top: 1rem;
   text-align: center;
   font-size: 0.9rem;
+  font-family: var(--secondary-font, Arial, sans-serif);
 }
 
 @media (max-width: 480px) {

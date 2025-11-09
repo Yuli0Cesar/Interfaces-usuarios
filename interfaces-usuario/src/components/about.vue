@@ -11,7 +11,7 @@
             <a href="#" @click="setActiveView('events')" :class="{ active: activeView === 'events' }">Eventos</a>
             <a href="#" @click="setActiveView('contact')" :class="{ active: activeView === 'contact' }">Contacto</a>
             
-            <!-- Enlace al panel de administrador (solo para admins) -->
+            <!-- Enlace al panel de administrador -->
             <a 
               v-if="user && user.isAdmin" 
               href="#" 
@@ -59,7 +59,7 @@
       <!-- Enlace al panel de administrador móvil -->
       <a 
         v-if="user && user.isAdmin" 
-        href="#" 
+        href="#"
         @click="setActiveView('admin'); mobileMenuOpen = false;" 
         :class="{ active: activeView === 'admin' }"
         class="admin-nav-link"
@@ -87,7 +87,7 @@
       </div>
     </div>
 
-    <!-- Modales de Login y Registro (se mantienen igual) -->
+    <!-- Modales de Login y Registro -->
     <div class="login-modal" v-if="showLoginModal" @click.self="closeLoginModal">
       <div class="login-content">
         <button class="close-btn" @click="closeLoginModal">×</button>
@@ -176,105 +176,12 @@
       </div>
     </div>
 
-    <!-- Vista de Administrador -->
-    <section v-if="activeView === 'admin' && user && user.isAdmin" class="admin-section">
-      <div class="container">
-        <div class="admin-header">
-          <h1>🛠️ Panel de Administración</h1>
-          <p class="admin-subtitle">Bienvenido al panel de control de JDM Tuning</p>
-        </div>
-
-        <div class="admin-stats">
-          <div class="stat-card">
-            <div class="stat-icon">👥</div>
-            <div class="stat-info">
-              <h3>{{ totalUsers }}</h3>
-              <p>Usuarios Registrados</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">👑</div>
-            <div class="stat-info">
-              <h3>{{ adminUsers }}</h3>
-              <p>Administradores</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">🚗</div>
-            <div class="stat-info">
-              <h3>0</h3>
-              <p>Vehículos en Galería</p>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon">📅</div>
-            <div class="stat-info">
-              <h3>0</h3>
-              <p>Eventos Programados</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="admin-content">
-          <div class="admin-card">
-            <h2>📊 Resumen del Sistema</h2>
-            <div class="card-content">
-              <p>Esta es la vista de administrador donde podrás gestionar todos los aspectos del sitio.</p>
-              <p><strong>Funciones futuras a implementar:</strong></p>
-              <ul class="features-list">
-                <li>✅ Gestión de usuarios</li>
-                <li>✅ Moderación de contenido</li>
-                <li>✅ Estadísticas del sitio</li>
-                <li>✅ Configuración del sistema</li>
-                <li>✅ Gestión de eventos</li>
-                <li>✅ Administración de la galería</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="admin-card">
-            <h2>👥 Gestión de Usuarios</h2>
-            <div class="card-content">
-              <p>Actualmente hay <strong>{{ totalUsers }}</strong> usuarios registrados en el sistema.</p>
-              <div class="users-list">
-                <div v-for="user in allUsers" :key="user.id" class="user-item">
-                  <div class="user-avatar">{{ user.email.charAt(0).toUpperCase() }}</div>
-                  <div class="user-details">
-                    <strong>{{ user.email }}</strong>
-                    <span class="user-role">{{ user.isAdmin ? 'Administrador' : 'Usuario' }}</span>
-                    <small>Registrado: {{ formatDate(user.createdAt) }}</small>
-                  </div>
-                  <div class="user-actions">
-                    <button class="action-btn edit-btn" title="Editar usuario">✏️</button>
-                    <button class="action-btn delete-btn" title="Eliminar usuario">🗑️</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="admin-card">
-            <h2>⚙️ Configuración Rápida</h2>
-            <div class="card-content">
-              <div class="quick-actions">
-                <button class="action-btn primary" @click="showComingSoon('Gestión de Contenido')">
-                  📝 Gestionar Contenido
-                </button>
-                <button class="action-btn primary" @click="showComingSoon('Configuración del Sitio')">
-                  ⚙️ Configuración
-                </button>
-                <button class="action-btn primary" @click="showComingSoon('Estadísticas Detalladas')">
-                  📈 Ver Estadísticas
-                </button>
-                <button class="action-btn primary" @click="showComingSoon('Backup del Sistema')">
-                  💾 Backup
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <!-- Componente Admin importado -->
+    <ConfigAdmin 
+      v-if="activeView === 'admin' && user && user.isAdmin" 
+      :user="user"
+      @back-to-main="setActiveView('about')"
+    />
 
     <!-- Vista Principal (About) -->
     <section v-if="activeView === 'about'" class="hero">
@@ -316,7 +223,7 @@
       </div>
     </section>
 
-    <!-- Otras vistas (placeholder) -->
+    <!-- Otras vistas -->
     <section v-if="activeView === 'home'" class="hero">
       <div class="hero-content">
         <h1>Bienvenido a JDM Tuning</h1>
@@ -351,7 +258,7 @@
       </div>
     </section>
 
-    <!-- Secciones comunes (solo se muestran en la vista about) -->
+    <!-- Secciones comunes -->
     <section v-if="activeView === 'about'" class="section features">
       <div class="container">
         <div class="section-title">
@@ -428,10 +335,15 @@
   </div>
 </template>
 
-
 <script>
+// Importar el componente Admin
+import ConfigAdmin from './assets/configadmin.vue';
+
 export default {
   name: 'AboutJdmTuning',
+  components: {
+    ConfigAdmin
+  },
   data() {
     return {
       mobileMenuOpen: false,
@@ -442,7 +354,7 @@ export default {
       loginError: '',
       registerError: '',
       user: null,
-      activeView: 'about', // Vista activa por defecto
+      activeView: 'about',
       loginForm: {
         email: '',
         password: ''
@@ -535,12 +447,18 @@ export default {
       return this.allUsers.filter(user => user.isAdmin).length;
     }
   },
+  mounted() {
+    this.initializeSampleUsers();
+    this.checkStoredAuth();
+    this.loadGlobalStyles(); // Cargar estilos guardados al iniciar
+  },
   methods: {
     setActiveView(view) {
       this.activeView = view;
       this.mobileMenuOpen = false;
     },
-    // Métodos de autenticación real
+    
+    // Métodos de autenticación
     getStoredUsers() {
       const users = localStorage.getItem('jdmUsers');
       return users ? JSON.parse(users) : [];
@@ -561,7 +479,6 @@ export default {
       const user = this.findUserByEmail(email);
       if (!user) return null;
       
-      // En un caso real, aquí deberías usar hashing de contraseñas
       if (user.password === password) {
         return user;
       }
@@ -600,31 +517,26 @@ export default {
       this.loginError = '';
       
       try {
-        // Validaciones básicas
         if (!this.loginForm.email || !this.loginForm.password) {
           throw new Error('Por favor completa todos los campos');
         }
 
-        // Buscar y validar usuario
         const validatedUser = this.validateUser(this.loginForm.email, this.loginForm.password);
         
         if (!validatedUser) {
           throw new Error('Email o contraseña incorrectos');
         }
 
-        // Iniciar sesión
         this.user = {
           email: validatedUser.email,
           isAdmin: validatedUser.isAdmin,
           id: validatedUser.id
         };
         
-        // Guardar sesión actual
         localStorage.setItem('jdmCurrentUser', JSON.stringify(this.user));
         
         this.closeLoginModal();
         
-        // Mostrar mensaje de bienvenida
         const userType = this.user.isAdmin ? 'Administrador' : 'Usuario';
         alert(`¡Bienvenido de nuevo! Has iniciado sesión como ${userType}.`);
         
@@ -640,7 +552,6 @@ export default {
       this.registerError = '';
       
       try {
-        // Validaciones
         if (!this.registerForm.email || !this.registerForm.password) {
           throw new Error('Por favor completa todos los campos');
         }
@@ -653,25 +564,21 @@ export default {
           throw new Error('La contraseña debe tener al menos 6 caracteres');
         }
 
-        // Verificar si el usuario ya existe
         const existingUser = this.findUserByEmail(this.registerForm.email);
         if (existingUser) {
           throw new Error('El email ya está registrado');
         }
 
-        // Crear nuevo usuario
         const newUser = {
-          id: Date.now().toString(), // ID único simple
+          id: Date.now().toString(),
           email: this.registerForm.email,
-          password: this.registerForm.password, // En producción, esto debería estar hasheado
+          password: this.registerForm.password,
           isAdmin: this.registerForm.isAdmin,
           createdAt: new Date().toISOString()
         };
 
-        // Guardar usuario
         this.saveUser(newUser);
 
-        // Iniciar sesión automáticamente
         this.user = {
           email: newUser.email,
           isAdmin: newUser.isAdmin,
@@ -682,7 +589,6 @@ export default {
         
         this.closeRegisterModal();
         
-        // Mostrar mensaje de bienvenida
         const userType = this.user.isAdmin ? 'Administrador' : 'Usuario';
         alert(`¡Bienvenido! Te has registrado correctamente como ${userType}.`);
         
@@ -697,6 +603,7 @@ export default {
       this.user = null;
       localStorage.removeItem('jdmCurrentUser');
       this.mobileMenuOpen = false;
+      this.setActiveView('about');
       alert('¡Hasta pronto! Has cerrado sesión correctamente.');
     },
     
@@ -707,7 +614,6 @@ export default {
       }
     },
 
-    // Inicializar con algunos usuarios de ejemplo (opcional)
     initializeSampleUsers() {
       const users = this.getStoredUsers();
       if (users.length === 0) {
@@ -735,18 +641,57 @@ export default {
     selectBrand(brandName) {
       console.log(`Marca seleccionada: ${brandName}`);
       alert(`Has seleccionado: ${brandName}`);
+    },
+
+    // Método para cargar estilos globales
+    loadGlobalStyles() {
+      const saved = localStorage.getItem('jdmGlobalStyles');
+      if (saved) {
+        try {
+          const { styles } = JSON.parse(saved);
+          
+          // Aplicar estilos al documento
+          let styleElement = document.getElementById('jdm-global-styles');
+          if (!styleElement) {
+            styleElement = document.createElement('style');
+            styleElement.id = 'jdm-global-styles';
+            document.head.appendChild(styleElement);
+          }
+          
+          let css = ':root {\n';
+          Object.entries(styles).forEach(([key, value]) => {
+            css += `  ${key}: ${value};\n`;
+          });
+          css += '}\n';
+          
+          styleElement.textContent = css;
+          
+        } catch (e) {
+          console.error('Error al cargar estilos globales:', e);
+        }
+      }
     }
-  },
-  
-  mounted() {
-    this.initializeSampleUsers();
-    this.checkStoredAuth();
   }
 }
 </script>
 
 <style scoped>
-/* Estilos existentes del header y navegación */
+/* Variables CSS globales - ahora se definen en el ConfigAdmin */
+:root {
+  --primary: #2c3e50;
+  --secondary: #e74c3c;
+  --background: #ecf0f1;
+  --text: #2c3e50;
+  --accent: #ffffff;
+  --paragraph-size: 16px;
+  --title-size: 24px;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --secondary-font: Arial, sans-serif;
+  --border-radius: 8px;
+  --shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* HEADER - Texto con Color 4 */
 header {
   background-color: var(--primary);
   padding: 1rem 0;
@@ -765,8 +710,9 @@ nav {
 .logo {
   font-size: 1.8rem;
   font-weight: bold;
-  color: white;
+  color: var(--text);
   text-decoration: none;
+  font-family: var(--font-family);
 }
 
 .nav-links {
@@ -776,22 +722,24 @@ nav {
 }
 
 .nav-links a {
-  color: white;
+  color: var(--text);
   text-decoration: none;
   font-weight: 500;
   transition: color 0.3s;
+  font-family: var(--font-family);
+  font-size: var(--paragraph-size);
 }
 
 .nav-links a:hover,
 .nav-links a.active {
-  color: var(--highlight);
+  color: var(--secondary);
 }
 
 .mobile-menu-btn {
   display: none;
   background: none;
   border: none;
-  color: white;
+  color: var(--text);
   font-size: 1.5rem;
   cursor: pointer;
 }
@@ -816,20 +764,21 @@ nav {
 }
 
 .mobile-menu a {
-  color: white;
+  color: var(--text);
   text-decoration: none;
   padding: 1rem 2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   transition: background-color 0.3s;
+  font-family: var(--font-family);
 }
 
 .mobile-menu a:hover,
 .mobile-menu a.active {
   background-color: rgba(0, 0, 0, 0.2);
-  color: var(--highlight);
+  color: var(--secondary);
 }
 
-/* Estilos para el panel de usuario */
+/* Panel de usuario - Texto con Color 4 */
 .user-panel {
   display: flex;
   align-items: center;
@@ -838,13 +787,14 @@ nav {
 }
 
 .user-greeting {
-  color: white;
+  color: var(--text);
   font-size: 0.9rem;
+  font-family: var(--secondary-font);
 }
 
 .admin-badge {
-  background: var(--highlight);
-  color: white;
+  background: var(--secondary);
+  color: var(--accent);
   padding: 0.2rem 0.5rem;
   border-radius: 12px;
   font-size: 0.7rem;
@@ -854,17 +804,18 @@ nav {
 
 .logout-btn {
   background: transparent;
-  border: 1px solid white;
-  color: white;
+  border: 1px solid var(--text);
+  color: var(--text);
   padding: 0.4rem 0.8rem;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   cursor: pointer;
   font-size: 0.8rem;
   transition: all 0.3s;
+  font-family: var(--secondary-font);
 }
 
 .logout-btn:hover {
-  background: white;
+  background: var(--text);
   color: var(--primary);
 }
 
@@ -878,31 +829,33 @@ nav {
 .register-btn {
   padding: 0.5rem 1rem;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.3s;
+  font-family: var(--font-family);
 }
 
 .login-btn {
   background: transparent;
-  border: 1px solid white;
-  color: white;
+  border: 1px solid var(--text);
+  color: var(--text);
 }
 
 .login-btn:hover {
-  background: white;
+  background: var(--text);
   color: var(--primary);
 }
 
 .register-btn {
-  background: var(--highlight);
-  color: white;
+  background: var(--secondary);
+  color: var(--accent);
 }
 
 .register-btn:hover {
-  background: #ff6b35;
+  background: var(--primary);
+  color: var(--accent);
 }
 
 /* Estilos para móvil */
@@ -913,8 +866,9 @@ nav {
 }
 
 .mobile-user-panel .user-info {
-  color: white;
+  color: var(--text);
   margin-bottom: 0.5rem;
+  font-family: var(--secondary-font);
 }
 
 .mobile-user-panel .logout-btn {
@@ -952,13 +906,13 @@ nav {
 }
 
 .login-content {
-  background: var(--secondary);
+  background: var(--accent);
   padding: 2rem;
-  border-radius: 12px;
+  border-radius: var(--border-radius);
   width: 90%;
   max-width: 400px;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow);
 }
 
 .close-btn {
@@ -979,13 +933,15 @@ nav {
 }
 
 .close-btn:hover {
-  color: var(--highlight);
+  color: var(--secondary);
 }
 
 h2 {
   text-align: center;
   margin-bottom: 1.5rem;
   color: var(--text);
+  font-family: var(--font-family);
+  font-size: var(--title-size);
 }
 
 .form-group {
@@ -997,6 +953,8 @@ label {
   margin-bottom: 0.5rem;
   color: var(--text);
   font-weight: 500;
+  font-family: var(--secondary-font);
+  font-size: var(--paragraph-size);
 }
 
 input[type="email"],
@@ -1004,17 +962,18 @@ input[type="password"] {
   width: 100%;
   padding: 0.75rem;
   border: 2px solid var(--accent);
-  border-radius: 6px;
-  background: var(--secondary);
+  border-radius: var(--border-radius);
+  background: var(--accent);
   color: var(--text);
-  font-size: 1rem;
+  font-size: var(--paragraph-size);
+  font-family: var(--secondary-font);
   transition: border-color 0.3s;
 }
 
 input[type="email"]:focus,
 input[type="password"]:focus {
   outline: none;
-  border-color: var(--highlight);
+  border-color: var(--secondary);
 }
 
 input[type="checkbox"] {
@@ -1025,18 +984,19 @@ input[type="checkbox"] {
   width: 100%;
   padding: 0.75rem;
   background: var(--primary);
-  color: white;
+  color: var(--accent);
   border: none;
-  border-radius: 6px;
-  font-size: 1rem;
+  border-radius: var(--border-radius);
+  font-size: var(--paragraph-size);
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.3s;
   margin-top: 1rem;
+  font-family: var(--font-family);
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: var(--highlight);
+  background: var(--secondary);
 }
 
 .submit-btn:disabled {
@@ -1051,9 +1011,16 @@ input[type="checkbox"] {
   border-top: 1px solid var(--accent);
 }
 
+.switch-mode p {
+  color: var(--text);
+  font-family: var(--secondary-font);
+  font-size: var(--paragraph-size);
+}
+
 .switch-mode a {
-  color: var(--highlight);
+  color: var(--secondary);
   text-decoration: none;
+  font-weight: 600;
 }
 
 .switch-mode a:hover {
@@ -1064,23 +1031,24 @@ input[type="checkbox"] {
   background: #ff4444;
   color: white;
   padding: 0.75rem;
-  border-radius: 6px;
+  border-radius: var(--border-radius);
   margin-top: 1rem;
   text-align: center;
   font-size: 0.9rem;
+  font-family: var(--secondary-font);
 }
 
 /* Estilos para el placeholder de imagen */
 .image-placeholder {
   width: 100%;
   height: 300px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
-  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--background) 100%);
+  border-radius: var(--border-radius);
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px dashed var(--primary);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow);
 }
 
 .placeholder-content {
@@ -1098,13 +1066,15 @@ input[type="checkbox"] {
   font-size: 1.2rem;
   font-weight: bold;
   margin-bottom: 0.5rem;
+  font-family: var(--font-family);
 }
 
 .placeholder-content small {
   opacity: 0.8;
+  font-family: var(--secondary-font);
 }
 
-/* Estilos existentes del resto del contenido */
+/* HERO SECTION */
 .hero {
   background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
               url('https://www.vividracing.com/blog/wp-content/uploads/2000-nissan-skyline-r34-gt-r-by-kaizo-industries-driven-by-paul-walker-in-fast-and-furious-bonham-s-auction-1536x864-1.jpg');
@@ -1120,8 +1090,18 @@ input[type="checkbox"] {
 
 .hero-content h1 {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  color: var(--accent);
+  font-family: var(--font-family);
+  font-size: calc(var(--title-size) * 1.5);
 }
 
+.hero-content p {
+  color: var(--accent);
+  font-family: var(--secondary-font);
+  font-size: var(--paragraph-size);
+}
+
+/* ABOUT CONTENT */
 .about-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1130,9 +1110,20 @@ input[type="checkbox"] {
 }
 
 .about-text h3 {
-  color: var(--highlight);
+  color: var(--secondary);
+  font-family: var(--font-family);
+  font-size: calc(var(--title-size) * 1.2);
 }
 
+.about-text p {
+  color: var(--text);
+  font-family: var(--secondary-font);
+  font-size: var(--paragraph-size);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+/* STATS SECTION - Fondo con Color 3, Tarjetas con Color 5 */
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1144,13 +1135,24 @@ input[type="checkbox"] {
   text-align: center;
   padding: 1.5rem;
   background-color: var(--accent);
-  border-radius: 8px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
 }
 
 .stat-item h4 {
-  color: var(--highlight);
+  color: var(--secondary);
+  font-family: var(--font-family);
+  font-size: calc(var(--title-size) * 1.1);
+  margin-bottom: 0.5rem;
 }
 
+.stat-item p {
+  color: var(--text);
+  font-family: var(--secondary-font);
+  font-size: calc(var(--paragraph-size) * 0.9);
+}
+
+/* FEATURES SECTION - Fondo con Color 5, Tarjetas con Color 3 */
 .features {
   background-color: var(--accent);
 }
@@ -1162,12 +1164,13 @@ input[type="checkbox"] {
 }
 
 .feature-card {
-  background-color: var(--secondary);
+  background-color: var(--background);
   padding: 2rem;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   text-align: center;
   transition: transform 0.3s, box-shadow 0.3s;
   border-left: 4px solid var(--primary);
+  box-shadow: var(--shadow);
 }
 
 .feature-card:hover {
@@ -1181,6 +1184,25 @@ input[type="checkbox"] {
   color: var(--primary);
 }
 
+.feature-card h3 {
+  color: var(--primary);
+  font-family: var(--font-family);
+  font-size: calc(var(--title-size) * 0.9);
+  margin-bottom: 1rem;
+}
+
+.feature-card p {
+  color: var(--text);
+  font-family: var(--secondary-font);
+  font-size: var(--paragraph-size);
+  line-height: 1.6;
+}
+
+/* BRANDS SECTION - Fondo con Color 3, Botones con Color 5 */
+.brands-section {
+  background-color: var(--background);
+}
+
 .brands-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1190,8 +1212,8 @@ input[type="checkbox"] {
 
 .brand-btn {
   background-color: var(--accent);
-  border: none;
-  border-radius: 12px;
+  border: 2px solid var(--primary);
+  border-radius: var(--border-radius);
   color: var(--text);
   cursor: pointer;
   font-weight: bold;
@@ -1202,36 +1224,22 @@ input[type="checkbox"] {
   align-items: center;
   justify-content: center;
   min-height: 80px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  position: relative;
-  overflow: hidden;
+  box-shadow: var(--shadow);
+  font-family: var(--font-family);
 }
 
 .brand-btn:hover {
   transform: translateY(-5px);
   background-color: var(--primary);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  color: var(--accent);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3);
 }
 
 .brand-btn:active {
   transform: translateY(-2px);
 }
 
-.brand-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: left 0.5s;
-}
-
-.brand-btn:hover::before {
-  left: 100%;
-}
-
+/* TIMELINE SECTION - Fondo con Color 5, Tarjetas con Color 3 */
 .timeline-section {
   background-color: var(--accent);
 }
@@ -1266,28 +1274,39 @@ input[type="checkbox"] {
 
 .timeline-year {
   background-color: var(--primary);
-  color: white;
+  color: var(--accent);
   padding: 0.5rem 1rem;
   border-radius: 20px;
   font-weight: bold;
   min-width: 100px;
   text-align: center;
   z-index: 1;
+  font-family: var(--font-family);
 }
 
 .timeline-content {
-  background-color: var(--secondary);
+  background-color: var(--background);
   padding: 1.5rem;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   margin: 0 2rem;
   flex: 1;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow);
 }
 
 .timeline-content h3 {
-  color: var(--highlight);
+  color: var(--secondary);
+  font-family: var(--font-family);
+  font-size: calc(var(--title-size) * 0.9);
 }
 
+.timeline-content p {
+  color: var(--text);
+  font-family: var(--secondary-font);
+  font-size: var(--paragraph-size);
+  line-height: 1.6;
+}
+
+/* FOOTER - Fondo con Color 1, Texto con Color 4 */
 footer {
   background-color: var(--primary);
   padding: 3rem 0;
@@ -1301,219 +1320,75 @@ footer {
   gap: 1.5rem;
 }
 
+.footer-content p {
+  color: var(--text);
+  font-family: var(--secondary-font);
+  font-size: var(--paragraph-size);
+}
+
 .social-links {
   display: flex;
   gap: 1.5rem;
 }
 
 .social-links a {
-  color: white;
+  color: var(--text);
   font-size: 1.5rem;
   transition: color 0.3s;
+  font-family: var(--secondary-font);
 }
 
 .social-links a:hover {
-  color: var(--highlight);
+  color: var(--secondary);
 }
 
 .admin-nav-link {
-  color: #ffd700 !important;
+  color: var(--secondary) !important;
   font-weight: bold;
-  border: 1px solid #ffd700;
+  border: 1px solid var(--secondary);
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   margin-left: 1rem;
 }
 
 .admin-nav-link:hover {
-  background-color: #ffd700;
+  background-color: var(--secondary);
   color: var(--primary) !important;
 }
 
-.admin-section {
-  padding: 2rem 0;
-  min-height: 80vh;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+/* Secciones comunes */
+.section {
+  padding: 4rem 0;
 }
 
-.admin-header {
+.section-title {
   text-align: center;
   margin-bottom: 3rem;
 }
 
-.admin-header h1 {
-  color: var(--text);
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.admin-subtitle {
-  color: var(--text);
-  opacity: 0.8;
-  font-size: 1.1rem;
-}
-
-.admin-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 3rem;
-}
-
-.stat-card {
-  background: var(--secondary);
-  padding: 1.5rem;
-  border-radius: 12px;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  border-left: 4px solid var(--highlight);
-}
-
-.stat-icon {
-  font-size: 2.5rem;
+.section-title h2 {
+  color: var(--primary);
+  font-family: var(--font-family);
+  font-size: calc(var(--title-size) * 1.3);
   margin-bottom: 1rem;
 }
 
-.stat-info h3 {
-  color: var(--highlight);
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
-
-.stat-info p {
+.section-title p {
   color: var(--text);
-  opacity: 0.8;
+  font-family: var(--secondary-font);
+  font-size: var(--paragraph-size);
 }
 
-.admin-content {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 2rem;
-}
-
-.admin-card {
-  background: var(--secondary);
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.admin-card h2 {
-  color: var(--text);
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid var(--primary);
-  padding-bottom: 0.5rem;
-}
-
-.card-content {
+/* Títulos adaptativos para secciones con fondo oscuro */
+.brands-section .section-title h2,
+.brands-section .section-title p {
   color: var(--text);
 }
 
-.features-list {
-  list-style: none;
-  padding: 0;
-  margin: 1rem 0;
-}
-
-.features-list li {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--accent);
-}
-
-.users-list {
-  margin-top: 1rem;
-}
-
-.user-item {
-  display: flex;
-  align-items: center;
-  padding: 1rem;
-  background: var(--accent);
-  border-radius: 8px;
-  margin-bottom: 0.5rem;
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  background: var(--primary);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: bold;
-  margin-right: 1rem;
-}
-
-.user-details {
-  flex: 1;
-}
-
-.user-details strong {
-  display: block;
-  color: var(--text);
-}
-
-.user-role {
-  background: var(--primary);
-  color: white;
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  margin-right: 0.5rem;
-}
-
-.user-details small {
-  color: var(--text);
-  opacity: 0.7;
-}
-
-.user-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.action-btn {
-  background: none;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
-}
-
-.action-btn:hover {
-  background: var(--accent);
-}
-
-.edit-btn:hover {
-  background: #4CAF50;
-  color: white;
-}
-
-.delete-btn:hover {
-  background: #f44336;
-  color: white;
-}
-
-.action-btn.primary {
-  background: var(--primary);
-  color: white;
-  padding: 0.75rem 1.5rem;
-  margin: 0.25rem;
-}
-
-.action-btn.primary:hover {
-  background: var(--highlight);
-}
-
-.quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
 /* Responsive Design */
@@ -1578,6 +1453,18 @@ footer {
     margin: 1rem;
     padding: 1.5rem;
   }
+
+  .hero-content h1 {
+    font-size: calc(var(--title-size) * 1.2);
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section {
+    padding: 2rem 0;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1604,6 +1491,22 @@ footer {
   .placeholder-content p {
     font-size: 1rem;
   }
+
+  .stats {
+    gap: 1rem;
+  }
+
+  .stat-item {
+    padding: 1rem;
+  }
+
+  .feature-card {
+    padding: 1.5rem;
+  }
+
+  .mobile-menu a {
+    padding: 0.75rem 1.5rem;
+  }
 }
 
 @media (min-width: 769px) {
@@ -1613,42 +1516,282 @@ footer {
   }
 }
 
-@media (max-width: 768px) {
-  .admin-content {
-    grid-template-columns: 1fr;
-  }
-  
-  .admin-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .quick-actions {
-    flex-direction: column;
-  }
-  
-  .user-item {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .user-avatar {
-    margin-right: 0;
-    margin-bottom: 1rem;
-  }
-  
-  .user-actions {
-    margin-top: 1rem;
-    justify-content: center;
+/* Utilidades */
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+/* Ajustes de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  .feature-card,
+  .brand-btn,
+  .timeline-item {
+    transition: none;
   }
 }
 
-@media (max-width: 480px) {
-  .admin-stats {
-    grid-template-columns: 1fr;
+/* Alto contraste */
+@media (prefers-contrast: high) {
+  .feature-card,
+  .stat-item,
+  .timeline-content {
+    border: 2px solid var(--primary);
   }
   
-  .admin-card {
-    padding: 1rem;
+  .brand-btn {
+    border-width: 3px;
   }
+}
+header {
+  background-color: var(--primary);
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: var(--text);
+  text-decoration: none;
+  font-family: var(--font-family);
+}
+
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.nav-links a {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+  font-family: var(--font-family);
+  font-size: var(--paragraph-size);
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--secondary);
+}
+
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.mobile-menu-btn:hover {
+  color: var(--secondary);
+}
+
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  background-color: var(--primary);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.mobile-menu.active {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.mobile-menu a {
+  color: var(--text);
+  text-decoration: none;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s;
+  font-family: var(--font-family);
+}
+
+.mobile-menu a:hover,
+.mobile-menu a.active {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: var(--secondary);
+}
+
+/* Panel de usuario - Texto con Color 4, Hovers con Color 2 */
+.user-panel {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: 2rem;
+}
+
+.user-greeting {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: var(--secondary-font);
+}
+
+.admin-badge {
+  background: var(--secondary);
+  color: var(--accent);
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  margin-left: 0.5rem;
+  transition: background-color 0.3s;
+}
+
+.admin-badge:hover {
+  background: var(--accent);
+  color: var(--secondary);
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid var(--text);
+  color: var(--text);
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s;
+  font-family: var(--secondary-font);
+}
+
+.logout-btn:hover {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: var(--accent);
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: 2rem;
+}
+
+.login-btn,
+.register-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s;
+  font-family: var(--font-family);
+}
+
+.login-btn {
+  background: transparent;
+  border: 1px solid var(--text);
+  color: var(--text);
+}
+
+.login-btn:hover {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: var(--accent);
+}
+
+.register-btn {
+  background: var(--secondary);
+  color: var(--accent);
+  transition: all 0.3s;
+}
+
+.register-btn:hover {
+  background: var(--primary);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* Estilos para móvil - Hovers con Color 2 */
+.mobile-user-panel {
+  padding: 1rem 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.mobile-user-panel .user-info {
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  font-family: var(--secondary-font);
+}
+
+.mobile-user-panel .logout-btn {
+  width: 100%;
+  text-align: center;
+}
+
+.mobile-user-panel .logout-btn:hover {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: var(--accent);
+}
+
+.mobile-auth-buttons {
+  padding: 1rem 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mobile-auth-buttons .login-btn,
+.mobile-auth-buttons .register-btn {
+  width: 100%;
+  text-align: center;
+  padding: 0.75rem;
+}
+
+.mobile-auth-buttons .login-btn:hover {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: var(--accent);
+}
+
+.mobile-auth-buttons .register-btn:hover {
+  background: var(--primary);
+  color: var(--accent);
+}
+
+/* Admin nav link - Hover con Color 2 */
+.admin-nav-link {
+  color: var(--secondary) !important;
+  font-weight: bold;
+  border: 1px solid var(--secondary);
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  margin-left: 1rem;
+  transition: all 0.3s;
+}
+
+.admin-nav-link:hover {
+  background-color: var(--secondary);
+  color: var(--primary) !important;
+  transform: translateY(-2px);
 }
 </style>
