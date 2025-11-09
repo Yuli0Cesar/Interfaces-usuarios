@@ -28,6 +28,18 @@
                 Hola, {{ user.email }}
                 <span v-if="user.isAdmin" class="admin-badge">Admin</span>
               </span>
+              
+              <!-- Enlace al creador de CV para usuarios normales -->
+              <a 
+                v-if="user && !user.isAdmin" 
+                href="#" 
+                @click="setActiveView('usercv')" 
+                :class="{ active: activeView === 'usercv' }"
+                class="cv-nav-link"
+              >
+                📄 Mi Currículum
+              </a>
+              
               <button class="logout-btn" @click="handleLogout">Cerrar Sesión</button>
             </div>
             
@@ -73,6 +85,18 @@
           <strong>{{ user.email }}</strong>
           <span v-if="user.isAdmin" class="admin-badge">Admin</span>
         </div>
+        
+        <!-- Enlace al creador de CV móvil -->
+        <a 
+          v-if="user && !user.isAdmin" 
+          href="#"
+          @click="setActiveView('usercv'); mobileMenuOpen = false;" 
+          :class="{ active: activeView === 'usercv' }"
+          class="cv-nav-link"
+        >
+          📄 Mi Currículum
+        </a>
+        
         <button class="logout-btn" @click="handleLogout">Cerrar Sesión</button>
       </div>
       
@@ -179,6 +203,13 @@
     <!-- Componente Admin importado -->
     <ConfigAdmin 
       v-if="activeView === 'admin' && user && user.isAdmin" 
+      :user="user"
+      @back-to-main="setActiveView('about')"
+    />
+
+    <!-- Componente UserCV importado -->
+    <UserCV 
+      v-if="activeView === 'usercv' && user && !user.isAdmin" 
       :user="user"
       @back-to-main="setActiveView('about')"
     />
@@ -338,11 +369,14 @@
 <script>
 // Importar el componente Admin
 import ConfigAdmin from './assets/configadmin.vue';
+// Importar el componente UserCV
+import UserCV from './UserCV.vue';
 
 export default {
   name: 'AboutJdmTuning',
   components: {
-    ConfigAdmin
+    ConfigAdmin,
+    UserCV
   },
   data() {
     return {
@@ -1354,6 +1388,32 @@ footer {
 .admin-nav-link:hover {
   background-color: var(--secondary);
   color: var(--primary) !important;
+}
+
+/* Enlace al creador de CV */
+.cv-nav-link {
+  color: var(--text) !important;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--secondary);
+  border-radius: var(--border-radius);
+  margin-left: 1rem;
+  transition: all 0.3s;
+  font-family: var(--font-family);
+}
+
+.cv-nav-link:hover,
+.cv-nav-link.active {
+  background-color: var(--secondary);
+  color: var(--primary) !important;
+}
+
+/* En móvil */
+.mobile-user-panel .cv-nav-link {
+  display: block;
+  margin: 0.5rem 0;
+  text-align: center;
 }
 
 /* Secciones comunes */
