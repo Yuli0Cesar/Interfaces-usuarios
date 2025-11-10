@@ -24,8 +24,8 @@
     <main class="cv-builder">
       <div class="container">
         <div class="builder-header">
-          <h1>Creador de Currículum</h1>
-          <p>Crea tu currículum profesional en minutos</p>
+          <h1>Creador de Currículum Profesional</h1>
+          <p>Crea tu currículum profesional en formato gris oscuro</p>
           <div class="header-actions">
             <button class="action-btn secondary" @click="resetForm">
               🔄 Reiniciar
@@ -67,7 +67,7 @@
                       <input
                         type="text"
                         v-model="formData.personalInfo.fullName"
-                        placeholder="Ej: Juan Pérez García"
+                        placeholder="Ej: Alejandro Torres"
                         required
                       >
                     </div>
@@ -77,7 +77,7 @@
                       <input
                         type="text"
                         v-model="formData.personalInfo.title"
-                        placeholder="Ej: Desarrollador Frontend Senior"
+                        placeholder="Ej: Programador web"
                         required
                       >
                     </div>
@@ -87,7 +87,7 @@
                       <input
                         type="email"
                         v-model="formData.personalInfo.email"
-                        placeholder="Ej: tu@email.com"
+                        placeholder="Ej: Hola@unsitiogenial.es"
                         required
                       >
                     </div>
@@ -97,7 +97,7 @@
                       <input
                         type="tel"
                         v-model="formData.personalInfo.phone"
-                        placeholder="Ej: +34 612 345 678"
+                        placeholder="Ej: +34-91-1234-567"
                       >
                     </div>
 
@@ -106,34 +106,34 @@
                       <input
                         type="text"
                         v-model="formData.personalInfo.location"
-                        placeholder="Ej: Madrid, España"
+                        placeholder="Ej: Calle Cualquiera 123, Cualquier Lugar"
                       >
                     </div>
 
                     <div class="form-group">
-                      <label>LinkedIn (opcional)</label>
+                      <label>Sitio Web (opcional)</label>
                       <input
                         type="url"
-                        v-model="formData.personalInfo.linkedin"
-                        placeholder="Ej: linkedin.com/in/tuperfil"
+                        v-model="formData.personalInfo.website"
+                        placeholder="Ej: www.unsitiogenial.es"
                       >
                     </div>
                   </div>
                 </div>
 
-                <!-- Paso 2: Resumen Profesional -->
+                <!-- Paso 2: Perfil Profesional -->
                 <div v-if="currentStep === 2" class="form-section">
-                  <h2>Resumen Profesional</h2>
+                  <h2>Perfil Profesional</h2>
                   
                   <div class="form-group">
-                    <label>Resumen *</label>
+                    <label>Perfil *</label>
                     <textarea
-                      v-model="formData.summary"
+                      v-model="formData.profile"
                       rows="6"
                       placeholder="Describe tu experiencia profesional, habilidades clave y objetivos de carrera..."
                       required
                     ></textarea>
-                    <div class="char-count">{{ formData.summary.length }}/500</div>
+                    <div class="char-count">{{ formData.profile.length }}/500</div>
                   </div>
                 </div>
 
@@ -157,66 +157,23 @@
 
                       <div class="form-grid">
                         <div class="form-group">
-                          <label>Puesto *</label>
-                          <input
-                            type="text"
-                            v-model="exp.position"
-                            placeholder="Ej: Desarrollador Frontend"
-                            required
-                          >
-                        </div>
-
-                        <div class="form-group">
                           <label>Empresa *</label>
                           <input
                             type="text"
                             v-model="exp.company"
-                            placeholder="Ej: Tech Solutions S.L."
+                            placeholder="Ej: Multinacional González"
                             required
                           >
                         </div>
 
                         <div class="form-group">
-                          <label>Ubicación</label>
+                          <label>Período *</label>
                           <input
                             type="text"
-                            v-model="exp.location"
-                            placeholder="Ej: Madrid, España"
-                          >
-                        </div>
-
-                        <div class="form-group">
-                          <label>Tipo de empleo</label>
-                          <select v-model="exp.employmentType">
-                            <option value="">Seleccionar tipo</option>
-                            <option value="Tiempo completo">Tiempo completo</option>
-                            <option value="Medio tiempo">Medio tiempo</option>
-                            <option value="Freelance">Freelance</option>
-                            <option value="Contrato">Contrato</option>
-                            <option value="Prácticas">Prácticas</option>
-                          </select>
-                        </div>
-
-                        <div class="form-group">
-                          <label>Fecha de inicio *</label>
-                          <input
-                            type="month"
-                            v-model="exp.startDate"
+                            v-model="exp.period"
+                            placeholder="Ej: 2019 - 2023"
                             required
                           >
-                        </div>
-
-                        <div class="form-group">
-                          <label>Fecha de fin</label>
-                          <input
-                            type="month"
-                            v-model="exp.endDate"
-                            :disabled="exp.current"
-                          >
-                          <label class="checkbox-label">
-                            <input type="checkbox" v-model="exp.current">
-                            Trabajo actual
-                          </label>
                         </div>
 
                         <div class="form-group full-width">
@@ -232,12 +189,12 @@
                   </div>
                 </div>
 
-                <!-- Paso 4: Educación -->
+                <!-- Paso 4: Formación Académica -->
                 <div v-if="currentStep === 4" class="form-section">
                   <div class="section-header">
-                    <h2>Educación</h2>
+                    <h2>Formación Académica</h2>
                     <button class="add-btn" @click="addEducation">
-                      + Añadir Educación
+                      + Añadir Formación
                     </button>
                   </div>
                   
@@ -256,7 +213,7 @@
                           <input
                             type="text"
                             v-model="edu.degree"
-                            placeholder="Ej: Grado en Ingeniería Informática"
+                            placeholder="Ej: Ingeniería en sistemas"
                             required
                           >
                         </div>
@@ -266,91 +223,98 @@
                           <input
                             type="text"
                             v-model="edu.institution"
-                            placeholder="Ej: Universidad Complutense de Madrid"
+                            placeholder="Ej: Universidad Ensigna"
                             required
                           >
                         </div>
 
                         <div class="form-group">
-                          <label>Ubicación</label>
+                          <label>Período</label>
                           <input
                             type="text"
-                            v-model="edu.location"
-                            placeholder="Ej: Madrid, España"
-                          >
-                        </div>
-
-                        <div class="form-group">
-                          <label>Año de graduación *</label>
-                          <input
-                            type="number"
-                            v-model="edu.graduationYear"
-                            min="1900"
-                            :max="new Date().getFullYear()"
-                            placeholder="Ej: 2020"
-                            required
+                            v-model="edu.period"
+                            placeholder="Ej: 2018 - 2023"
                           >
                         </div>
 
                         <div class="form-group full-width">
-                          <label>Descripción (opcional)</label>
-                          <textarea
-                            v-model="edu.description"
-                            rows="3"
-                            placeholder="Menciona honores, actividades extracurriculares o proyectos relevantes..."
-                          ></textarea>
+                          <label>Especialización (opcional)</label>
+                          <input
+                            type="text"
+                            v-model="edu.specialization"
+                            placeholder="Ej: Programación web"
+                          >
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Paso 5: Habilidades -->
+                <!-- Paso 5: Competencias -->
                 <div v-if="currentStep === 5" class="form-section">
                   <div class="section-header">
-                    <h2>Habilidades</h2>
-                    <button class="add-btn" @click="addSkill">
-                      + Añadir Habilidad
+                    <h2>Competencias</h2>
+                    <button class="add-btn" @click="addCompetence">
+                      + Añadir Competencia
                     </button>
                   </div>
                   
                   <div class="items-list">
-                    <div v-for="(skill, index) in formData.skills" :key="index" class="form-item">
+                    <div v-for="(comp, index) in formData.competences" :key="index" class="form-item">
                       <div class="item-header">
-                        <h3>Habilidad {{ index + 1 }}</h3>
-                        <button class="remove-btn" @click="removeSkill(index)" v-if="formData.skills.length > 1">
+                        <h3>Competencia {{ index + 1 }}</h3>
+                        <button class="remove-btn" @click="removeCompetence(index)" v-if="formData.competences.length > 1">
                           🗑️ Eliminar
                         </button>
                       </div>
 
+                      <div class="form-group">
+                        <label>Competencia *</label>
+                        <input
+                          type="text"
+                          v-model="comp.name"
+                          placeholder="Ej: Liderazgo, Software 01, Creatividad"
+                          required
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Paso 6: Habilidades -->
+                <div v-if="currentStep === 6" class="form-section">
+                  <div class="section-header">
+                    <h2>Habilidades</h2>
+                  </div>
+                  <div class="items-list">
+                    <div v-for="(skill, index) in formData.skills" :key="index" class="form-item">
+                      <div class="item-header">
+                        <h3>Habilidad {{ index + 1 }}</h3>
+                        <button class="remove-btn" @click="removeSkill(index)" v-if="formData.skills.length > 1 && (skill.name || index < formData.skills.length - 1)">
+                          🗑️ Eliminar
+                        </button>
+                      </div>
                       <div class="form-grid">
                         <div class="form-group">
-                          <label>Habilidad *</label>
+                          <label>Nombre *</label>
                           <input
                             type="text"
                             v-model="skill.name"
-                            placeholder="Ej: JavaScript, Photoshop, Gestión de proyectos"
-                            required
-                          >
+                            @input="onSkillInput"
+                            placeholder="Ej: Trabajo en equipo, Creatividad, Vue.js"
+                            required/>
                         </div>
-
                         <div class="form-group">
                           <label>Nivel</label>
-                          <select v-model="skill.level">
-                            <option value="">Seleccionar nivel</option>
-                            <option value="Principiante">Principiante</option>
-                            <option value="Intermedio">Intermedio</option>
-                            <option value="Avanzado">Avanzado</option>
-                            <option value="Experto">Experto</option>
-                          </select>
+                          <StarRating v-model:rating="skill.rating" :editable="true" />
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Paso 6: Idiomas -->
-                <div v-if="currentStep === 6" class="form-section">
+                <!-- Paso 7: Idiomas -->
+                <div v-if="currentStep === 7" class="form-section">
                   <div class="section-header">
                     <h2>Idiomas</h2>
                     <button class="add-btn" @click="addLanguage">
@@ -373,20 +337,9 @@
                           <input
                             type="text"
                             v-model="lang.name"
-                            placeholder="Ej: Inglés, Francés, Alemán"
+                            placeholder="Ej: Español, Inglés"
                             required
                           >
-                        </div>
-
-                        <div class="form-group">
-                          <label>Nivel *</label>
-                          <select v-model="lang.level" required>
-                            <option value="">Seleccionar nivel</option>
-                            <option value="Básico">Básico</option>
-                            <option value="Intermedio">Intermedio</option>
-                            <option value="Avanzado">Avanzado</option>
-                            <option value="Nativo">Nativo</option>
-                          </select>
                         </div>
                       </div>
                     </div>
@@ -413,7 +366,7 @@
           <div class="preview-column">
             <div class="preview-container">
               <div class="preview-header">
-                <h2>Vista Previa</h2>
+                <h2>Vista Previa - Estilo Gris Oscuro</h2>
                 <div class="preview-actions">
                   <button class="preview-btn" @click="downloadCV" :disabled="!isFormValid">
                     📄 Descargar PDF
@@ -422,70 +375,102 @@
               </div>
               
               <div class="preview-content" ref="cvPreview">
-                <div class="cv-template">
-                  <!-- Encabezado -->
-                  <div class="cv-header-preview">
-                    <h1>{{ formData.personalInfo.fullName || 'Tu Nombre Completo' }}</h1>
-                    <p class="cv-title">{{ formData.personalInfo.title || 'Tu Profesión' }}</p>
-                    <div class="contact-info">
-                      <span v-if="formData.personalInfo.email">📧 {{ formData.personalInfo.email }}</span>
-                      <span v-if="formData.personalInfo.phone">📱 {{ formData.personalInfo.phone }}</span>
-                      <span v-if="formData.personalInfo.location">📍 {{ formData.personalInfo.location }}</span>
-                      <span v-if="formData.personalInfo.linkedin">🔗 {{ formData.personalInfo.linkedin }}</span>
+                <div class="cv-template-dark">
+                  <!-- CABECERA CON PERFIL Y DATOS PERSONALES -->
+                  <div class="cv-header-dark">
+                    <div class="header-main">
+                      <h1>{{ formData.personalInfo.fullName || 'Tu Nombre Completo' }}</h1>
+                      <p class="cv-title-dark">{{ formData.personalInfo.title || 'Tu Profesión' }}</p>
                     </div>
-                  </div>
-
-                  <!-- Resumen profesional -->
-                  <div class="cv-section" v-if="formData.summary">
-                    <h2>Resumen Profesional</h2>
-                    <p>{{ formData.summary }}</p>
-                  </div>
-
-                  <!-- Experiencia laboral -->
-                  <div class="cv-section" v-if="formData.experience.some(exp => exp.position && exp.company)">
-                    <h2>Experiencia Laboral</h2>
-                    <div class="experience-item" v-for="(exp, index) in formData.experience.filter(exp => exp.position && exp.company)" :key="index">
-                      <div class="exp-header">
-                        <h3>{{ exp.position }}</h3>
-                        <span class="exp-dates">
-                          {{ exp.startDate }} - {{ exp.current ? 'Actual' : exp.endDate }}
-                        </span>
+                    <div class="header-grid">
+                      <!-- Izquierda: Perfil -->
+                      <div class="header-left">
+                        <div class="profile-section" v-if="formData.profile">
+                          <h2 class="section-title-dark">Mi Perfil</h2>
+                          <p class="profile-text">{{ formData.profile }}</p>
+                        </div>
                       </div>
-                      <p class="company">{{ exp.company }}{{ exp.location ? ` | ${exp.location}` : '' }}</p>
-                      <p class="description" v-if="exp.description">{{ exp.description }}</p>
-                    </div>
-                  </div>
-
-                  <!-- Educación -->
-                  <div class="cv-section" v-if="formData.education.some(edu => edu.degree && edu.institution)">
-                    <h2>Educación</h2>
-                    <div class="education-item" v-for="(edu, index) in formData.education.filter(edu => edu.degree && edu.institution)" :key="index">
-                      <div class="edu-header">
-                        <h3>{{ edu.degree }}</h3>
-                        <span class="edu-year">{{ edu.graduationYear }}</span>
+                      <!-- Derecha: Datos personales -->
+                      <div class="header-right">
+                        <span v-if="formData.personalInfo.phone">📞 {{ formData.personalInfo.phone }}</span>
+                        <span v-if="formData.personalInfo.email">✉️ {{ formData.personalInfo.email }}</span>
+                        <span v-if="formData.personalInfo.website">🌐 {{ formData.personalInfo.website }}</span>
+                        <span v-if="formData.personalInfo.location">📍 {{ formData.personalInfo.location }}</span>
                       </div>
-                      <p class="institution">{{ edu.institution }}{{ edu.location ? ` | ${edu.location}` : '' }}</p>
-                      <p class="description" v-if="edu.description">{{ edu.description }}</p>
                     </div>
                   </div>
 
-                  <!-- Habilidades -->
-                  <div class="cv-section" v-if="formData.skills.some(skill => skill.name)">
-                    <h2>Habilidades</h2>
-                    <div class="skills-list">
-                      <span class="skill-tag" v-for="(skill, index) in formData.skills.filter(skill => skill.name)" :key="index">
-                        {{ skill.name }}{{ skill.level ? ` (${skill.level})` : '' }}
-                      </span>
-                    </div>
-                  </div>
+                  <div class="cv-content-dark">
+                    <!-- COLUMNA IZQUIERDA: Experiencia Laboral y Formación Académica -->
+                    <div class="cv-left-column">
+                      <!-- Experiencia laboral -->
+                      <div class="cv-section-dark" v-if="formData.experience.some(exp => exp.company)">
+                        <h2 class="section-title-dark">Experiencia Laboral</h2>
+                        <div class="experience-list-dark">
+                          <div class="experience-item-dark" v-for="(exp, index) in formData.experience.filter(exp => exp.company)" :key="index">
+                            <div class="exp-header-dark">
+                              <span class="exp-check">✅</span>
+                              <div class="exp-info">
+                                <h3 class="company-name">{{ exp.company }}</h3>
+                                <p class="exp-period">{{ exp.period }}</p>
+                              </div>
+                            </div>
+                            <p class="exp-description" v-if="exp.description">{{ exp.description }}</p>
+                          </div>
+                        </div>
+                      </div>
 
-                  <!-- Idiomas -->
-                  <div class="cv-section" v-if="formData.languages.some(lang => lang.name && lang.level)">
-                    <h2>Idiomas</h2>
-                    <div class="languages-list">
-                      <div class="language-item" v-for="(lang, index) in formData.languages.filter(lang => lang.name && lang.level)" :key="index">
-                        <span class="language-name">{{ lang.name }}</span>
-                        <span class="language-level">{{ lang.level }}</span>
+                      <!-- Formación académica -->
+                      <div class="cv-section-dark" v-if="formData.education.some(edu => edu.degree)">
+                        <h2 class="section-title-dark">Formación Académica</h2>
+                        <div class="education-list-dark">
+                          <div class="education-item-dark" v-for="(edu, index) in formData.education.filter(edu => edu.degree)" :key="index">
+                            <div class="edu-header-dark">
+                              <span class="edu-check">✅</span>
+                              <div class="edu-info">
+                                <h3 class="edu-degree">{{ edu.degree }}</h3>
+                                <p class="edu-period" v-if="edu.period">{{ edu.period }}</p>
+                              </div>
+                            </div>
+                            <p class="edu-institution" v-if="edu.institution">{{ edu.institution }}</p>
+                            <p class="edu-specialization" v-if="edu.specialization">{{ edu.specialization }}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- COLUMNA DERECHA: Idiomas y Competencias -->
+                    <div class="cv-right-column">
+                      <!-- Idiomas -->
+                      <div class="cv-section-dark" v-if="formData.languages.some(lang => lang.name)">
+                        <h2 class="section-title-dark">Idiomas</h2>
+                        <div class="languages-list-dark">
+                          <div class="language-item-dark" v-for="(lang, index) in formData.languages.filter(lang => lang.name)" :key="index">
+                            <span class="language-check">✅</span>
+                            <span class="language-name-dark">{{ lang.name }}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Competencias -->
+                      <div class="cv-section-dark" v-if="formData.competences.some(comp => comp.name)">
+                        <h2 class="section-title-dark">Competencias</h2>
+                        <div class="competences-list-dark">
+                          <div class="competence-item-dark" v-for="(comp, index) in formData.competences.filter(comp => comp.name)" :key="index">
+                            {{ comp.name }}
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Paso visualización de habilidades en el preview (en la vista previa del CV) -->
+                      <div class="cv-section-dark" v-if="formData.skills && formData.skills.some(skill => skill.name)">
+                        <h2 class="section-title-dark">Habilidades</h2>
+                        <div class="skills-list-dark">
+                          <div class="skill-item-dark" v-for="(skill, index) in formData.skills.filter(skill => skill.name)" :key="index">
+                            <span class="skill-name">{{ skill.name }}</span>
+                            <StarRating :rating="skill.rating" :editable="false" :max="5" />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -502,19 +487,44 @@
 <script>
 import html2pdf from 'html2pdf.js';
 
+const StarRating = {
+  props: {
+    rating: { type: Number, required: true },
+    max: { type: Number, default: 5 },
+    editable: { type: Boolean, default: true },
+  },
+  emits: ["update:rating"],
+  methods: {
+    setRating(val) {
+      if (this.editable) this.$emit("update:rating", val);
+    },
+  },
+  template: `
+    <span class='star-rating'>
+      <span v-for="n in max" :key="n" @click="setRating(n)" style="cursor: pointer; font-size: 1.4em; color: #EAB308;">
+        <span v-if="n <= rating">★</span><span v-else>☆</span>
+      </span>
+    </span>
+  `
+};
+
 export default {
   name: 'UserCV',
+  components: {
+    StarRating
+  },
   data() {
     return {
       user: null,
       currentStep: 1,
       steps: [
         { id: 1, icon: '👤', title: 'Personal' },
-        { id: 2, icon: '📝', title: 'Resumen' },
+        { id: 2, icon: '📝', title: 'Perfil' },
         { id: 3, icon: '💼', title: 'Experiencia' },
-        { id: 4, icon: '🎓', title: 'Educación' },
-        { id: 5, icon: '⚡', title: 'Habilidades' },
-        { id: 6, icon: '🌐', title: 'Idiomas' }
+        { id: 4, icon: '🎓', title: 'Formación' },
+        { id: 5, icon: '⚡', title: 'Competencias' },
+        { id: 6, icon: '⭐', title: 'Habilidades' },
+        { id: 7, icon: '🌐', title: 'Idiomas' }
       ],
       formData: {
         personalInfo: {
@@ -523,18 +533,13 @@ export default {
           email: '',
           phone: '',
           location: '',
-          linkedin: ''
+          website: ''
         },
-        summary: '',
+        profile: '',
         experience: [
           {
-            position: '',
             company: '',
-            location: '',
-            employmentType: '',
-            startDate: '',
-            endDate: '',
-            current: false,
+            period: '',
             description: ''
           }
         ],
@@ -542,15 +547,19 @@ export default {
           {
             degree: '',
             institution: '',
-            location: '',
-            graduationYear: new Date().getFullYear(),
-            description: ''
+            period: '',
+            specialization: ''
+          }
+        ],
+        competences: [
+          {
+            name: ''
           }
         ],
         skills: [
           {
             name: '',
-            level: ''
+            rating: 3
           }
         ],
         languages: [
@@ -615,13 +624,8 @@ export default {
     // Gestión de experiencia
     addExperience() {
       this.formData.experience.push({
-        position: '',
         company: '',
-        location: '',
-        employmentType: '',
-        startDate: '',
-        endDate: '',
-        current: false,
+        period: '',
         description: ''
       });
     },
@@ -637,9 +641,8 @@ export default {
       this.formData.education.push({
         degree: '',
         institution: '',
-        location: '',
-        graduationYear: new Date().getFullYear(),
-        description: ''
+        period: '',
+        specialization: ''
       });
     },
 
@@ -649,17 +652,46 @@ export default {
       }
     },
 
-    // Gestión de habilidades
-    addSkill() {
-      this.formData.skills.push({
-        name: '',
-        level: ''
+    // Gestión de competencias
+    addCompetence() {
+      this.formData.competences.push({
+        name: ''
       });
     },
 
+    removeCompetence(index) {
+      if (this.formData.competences.length > 1) {
+        this.formData.competences.splice(index, 1);
+      }
+    },
+
+    // Gestión de habilidades
+    addSkill() {
+      this.formData.skills.push({ name: '', rating: 3 });
+    },
+
+    onSkillInput() {
+      // Si NO hay ningún espacio vacío al final, agrega uno
+      const skills = this.formData.skills;
+      if (
+        skills.length === 0 ||
+        skills[skills.length - 1].name.trim() !== ''
+      ) {
+        skills.push({ name: '', rating: 3 });
+      }
+      // Eliminar líneas intermedias vacías que estén duplicadas (excepto la última)
+      for (let i = skills.length - 2; i >= 0; i--) {
+        if (!skills[i].name && !skills[i + 1].name) {
+          skills.splice(i, 1);
+        }
+      }
+    },
     removeSkill(index) {
+      // Solo permite eliminar si hay más de 1, pero nunca elimina la última vacía
       if (this.formData.skills.length > 1) {
         this.formData.skills.splice(index, 1);
+        // Si tras eliminar ya no hay ningún bloque vacío, asegurar uno
+        this.onSkillInput();
       }
     },
 
@@ -683,10 +715,13 @@ export default {
         alert('Por favor completa los campos obligatorios (Nombre, Título y Email)');
         return;
       }
-
+      // Validación para habilidades
+      if (!this.formData.skills.some(skill => skill.name.trim() !== '')) {
+        alert('Debes agregar al menos una habilidad.');
+        return;
+      }
       const userCVs = this.getStoredCVs();
       const userCVIndex = userCVs.findIndex(cv => cv.userId === this.user.id);
-
       const cvData = {
         ...this.formData,
         userId: this.user.id,
@@ -698,7 +733,6 @@ export default {
       } else {
         userCVs.push(cvData);
       }
-
       localStorage.setItem('jdmUserCVs', JSON.stringify(userCVs));
       alert('¡Currículum guardado correctamente!');
     },
@@ -728,18 +762,13 @@ export default {
             email: this.user?.email || '',
             phone: '',
             location: '',
-            linkedin: ''
+            website: ''
           },
-          summary: '',
+          profile: '',
           experience: [
             {
-              position: '',
               company: '',
-              location: '',
-              employmentType: '',
-              startDate: '',
-              endDate: '',
-              current: false,
+              period: '',
               description: ''
             }
           ],
@@ -747,15 +776,19 @@ export default {
             {
               degree: '',
               institution: '',
-              location: '',
-              graduationYear: new Date().getFullYear(),
-              description: ''
+              period: '',
+              specialization: ''
+            }
+          ],
+          competences: [
+            {
+              name: ''
             }
           ],
           skills: [
             {
               name: '',
-              level: ''
+              rating: 3
             }
           ],
           languages: [
@@ -801,6 +834,100 @@ export default {
   min-height: 100vh;
   background: var(--background, #ecf0f1);
 }
+.cv-template-dark {
+  background: #fff;
+  color: #232323;
+  padding: 2rem;
+  border-radius: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+}
+:root {
+  --background: #ecf0f1;
+  --secondary: #e74c3c;
+}
+.cv-header-dark {
+  background: var(--background, #ecf0f1);
+  color: #fff;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid var(--secondary, #e74c3c);
+  padding-bottom: 1.5rem;
+  border-radius: 8px 8px 0 0;
+  padding-top: 1.2rem;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+.cv-header-dark *, .cv-header-dark .header-main *, .cv-header-dark .header-left, .cv-header-dark .header-right { color: #fff !important; }
+.header-main h1 {
+  color: #111;
+  font-weight: 800;
+}
+.header-main p, .cv-title-dark {
+  color: #232323;
+  font-weight: 600;
+}
+.cv-header-dark .cv-title-dark {
+  color: var(--secondary, #e74c3c) !important;
+}
+.section-title-dark {
+  color: #222;
+  font-weight: 700;
+}
+.profile-section, .profile-section *, .header-left, .header-right, .header-main, .cv-header-dark, .skill-name, .language-name-dark {
+  color: #232323;
+}
+.cv-section-dark, .experience-item-dark, .education-item-dark, .language-item-dark, .competence-item-dark, .skill-item-dark, .profile-text {
+  color: #232323;
+}
+.header-right span {
+  color: #222;
+}
+.header-grid {
+  gap: 2rem;
+}
+.header-left, .header-right {
+  font-size: 1rem;
+}
+.profile-section .profile-text, .profile-text {
+  font-size: 1rem;
+}
+.cv-section-dark {
+  margin-bottom: 1.5rem !important;
+}
+.experience-item-dark, .education-item-dark, .language-item-dark, .competence-item-dark, .skill-item-dark {
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+.cv-content-dark {
+  gap: 2rem;
+}
+.languages-list-dark, .competences-list-dark, .skills-list-dark {
+  gap: 0.8rem !important;
+}
+.cv-layout {
+  display: block;
+}
+.form-column {
+  margin-bottom: 3.5rem;
+}
+.preview-column {
+  margin-top: 2.5rem;
+}
+@media (max-width: 768px) {
+  .header-grid { grid-template-columns: 1fr; }
+  .header-right { align-items: flex-start; }
+}
+
+/* Estilos específicos para el template gris oscuro */
+/* CABECERA CON PERFIL Y DATOS PERSONALES */
+/* Ajuste del CSS: header-main encima, luego header-grid */
+/* LAYOUT PRINCIPAL DE 2 COLUMNAS */
+/* ESTILOS GENERALES DE SECCIONES */
+/* ESTILOS PARA LA COLUMNA IZQUIERDA (Experiencia y Formación) */
+/* ESTILOS PARA LA COLUMNA DERECHA (Idiomas y Competencias) */
+/* Responsive para el template */
+
 
 /* Header */
 header {
@@ -942,9 +1069,7 @@ nav {
 
 /* Layout principal */
 .cv-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  display: block;
   margin-bottom: 2rem;
 }
 
@@ -1493,5 +1618,86 @@ nav {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+@media print {
+  body, html, #app, .user-cv-container {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .user-cv-container {
+    min-height: unset;
+    padding: 0!important;
+  }
+  header, .builder-header, .steps-navigation, .form-column, .header-actions, .action-btn, .form-navigation, .preview-btn, .add-btn, .remove-btn, .form-section:not(.preview-column) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  .preview-column, .preview-container, .preview-content, .cv-template-dark {
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+  .cv-content-dark {
+    display: block !important;
+  }
+  .cv-section-dark, .section-title-dark, .experience-item-dark, .education-item-dark, .skill-item-dark, .competence-item-dark, .language-item-dark {
+    background: none !important;
+    color: #000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  .star-rating span {
+    color: #eab308 !important;
+    font-size: 1.2em !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 1.1cm !important;
+  }
+}
+/* CSS para nueva estructura de cabecera */
+.header-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+.header-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+.header-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  gap: 0.7rem;
+  font-size: 1rem;
+}
+@media (max-width: 768px) {
+  .header-grid { grid-template-columns: 1fr; }
+  .header-right { align-items: flex-start; }
+}
+
+/* CSS para columnas */
+.cv-content-dark {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+.cv-left-column, .cv-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+@media (max-width: 768px) {
+  .cv-content-dark {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
