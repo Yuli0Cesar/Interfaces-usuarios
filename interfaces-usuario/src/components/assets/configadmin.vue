@@ -25,7 +25,7 @@
         </button>
       </div>
 
-      <!-- Sección de Gestión de Usuarios -->
+      <!-- Sección de Gestión de Usuarios con DataTable -->
       <div v-if="currentAdminSection === 'users'" class="users-management-section">
         <div class="users-header">
           <h2>👥 Gestión de Usuarios</h2>
@@ -46,122 +46,44 @@
         </div>
 
         <div class="users-content">
-          <!-- Búsqueda y filtros -->
-          <div class="users-controls">
-            <div class="search-box">
-              <input 
-                type="text" 
-                v-model="usersSearchTerm" 
-                placeholder="Buscar usuarios por email..."
-                class="search-input"
-              >
-              <span class="search-icon">🔍</span>
+          <!-- Controles de DataTable -->
+          <div class="datatable-controls">
+            <div class="control-group">
+              <button class="control-btn refresh-btn" @click="refreshUsersTable" title="Actualizar tabla">
+                🔄 Actualizar
+              </button>
+              <button class="control-btn export-btn" @click="exportToCSV" title="Exportar a CSV">
+                📊 Exportar CSV
+              </button>
             </div>
-            <div class="filter-buttons">
-              <button 
-                class="filter-btn" 
-                :class="{ active: currentFilter === 'all' }"
-                @click="currentFilter = 'all'"
-              >
-                Todos
-              </button>
-              <button 
-                class="filter-btn" 
-                :class="{ active: currentFilter === 'with-cv' }"
-                @click="currentFilter = 'with-cv'"
-              >
-                Con CV
-              </button>
-              <button 
-                class="filter-btn" 
-                :class="{ active: currentFilter === 'admins' }"
-                @click="currentFilter = 'admins'"
-              >
-                Administradores
-              </button>
+            <div class="control-group">
+              <select v-model="tablePageSize" @change="updatePageSize" class="page-size-select">
+                <option value="10">10 registros</option>
+                <option value="25">25 registros</option>
+                <option value="50">50 registros</option>
+                <option value="100">100 registros</option>
+              </select>
             </div>
           </div>
 
-          <!-- Lista de usuarios -->
-          <div class="users-list">
-            <div class="users-list-header">
-              <div class="user-column">Usuario</div>
-              <div class="user-column">Tipo</div>
-              <div class="user-column">CV</div>
-              <div class="user-column">Fecha Registro</div>
-              <div class="user-column">Acciones</div>
-            </div>
-
-            <div 
-              v-for="user in filteredUsers" 
-              :key="user.id" 
-              class="user-item"
-            >
-              <div class="user-column user-info">
-                <div class="user-email">{{ user.email }}</div>
-                <div class="user-id">ID: {{ user.id }}</div>
-              </div>
-              
-              <div class="user-column">
-                <span class="user-type-badge" :class="{ admin: user.isAdmin }">
-                  {{ user.isAdmin ? 'Administrador' : 'Usuario' }}
-                </span>
-              </div>
-              
-              <div class="user-column">
-                <span v-if="hasCV(user.id)" class="cv-status has-cv">
-                  ✅ Disponible
-                </span>
-                <span v-else class="cv-status no-cv">
-                  ❌ Sin CV
-                </span>
-              </div>
-              
-              <div class="user-column">
-                {{ formatDate(user.createdAt) }}
-              </div>
-              
-              <div class="user-column user-actions">
-                <button 
-                  v-if="hasCV(user.id)" 
-                  class="action-btn download-btn"
-                  @click="downloadUserCV(user)"
-                  title="Descargar CV"
-                >
-                  📄 Descargar CV
-                </button>
-                <button 
-                  v-else 
-                  class="action-btn disabled-btn"
-                  disabled
-                  title="El usuario no tiene CV"
-                >
-                  📄 Sin CV
-                </button>
-                
-                <button 
-                  v-if="!user.isAdmin" 
-                  class="action-btn promote-btn"
-                  @click="promoteToAdmin(user)"
-                  title="Convertir en administrador"
-                >
-                  ⬆️ Hacer Admin
-                </button>
-                
-                <button 
-                  v-if="user.id !== currentUser.id" 
-                  class="action-btn delete-btn"
-                  @click="deleteUser(user)"
-                  title="Eliminar usuario"
-                >
-                  🗑️ Eliminar
-                </button>
-              </div>
-            </div>
-
-            <div v-if="filteredUsers.length === 0" class="no-users">
-              No se encontraron usuarios que coincidan con los criterios de búsqueda.
-            </div>
+          <!-- DataTable Container -->
+          <div class="datatable-container">
+            <table id="usersDatatable" class="display" style="width:100%">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Email</th>
+                  <th>Tipo</th>
+                  <th>CV</th>
+                  <th>Fecha Registro</th>
+                  <th>Última Actividad</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Los datos se cargarán dinámicamente -->
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -534,6 +456,18 @@
       </div>
     </div>
 
+    <!-- Modal de confirmación para acciones -->
+    <div class="modal-overlay" v-if="showActionModal" @click="closeActionModal">
+      <div class="modal-content" @click.stop>
+        <h3 class="modal-title">{{ actionModalTitle }}</h3>
+        <p class="modal-message">{{ actionModalMessage }}</p>
+        <div class="modal-actions">
+          <button class="modal-btn secondary" @click="closeActionModal">Cancelar</button>
+          <button class="modal-btn danger" @click="confirmAction">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
     <div id="notification" class="notification" :class="notificationClass" v-if="showNotification">
       {{ notificationMessage }}
     </div>
@@ -541,6 +475,10 @@
 </template>
 
 <script>
+import $ from 'jquery';
+import 'datatables.net';
+import 'datatables.net-dt';
+
 export default {
   name: 'ConfigAdmin',
   props: {
@@ -553,8 +491,13 @@ export default {
     return {
       // Nueva sección de gestión de usuarios
       currentAdminSection: 'users',
-      usersSearchTerm: '',
-      currentFilter: 'all',
+      usersDataTable: null,
+      tablePageSize: '10',
+      showActionModal: false,
+      actionModalTitle: '',
+      actionModalMessage: '',
+      pendingAction: null,
+      selectedUser: null,
       
       // Colores configurables
       color1: '#D50000',
@@ -641,34 +584,15 @@ export default {
 
     currentUser() {
       return this.user;
-    },
-
-    filteredUsers() {
-      let users = this.allUsers;
-
-      // Aplicar filtro
-      if (this.currentFilter === 'with-cv') {
-        const cvs = this.getStoredCVs();
-        const userIdsWithCVs = [...new Set(cvs.map(cv => cv.userId))];
-        users = users.filter(user => userIdsWithCVs.includes(user.id));
-      } else if (this.currentFilter === 'admins') {
-        users = users.filter(user => user.isAdmin);
-      }
-
-      // Aplicar búsqueda
-      if (this.usersSearchTerm) {
-        users = users.filter(user => 
-          user.email.toLowerCase().includes(this.usersSearchTerm.toLowerCase())
-        );
-      }
-
-      return users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
   },
   mounted() {
     this.loadConfigsFromStorage();
     this.loadGlobalStyles();
     this.applyStylesToGlobal();
+    this.$nextTick(() => {
+      this.initializeDataTable();
+    });
   },
   watch: {
     // Observar cambios en todas las propiedades de configuración
@@ -688,6 +612,219 @@ export default {
     shadowIntensity: 'applyStylesToGlobal'
   },
   methods: {
+    // ===== MÉTODOS DE DATATABLE =====
+    initializeDataTable() {
+      const self = this;
+      
+      // Destruir DataTable existente si hay uno
+      if ($.fn.DataTable.isDataTable('#usersDatatable')) {
+        this.usersDataTable.destroy();
+        $('#usersDatatable').empty();
+      }
+
+      this.usersDataTable = $('#usersDatatable').DataTable({
+        data: this.formatUsersForDataTable(),
+        columns: [
+          { 
+            data: 'id',
+            className: 'dt-body-center',
+            width: '80px'
+          },
+          { 
+            data: 'email',
+            className: 'dt-body-left'
+          },
+          { 
+            data: 'type',
+            className: 'dt-body-center',
+            render: function(data, type, row) {
+              const badgeClass = row.isAdmin ? 'admin' : 'user';
+              const badgeText = row.isAdmin ? 'Administrador' : 'Usuario';
+              return `<span class="user-type-badge ${badgeClass}">${badgeText}</span>`;
+            }
+          },
+          { 
+            data: 'hasCV',
+            className: 'dt-body-center',
+            render: function(data, type, row) {
+              if (data) {
+                return '<span class="cv-status has-cv">✅ Disponible</span>';
+              } else {
+                return '<span class="cv-status no-cv">❌ Sin CV</span>';
+              }
+            }
+          },
+          { 
+            data: 'createdAt',
+            className: 'dt-body-center',
+            render: function(data) {
+              return self.formatDate(data);
+            }
+          },
+          { 
+            data: 'lastActivity',
+            className: 'dt-body-center',
+            render: function(data) {
+              return data ? self.formatDate(data) : 'Nunca';
+            }
+          },
+          { 
+            data: 'actions',
+            className: 'dt-body-center',
+            orderable: false,
+            render: function(data, type, row) {
+              return `
+                <div class="datatable-actions">
+                  ${row.hasCV ? `
+                    <button class="dt-action-btn download-btn" title="Descargar CV" data-user-id="${row.id}">
+                      📄
+                    </button>
+                  ` : `
+                    <button class="dt-action-btn disabled-btn" title="Sin CV" disabled>
+                      📄
+                    </button>
+                  `}
+                  
+                  ${!row.isAdmin ? `
+                    <button class="dt-action-btn promote-btn" title="Hacer Administrador" data-user-id="${row.id}">
+                      ⬆️
+                    </button>
+                  ` : ''}
+                  
+                  ${row.id !== self.currentUser.id ? `
+                    <button class="dt-action-btn delete-btn" title="Eliminar Usuario" data-user-id="${row.id}">
+                      🗑️
+                    </button>
+                  ` : ''}
+                </div>
+              `;
+            }
+          }
+        ],
+        language: {
+          url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+        },
+        pageLength: parseInt(this.tablePageSize),
+        responsive: true,
+        order: [[4, 'desc']], // Ordenar por fecha de registro descendente
+        dom: '<"datatable-header"fl>rt<"datatable-footer"ip>',
+        initComplete: function() {
+          // Agregar eventos a los botones después de inicializar
+          self.attachTableEvents();
+        }
+      });
+    },
+
+    formatUsersForDataTable() {
+      const cvs = this.getStoredCVs();
+      const userIdsWithCVs = new Set(cvs.map(cv => cv.userId));
+      
+      return this.allUsers.map(user => ({
+        id: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        type: user.isAdmin ? 'admin' : 'user',
+        hasCV: userIdsWithCVs.has(user.id),
+        createdAt: user.createdAt,
+        lastActivity: user.lastActivity || null,
+        actions: user.id
+      }));
+    },
+
+    attachTableEvents() {
+      const self = this;
+      
+      // Delegación de eventos para los botones de acción
+      $('#usersDatatable').on('click', '.download-btn', function() {
+        const userId = $(this).data('user-id');
+        const user = self.allUsers.find(u => u.id === userId);
+        if (user) self.downloadUserCV(user);
+      });
+
+      $('#usersDatatable').on('click', '.promote-btn', function() {
+        const userId = $(this).data('user-id');
+        const user = self.allUsers.find(u => u.id === userId);
+        if (user) self.promoteToAdmin(user);
+      });
+
+      $('#usersDatatable').on('click', '.delete-btn', function() {
+        const userId = $(this).data('user-id');
+        const user = self.allUsers.find(u => u.id === userId);
+        if (user) self.showDeleteConfirmation(user);
+      });
+    },
+
+    refreshUsersTable() {
+      if (this.usersDataTable) {
+        this.usersDataTable.clear();
+        this.usersDataTable.rows.add(this.formatUsersForDataTable());
+        this.usersDataTable.draw();
+        this.showNotification('Tabla de usuarios actualizada', 'success');
+      }
+    },
+
+    updatePageSize() {
+      if (this.usersDataTable) {
+        this.usersDataTable.page.len(parseInt(this.tablePageSize)).draw();
+      }
+    },
+
+    exportToCSV() {
+      const users = this.formatUsersForDataTable();
+      let csvContent = "data:text/csv;charset=utf-8,";
+      
+      // Encabezados
+      csvContent += "ID,Email,Tipo,CV,Fecha Registro,Última Actividad\n";
+      
+      // Datos
+      users.forEach(user => {
+        const row = [
+          user.id,
+          `"${user.email}"`,
+          user.isAdmin ? 'Administrador' : 'Usuario',
+          user.hasCV ? 'Sí' : 'No',
+          this.formatDate(user.createdAt),
+          user.lastActivity ? this.formatDate(user.lastActivity) : 'Nunca'
+        ].join(',');
+        csvContent += row + "\n";
+      });
+      
+      // Descargar
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `usuarios_jdm_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      this.showNotification('Datos exportados a CSV', 'success');
+    },
+
+    // ===== MÉTODOS DE ACCIÓN MODAL =====
+    showDeleteConfirmation(user) {
+      this.selectedUser = user;
+      this.actionModalTitle = 'Confirmar Eliminación';
+      this.actionModalMessage = `¿Estás seguro de que quieres eliminar al usuario "${user.email}"? Esta acción no se puede deshacer.`;
+      this.pendingAction = 'delete';
+      this.showActionModal = true;
+    },
+
+    closeActionModal() {
+      this.showActionModal = false;
+      this.selectedUser = null;
+      this.pendingAction = null;
+      this.actionModalTitle = '';
+      this.actionModalMessage = '';
+    },
+
+    confirmAction() {
+      if (this.pendingAction === 'delete' && this.selectedUser) {
+        this.deleteUser(this.selectedUser);
+      }
+      this.closeActionModal();
+    },
+
     // ===== MÉTODOS DE GESTIÓN DE USUARIOS =====
     hasCV(userId) {
       const cvs = this.getStoredCVs();
@@ -860,25 +997,26 @@ export default {
         
         if (userIndex !== -1) {
           users[userIndex].isAdmin = true;
+          users[userIndex].lastActivity = new Date().toISOString();
           localStorage.setItem('jdmUsers', JSON.stringify(users));
+          this.refreshUsersTable();
           this.showNotification(`${user.email} ahora es administrador`, 'success');
         }
       }
     },
 
     deleteUser(user) {
-      if (confirm(`¿Estás seguro de que quieres eliminar al usuario ${user.email}? Esta acción no se puede deshacer.`)) {
-        const users = this.allUsers;
-        const updatedUsers = users.filter(u => u.id !== user.id);
-        localStorage.setItem('jdmUsers', JSON.stringify(updatedUsers));
-        
-        // Eliminar también el CV si existe
-        const cvs = this.getStoredCVs();
-        const updatedCVs = cvs.filter(cv => cv.userId !== user.id);
-        localStorage.setItem('jdmUserCVs', JSON.stringify(updatedCVs));
-        
-        this.showNotification(`Usuario ${user.email} eliminado correctamente`, 'success');
-      }
+      const users = this.allUsers;
+      const updatedUsers = users.filter(u => u.id !== user.id);
+      localStorage.setItem('jdmUsers', JSON.stringify(updatedUsers));
+      
+      // Eliminar también el CV si existe
+      const cvs = this.getStoredCVs();
+      const updatedCVs = cvs.filter(cv => cv.userId !== user.id);
+      localStorage.setItem('jdmUserCVs', JSON.stringify(updatedCVs));
+      
+      this.refreshUsersTable();
+      this.showNotification(`Usuario ${user.email} eliminado correctamente`, 'success');
     },
 
     // ===== MÉTODOS DE CONFIGURACIÓN DE COLORES Y TIPOGRAFÍA =====
@@ -1153,7 +1291,9 @@ export default {
       return date.toLocaleDateString('es-ES', {
         day: '2-digit',
         month: '2-digit',
-        year: 'numeric'
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
     }
   }
@@ -1248,132 +1388,160 @@ export default {
   padding: 2rem;
 }
 
-.users-controls {
+/* ===== ESTILOS PARA DATATABLE ===== */
+.datatable-controls {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-}
-
-.search-box {
-  position: relative;
-  flex: 1;
-  min-width: 300px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.75rem 1rem 0.75rem 2.5rem;
-  border: 2px solid var(--background, #ecf0f1);
-  border-radius: var(--border-radius, 8px);
-  font-size: 1rem;
-  font-family: var(--secondary-font, Arial, sans-serif);
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 1rem;
   background: var(--accent, #ffffff);
-  color: var(--text, #2c3e50);
-  transition: all 0.3s ease;
+  border-radius: var(--border-radius, 8px);
+  box-shadow: var(--shadow, 0 2px 4px rgba(0,0,0,0.1));
 }
 
-.search-input:focus {
-  border-color: var(--secondary, #e74c3c);
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-}
-
-.search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text, #666666);
-}
-
-.filter-buttons {
+.control-group {
   display: flex;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  align-items: center;
 }
 
-.filter-btn {
-  padding: 0.75rem 1rem;
-  border: 2px solid var(--background, #ecf0f1);
-  background: var(--accent, #ffffff);
-  color: var(--text, #2c3e50);
-  border-radius: var(--border-radius, 8px);
+.control-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--border-radius, 6px);
   cursor: pointer;
+  font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.3s ease;
   font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
 }
 
-.filter-btn:hover {
-  border-color: var(--secondary, #e74c3c);
-  color: var(--secondary, #e74c3c);
-}
-
-.filter-btn.active {
-  background: var(--secondary, #e74c3c);
-  border-color: var(--secondary, #e74c3c);
-  color: var(--accent, #ffffff);
-}
-
-.users-list {
-  background: var(--accent, #ffffff);
-  border-radius: var(--border-radius, 8px);
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.users-list-header {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 2fr;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
+.refresh-btn {
   background: var(--primary, #2c3e50);
   color: var(--accent, #ffffff);
-  font-weight: 600;
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
 }
 
-.user-column {
-  display: flex;
-  align-items: center;
+.refresh-btn:hover {
+  background: var(--secondary, #e74c3c);
+  transform: translateY(-1px);
 }
 
-.user-item {
-  display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 2fr;
-  gap: 1rem;
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--background, #ecf0f1);
-  transition: background-color 0.3s ease;
+.export-btn {
+  background: #27ae60;
+  color: white;
 }
 
-.user-item:hover {
-  background: var(--background, #f8f9fa);
+.export-btn:hover {
+  background: #219a52;
+  transform: translateY(-1px);
 }
 
-.user-item:last-child {
-  border-bottom: none;
+.page-size-select {
+  padding: 0.5rem;
+  border: 1px solid var(--background, #ecf0f1);
+  border-radius: var(--border-radius, 6px);
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+  font-family: var(--secondary-font, Arial, sans-serif);
 }
 
-.user-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
+.datatable-container {
+  background: var(--accent, #ffffff);
+  border-radius: var(--border-radius, 8px);
+  box-shadow: var(--shadow, 0 2px 10px rgba(0,0,0,0.1));
+  overflow: hidden;
 }
 
-.user-email {
-  font-weight: 600;
-  color: var(--primary, #2c3e50);
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+/* Estilos para DataTables */
+:deep(.dataTables_wrapper) {
+  padding: 1rem;
 }
 
-.user-id {
-  font-size: 0.8rem;
+:deep(.dataTables_length),
+:deep(.dataTables_filter) {
+  margin-bottom: 1rem;
+}
+
+:deep(.dataTables_length select),
+:deep(.dataTables_filter input) {
+  padding: 0.5rem;
+  border: 1px solid var(--background, #ecf0f1);
+  border-radius: var(--border-radius, 6px);
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+}
+
+:deep(.dataTables_info) {
   color: var(--text, #666666);
   font-family: var(--secondary-font, Arial, sans-serif);
 }
 
+:deep(.paginate_button) {
+  padding: 0.5rem 0.75rem;
+  margin: 0 0.25rem;
+  border: 1px solid var(--background, #ecf0f1);
+  border-radius: var(--border-radius, 6px);
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+:deep(.paginate_button:hover) {
+  background: var(--secondary, #e74c3c);
+  color: var(--accent, #ffffff);
+  border-color: var(--secondary, #e74c3c);
+}
+
+:deep(.paginate_button.current) {
+  background: var(--primary, #2c3e50);
+  color: var(--accent, #ffffff);
+  border-color: var(--primary, #2c3e50);
+}
+
+/* Botones de acción en la tabla */
+.datatable-actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+.dt-action-btn {
+  padding: 0.4rem;
+  border: none;
+  border-radius: var(--border-radius, 4px);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+  background: transparent;
+}
+
+.dt-action-btn:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+.download-btn:hover {
+  background: #28a745;
+  color: white;
+}
+
+.promote-btn:hover {
+  background: #ffc107;
+  color: #212529;
+}
+
+.delete-btn:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.disabled-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Badges en la tabla */
 .user-type-badge {
   padding: 0.3rem 0.8rem;
   border-radius: 20px;
@@ -1382,7 +1550,7 @@ export default {
   font-family: var(--secondary-font, Arial, sans-serif);
 }
 
-.user-type-badge:not(.admin) {
+.user-type-badge.user {
   background: var(--background, #ecf0f1);
   color: var(--text, #666666);
 }
@@ -1408,69 +1576,6 @@ export default {
 .cv-status.no-cv {
   background: #f8d7da;
   color: #721c24;
-}
-
-.user-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  padding: 0.5rem 0.8rem;
-  border: none;
-  border-radius: var(--border-radius, 6px);
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-family: var(--secondary-font, Arial, sans-serif);
-  white-space: nowrap;
-}
-
-.download-btn {
-  background: #28a745;
-  color: white;
-}
-
-.download-btn:hover {
-  background: #218838;
-  transform: translateY(-1px);
-}
-
-.promote-btn {
-  background: #ffc107;
-  color: #212529;
-}
-
-.promote-btn:hover {
-  background: #e0a800;
-  transform: translateY(-1px);
-}
-
-.delete-btn {
-  background: #dc3545;
-  color: white;
-}
-
-.delete-btn:hover {
-  background: #c82333;
-  transform: translateY(-1px);
-}
-
-.disabled-btn {
-  background: #6c757d;
-  color: white;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-.no-users {
-  text-align: center;
-  padding: 3rem 2rem;
-  color: var(--text, #666666);
-  font-style: italic;
-  font-family: var(--secondary-font, Arial, sans-serif);
 }
 
 /* ===== ESTILOS EXISTENTES DE CONFIGURACIÓN ===== */
@@ -2047,6 +2152,14 @@ input:checked + .toggle-slider:before {
   text-align: center;
 }
 
+.modal-message {
+  color: var(--text, #2c3e50);
+  margin-bottom: 1.5rem;
+  font-family: var(--secondary-font, Arial, sans-serif);
+  text-align: center;
+  line-height: 1.5;
+}
+
 .modal-input {
   width: 100%;
   padding: 1rem;
@@ -2094,9 +2207,18 @@ input:checked + .toggle-slider:before {
   color: white;
 }
 
+.modal-btn.danger {
+  background: #dc3545;
+  color: white;
+}
+
 .modal-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.modal-btn.danger:hover {
+  background: #c82333;
 }
 
 /* ===== NOTIFICACIÓN ===== */
@@ -2427,11 +2549,6 @@ input:checked + .toggle-slider:before {
     grid-template-columns: 300px 1fr 300px;
     gap: 20px;
   }
-  
-  .users-list-header,
-  .user-item {
-    grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr;
-  }
 }
 
 @media (max-width: 992px) {
@@ -2451,32 +2568,14 @@ input:checked + .toggle-slider:before {
     margin-left: 0;
   }
   
-  .users-list-header,
-  .user-item {
-    grid-template-columns: 1fr;
+  .datatable-controls {
+    flex-direction: column;
     gap: 1rem;
+    align-items: stretch;
   }
   
-  .users-list-header {
-    display: none;
-  }
-  
-  .user-item {
-    padding: 1.5rem;
-    border: 1px solid var(--background, #ecf0f1);
-    border-radius: var(--border-radius, 8px);
-    margin-bottom: 1rem;
-  }
-  
-  .user-column {
-    justify-content: space-between;
-  }
-  
-  .user-column::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: var(--primary, #2c3e50);
-    font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+  .control-group {
+    justify-content: center;
   }
 }
 
@@ -2497,22 +2596,18 @@ input:checked + .toggle-slider:before {
     gap: 15px;
   }
   
-  .users-controls {
+  :deep(.dataTables_wrapper) {
+    padding: 0.5rem;
+  }
+  
+  .datatable-actions {
     flex-direction: column;
+    gap: 0.5rem;
   }
   
-  .search-box {
-    min-width: auto;
-  }
-  
-  .user-actions {
-    justify-content: center;
-  }
-  
-  .action-btn {
-    flex: 1;
-    text-align: center;
-    min-width: 120px;
+  .dt-action-btn {
+    padding: 0.5rem;
+    font-size: 0.9rem;
   }
   
   .preview-stats,
@@ -2547,6 +2642,20 @@ input:checked + .toggle-slider:before {
   
   .modal-btn {
     min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .users-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .preview-hero-title {
+    font-size: calc(var(--title-size) * 1.2);
   }
 }
 </style>
