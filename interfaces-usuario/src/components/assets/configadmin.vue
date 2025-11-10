@@ -2,12 +2,172 @@
   <section class="admin-section">
     <div class="container">
       <div class="admin-header">
-        <h1>🛠️ Panel de Configuración</h1>
-        <p class="admin-subtitle">Personaliza la apariencia de tu sitio JDM Tuning</p>
+        <h1>🛠️ Panel de Administración</h1>
+        <p class="admin-subtitle">Gestiona usuarios y personaliza la apariencia de tu sitio JDM Tuning</p>
         <button @click="$emit('back-to-main')" class="back-btn">← Volver al sitio principal</button>
       </div>
 
-      <div class="config-layout">
+      <!-- Navegación entre secciones del admin -->
+      <div class="admin-navigation">
+        <button 
+          class="admin-nav-btn" 
+          :class="{ active: currentAdminSection === 'users' }"
+          @click="currentAdminSection = 'users'"
+        >
+          👥 Gestión de Usuarios
+        </button>
+        <button 
+          class="admin-nav-btn" 
+          :class="{ active: currentAdminSection === 'config' }"
+          @click="currentAdminSection = 'config'"
+        >
+          🎨 Configuración
+        </button>
+      </div>
+
+      <!-- Sección de Gestión de Usuarios -->
+      <div v-if="currentAdminSection === 'users'" class="users-management-section">
+        <div class="users-header">
+          <h2>👥 Gestión de Usuarios</h2>
+          <div class="users-stats">
+            <div class="stat-card">
+              <div class="stat-number">{{ totalUsers }}</div>
+              <div class="stat-label">Usuarios Totales</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">{{ adminUsers }}</div>
+              <div class="stat-label">Administradores</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">{{ usersWithCVs }}</div>
+              <div class="stat-label">CVs Creados</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="users-content">
+          <!-- Búsqueda y filtros -->
+          <div class="users-controls">
+            <div class="search-box">
+              <input 
+                type="text" 
+                v-model="usersSearchTerm" 
+                placeholder="Buscar usuarios por email..."
+                class="search-input"
+              >
+              <span class="search-icon">🔍</span>
+            </div>
+            <div class="filter-buttons">
+              <button 
+                class="filter-btn" 
+                :class="{ active: currentFilter === 'all' }"
+                @click="currentFilter = 'all'"
+              >
+                Todos
+              </button>
+              <button 
+                class="filter-btn" 
+                :class="{ active: currentFilter === 'with-cv' }"
+                @click="currentFilter = 'with-cv'"
+              >
+                Con CV
+              </button>
+              <button 
+                class="filter-btn" 
+                :class="{ active: currentFilter === 'admins' }"
+                @click="currentFilter = 'admins'"
+              >
+                Administradores
+              </button>
+            </div>
+          </div>
+
+          <!-- Lista de usuarios -->
+          <div class="users-list">
+            <div class="users-list-header">
+              <div class="user-column">Usuario</div>
+              <div class="user-column">Tipo</div>
+              <div class="user-column">CV</div>
+              <div class="user-column">Fecha Registro</div>
+              <div class="user-column">Acciones</div>
+            </div>
+
+            <div 
+              v-for="user in filteredUsers" 
+              :key="user.id" 
+              class="user-item"
+            >
+              <div class="user-column user-info">
+                <div class="user-email">{{ user.email }}</div>
+                <div class="user-id">ID: {{ user.id }}</div>
+              </div>
+              
+              <div class="user-column">
+                <span class="user-type-badge" :class="{ admin: user.isAdmin }">
+                  {{ user.isAdmin ? 'Administrador' : 'Usuario' }}
+                </span>
+              </div>
+              
+              <div class="user-column">
+                <span v-if="hasCV(user.id)" class="cv-status has-cv">
+                  ✅ Disponible
+                </span>
+                <span v-else class="cv-status no-cv">
+                  ❌ Sin CV
+                </span>
+              </div>
+              
+              <div class="user-column">
+                {{ formatDate(user.createdAt) }}
+              </div>
+              
+              <div class="user-column user-actions">
+                <button 
+                  v-if="hasCV(user.id)" 
+                  class="action-btn download-btn"
+                  @click="downloadUserCV(user)"
+                  title="Descargar CV"
+                >
+                  📄 Descargar CV
+                </button>
+                <button 
+                  v-else 
+                  class="action-btn disabled-btn"
+                  disabled
+                  title="El usuario no tiene CV"
+                >
+                  📄 Sin CV
+                </button>
+                
+                <button 
+                  v-if="!user.isAdmin" 
+                  class="action-btn promote-btn"
+                  @click="promoteToAdmin(user)"
+                  title="Convertir en administrador"
+                >
+                  ⬆️ Hacer Admin
+                </button>
+                
+                <button 
+                  v-if="user.id !== currentUser.id" 
+                  class="action-btn delete-btn"
+                  @click="deleteUser(user)"
+                  title="Eliminar usuario"
+                >
+                  🗑️ Eliminar
+                </button>
+              </div>
+            </div>
+
+            <div v-if="filteredUsers.length === 0" class="no-users">
+              No se encontraron usuarios que coincidan con los criterios de búsqueda.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección de Configuración (existente) -->
+      <div v-if="currentAdminSection === 'config'" class="config-layout">
         <!-- Sidebar izquierdo (Personalización) -->
         <div class="color-sidebar">
           <h4 class="sidebar-title">Personalizar Colores</h4>
@@ -391,6 +551,11 @@ export default {
   },
   data() {
     return {
+      // Nueva sección de gestión de usuarios
+      currentAdminSection: 'users',
+      usersSearchTerm: '',
+      currentFilter: 'all',
+      
       // Colores configurables
       color1: '#D50000',
       color2: '#FFD600',
@@ -452,12 +617,58 @@ export default {
       return this.savedConfigs.filter(config =>
         config.name.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
+    },
+
+    // Gestión de usuarios
+    allUsers() {
+      const users = localStorage.getItem('jdmUsers');
+      return users ? JSON.parse(users) : [];
+    },
+
+    totalUsers() {
+      return this.allUsers.length;
+    },
+
+    adminUsers() {
+      return this.allUsers.filter(user => user.isAdmin).length;
+    },
+
+    usersWithCVs() {
+      const cvs = this.getStoredCVs();
+      const userIdsWithCVs = [...new Set(cvs.map(cv => cv.userId))];
+      return userIdsWithCVs.length;
+    },
+
+    currentUser() {
+      return this.user;
+    },
+
+    filteredUsers() {
+      let users = this.allUsers;
+
+      // Aplicar filtro
+      if (this.currentFilter === 'with-cv') {
+        const cvs = this.getStoredCVs();
+        const userIdsWithCVs = [...new Set(cvs.map(cv => cv.userId))];
+        users = users.filter(user => userIdsWithCVs.includes(user.id));
+      } else if (this.currentFilter === 'admins') {
+        users = users.filter(user => user.isAdmin);
+      }
+
+      // Aplicar búsqueda
+      if (this.usersSearchTerm) {
+        users = users.filter(user => 
+          user.email.toLowerCase().includes(this.usersSearchTerm.toLowerCase())
+        );
+      }
+
+      return users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
   },
   mounted() {
     this.loadConfigsFromStorage();
-    this.loadGlobalStyles(); // Cargar estilos guardados al iniciar
-    this.applyStylesToGlobal(); // Aplicar estilos al cargar
+    this.loadGlobalStyles();
+    this.applyStylesToGlobal();
   },
   watch: {
     // Observar cambios en todas las propiedades de configuración
@@ -477,14 +688,203 @@ export default {
     shadowIntensity: 'applyStylesToGlobal'
   },
   methods: {
-    // Método para aplicar estilos globalmente
+    // ===== MÉTODOS DE GESTIÓN DE USUARIOS =====
+    hasCV(userId) {
+      const cvs = this.getStoredCVs();
+      return cvs.some(cv => cv.userId === userId);
+    },
+
+    getStoredCVs() {
+      const cvs = localStorage.getItem('jdmUserCVs');
+      return cvs ? JSON.parse(cvs) : [];
+    },
+
+    async downloadUserCV(user) {
+      const cvs = this.getStoredCVs();
+      const userCV = cvs.find(cv => cv.userId === user.id);
+      
+      if (!userCV) {
+        this.showNotification('El usuario no tiene un CV guardado', 'error');
+        return;
+      }
+
+      try {
+        // Crear elemento temporal para generar el PDF
+        const tempElement = document.createElement('div');
+        tempElement.innerHTML = this.generateCVHTML(userCV);
+        
+        const opt = {
+          margin: 10,
+          filename: `CV_${user.email.replace(/[@.]/g, '_')}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Usar html2pdf para generar el PDF
+        const html2pdf = (await import('html2pdf.js')).default;
+        await html2pdf().set(opt).from(tempElement).save();
+        
+        this.showNotification(`CV de ${user.email} descargado correctamente`, 'success');
+      } catch (error) {
+        console.error('Error al descargar CV:', error);
+        this.showNotification('Error al descargar el CV', 'error');
+      }
+    },
+
+    generateCVHTML(cvData) {
+      return `
+        <div class="cv-template-dark" style="font-family: 'Segoe UI', sans-serif; color: #232323; padding: 2rem; background: #fff;">
+          <div class="cv-header-dark" style="background: #2c3e50; color: white; padding: 2rem; margin-bottom: 2rem; border-radius: 8px;">
+            <div class="header-main" style="text-align: center; margin-bottom: 1.5rem;">
+              <h1 style="margin: 0; font-size: 2.5rem; font-weight: 800;">${cvData.personalInfo.fullName || 'Nombre no especificado'}</h1>
+              <p class="cv-title-dark" style="margin: 0.5rem 0 0 0; font-size: 1.3rem; color: #e74c3c; font-weight: 600;">${cvData.personalInfo.title || 'Profesión no especificada'}</p>
+            </div>
+            <div class="header-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+              <div class="header-left">
+                ${cvData.profile ? `
+                  <div class="profile-section">
+                    <h2 class="section-title-dark" style="color: white; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem; margin-bottom: 1rem;">Mi Perfil</h2>
+                    <p class="profile-text" style="color: white; line-height: 1.6;">${cvData.profile}</p>
+                  </div>
+                ` : ''}
+              </div>
+              <div class="header-right" style="display: flex; flex-direction: column; gap: 0.7rem;">
+                ${cvData.personalInfo.phone ? `<span>📞 ${cvData.personalInfo.phone}</span>` : ''}
+                ${cvData.personalInfo.email ? `<span>✉️ ${cvData.personalInfo.email}</span>` : ''}
+                ${cvData.personalInfo.website ? `<span>🌐 ${cvData.personalInfo.website}</span>` : ''}
+                ${cvData.personalInfo.location ? `<span>📍 ${cvData.personalInfo.location}</span>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="cv-content-dark" style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+            <!-- Columna Izquierda -->
+            <div class="cv-left-column">
+              ${cvData.experience && cvData.experience.some(exp => exp.company) ? `
+                <div class="cv-section-dark" style="margin-bottom: 2rem;">
+                  <h2 class="section-title-dark" style="color: #2c3e50; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem; margin-bottom: 1rem;">Experiencia Laboral</h2>
+                  <div class="experience-list-dark">
+                    ${cvData.experience.filter(exp => exp.company).map(exp => `
+                      <div class="experience-item-dark" style="background: #f8f9fa; padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #e74c3c;">
+                        <div class="exp-header-dark" style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem;">
+                          <span style="color: #e74c3c; font-size: 1.2rem;">✅</span>
+                          <div class="exp-info" style="flex: 1;">
+                            <h3 class="company-name" style="margin: 0; color: #2c3e50; font-size: 1.2rem;">${exp.company}</h3>
+                            <p class="exp-period" style="margin: 0.25rem 0 0 0; color: #666; font-size: 0.9rem;">${exp.period || ''}</p>
+                          </div>
+                        </div>
+                        ${exp.description ? `<p class="exp-description" style="margin: 0.5rem 0 0 0; color: #555; line-height: 1.5;">${exp.description}</p>` : ''}
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${cvData.education && cvData.education.some(edu => edu.degree) ? `
+                <div class="cv-section-dark" style="margin-bottom: 2rem;">
+                  <h2 class="section-title-dark" style="color: #2c3e50; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem; margin-bottom: 1rem;">Formación Académica</h2>
+                  <div class="education-list-dark">
+                    ${cvData.education.filter(edu => edu.degree).map(edu => `
+                      <div class="education-item-dark" style="background: #f8f9fa; padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #3498db;">
+                        <div class="edu-header-dark" style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 0.5rem;">
+                          <span style="color: #3498db; font-size: 1.2rem;">✅</span>
+                          <div class="edu-info" style="flex: 1;">
+                            <h3 class="edu-degree" style="margin: 0; color: #2c3e50; font-size: 1.2rem;">${edu.degree}</h3>
+                            ${edu.period ? `<p class="edu-period" style="margin: 0.25rem 0 0 0; color: #666; font-size: 0.9rem;">${edu.period}</p>` : ''}
+                          </div>
+                        </div>
+                        ${edu.institution ? `<p class="edu-institution" style="margin: 0.5rem 0 0 0; color: #555; font-weight: 600;">${edu.institution}</p>` : ''}
+                        ${edu.specialization ? `<p class="edu-specialization" style="margin: 0.25rem 0 0 0; color: #666; font-style: italic;">${edu.specialization}</p>` : ''}
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Columna Derecha -->
+            <div class="cv-right-column">
+              ${cvData.languages && cvData.languages.some(lang => lang.name) ? `
+                <div class="cv-section-dark" style="margin-bottom: 2rem;">
+                  <h2 class="section-title-dark" style="color: #2c3e50; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem; margin-bottom: 1rem;">Idiomas</h2>
+                  <div class="languages-list-dark" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                    ${cvData.languages.filter(lang => lang.name).map(lang => `
+                      <div class="language-item-dark" style="display: flex; align-items: center; gap: 0.8rem; padding: 0.8rem; background: #f8f9fa; border-radius: 6px;">
+                        <span style="color: #27ae60;">✅</span>
+                        <span class="language-name-dark" style="color: #2c3e50; font-weight: 600;">${lang.name}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${cvData.competences && cvData.competences.some(comp => comp.name) ? `
+                <div class="cv-section-dark" style="margin-bottom: 2rem;">
+                  <h2 class="section-title-dark" style="color: #2c3e50; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem; margin-bottom: 1rem;">Competencias</h2>
+                  <div class="competences-list-dark" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    ${cvData.competences.filter(comp => comp.name).map(comp => `
+                      <div class="competence-item-dark" style="background: #e74c3c; color: white; padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+                        ${comp.name}
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${cvData.skills && cvData.skills.some(skill => skill.name) ? `
+                <div class="cv-section-dark" style="margin-bottom: 2rem;">
+                  <h2 class="section-title-dark" style="color: #2c3e50; border-bottom: 2px solid #e74c3c; padding-bottom: 0.5rem; margin-bottom: 1rem;">Habilidades</h2>
+                  <div class="skills-list-dark" style="display: flex; flex-direction: column; gap: 1rem;">
+                    ${cvData.skills.filter(skill => skill.name).map(skill => `
+                      <div class="skill-item-dark" style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: #f8f9fa; border-radius: 6px;">
+                        <span class="skill-name" style="color: #2c3e50; font-weight: 600;">${skill.name}</span>
+                        <div class="star-rating">
+                          ${'★'.repeat(skill.rating || 3)}${'☆'.repeat(5 - (skill.rating || 3))}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    },
+
+    promoteToAdmin(user) {
+      if (confirm(`¿Estás seguro de que quieres hacer administrador a ${user.email}?`)) {
+        const users = this.allUsers;
+        const userIndex = users.findIndex(u => u.id === user.id);
+        
+        if (userIndex !== -1) {
+          users[userIndex].isAdmin = true;
+          localStorage.setItem('jdmUsers', JSON.stringify(users));
+          this.showNotification(`${user.email} ahora es administrador`, 'success');
+        }
+      }
+    },
+
+    deleteUser(user) {
+      if (confirm(`¿Estás seguro de que quieres eliminar al usuario ${user.email}? Esta acción no se puede deshacer.`)) {
+        const users = this.allUsers;
+        const updatedUsers = users.filter(u => u.id !== user.id);
+        localStorage.setItem('jdmUsers', JSON.stringify(updatedUsers));
+        
+        // Eliminar también el CV si existe
+        const cvs = this.getStoredCVs();
+        const updatedCVs = cvs.filter(cv => cv.userId !== user.id);
+        localStorage.setItem('jdmUserCVs', JSON.stringify(updatedCVs));
+        
+        this.showNotification(`Usuario ${user.email} eliminado correctamente`, 'success');
+      }
+    },
+
+    // ===== MÉTODOS DE CONFIGURACIÓN DE COLORES Y TIPOGRAFÍA =====
     applyStylesToGlobal() {
       const styles = this.getGlobalStyles();
-      
-      // Aplicar al documento
       this.updateGlobalCSS(styles);
-      
-      // Guardar en localStorage para persistencia
       this.saveGlobalStyles(styles);
     },
     
@@ -508,7 +908,6 @@ export default {
     },
     
     updateGlobalCSS(styles) {
-      // Crear o actualizar la hoja de estilos global
       let styleElement = document.getElementById('jdm-global-styles');
       
       if (!styleElement) {
@@ -517,21 +916,18 @@ export default {
         document.head.appendChild(styleElement);
       }
       
-      // Generar CSS con las variables
       let css = ':root {\n';
       Object.entries(styles).forEach(([key, value]) => {
         css += `  ${key}: ${value};\n`;
       });
       css += '}\n\n';
       
-      // Aplicar filtro de daltonismo al body si es necesario
       if (this.colorBlindMode !== 'none') {
         css += `body { filter: ${this.getColorBlindFilter()}; }\n`;
       } else {
         css += `body { filter: none; }\n`;
       }
       
-      // Aplicar alto contraste
       if (this.highContrast) {
         css += `
           * {
@@ -556,7 +952,6 @@ export default {
         try {
           const { styles } = JSON.parse(saved);
           
-          // Aplicar los estilos guardados
           this.color1 = styles['--primary'] || this.color1;
           this.color2 = styles['--secondary'] || this.color2;
           this.color3 = styles['--background'] || this.color3;
@@ -570,7 +965,6 @@ export default {
           this.highContrast = styles['--high-contrast'] === '1';
           this.largeText = styles['--large-text'] === '1.2';
           
-          // Aplicar los estilos inmediatamente
           this.applyStylesToGlobal();
           
         } catch (e) {
@@ -640,7 +1034,6 @@ export default {
         this.borderRadius = config.effects?.borderRadius || 8;
         this.shadowIntensity = config.effects?.shadowIntensity || 5;
         
-        // Aplicar cambios globalmente
         this.applyStylesToGlobal();
         this.showNotification(`Configuración "${config.name}" cargada`, 'success');
       }
@@ -681,7 +1074,6 @@ export default {
         this.borderRadius = 8;
         this.shadowIntensity = 5;
         
-        // Aplicar cambios globalmente
         this.applyStylesToGlobal();
         this.showNotification('Configuración restablecida', 'info');
       }
@@ -763,26 +1155,325 @@ export default {
         month: '2-digit',
         year: 'numeric'
       });
-    },
-    
-    exportConfig() {
-      const config = this.getCurrentConfig();
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(config, null, 2));
-      const downloadAnchorNode = document.createElement('a');
-      downloadAnchorNode.setAttribute("href", dataStr);
-      downloadAnchorNode.setAttribute("download", `jdmtuning-config-${new Date().getTime()}.json`);
-      document.body.appendChild(downloadAnchorNode);
-      downloadAnchorNode.click();
-      downloadAnchorNode.remove();
-      this.showNotification('Configuración exportada', 'success');
     }
   }
 }
 </script>
 
 <style scoped>
-/* ===== ESTILOS PRINCIPALES CON VARIABLES GLOBALES ===== */
+/* ===== ESTILOS PARA GESTIÓN DE USUARIOS ===== */
+.admin-navigation {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  background: var(--accent, #ffffff);
+  padding: 1rem;
+  border-radius: var(--border-radius, 12px);
+  box-shadow: var(--shadow, 0 2px 10px rgba(0, 0, 0, 0.1));
+}
 
+.admin-nav-btn {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border: 2px solid var(--primary, #2c3e50);
+  background: transparent;
+  color: var(--primary, #2c3e50);
+  border-radius: var(--border-radius, 8px);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+.admin-nav-btn:hover {
+  background: var(--primary, #2c3e50);
+  color: var(--accent, #ffffff);
+  transform: translateY(-2px);
+}
+
+.admin-nav-btn.active {
+  background: var(--secondary, #e74c3c);
+  border-color: var(--secondary, #e74c3c);
+  color: var(--accent, #ffffff);
+}
+
+.users-management-section {
+  background: var(--accent, #ffffff);
+  border-radius: var(--border-radius, 12px);
+  box-shadow: var(--shadow, 0 2px 10px rgba(0, 0, 0, 0.1));
+  overflow: hidden;
+}
+
+.users-header {
+  background: var(--primary, #2c3e50);
+  color: var(--accent, #ffffff);
+  padding: 2rem;
+}
+
+.users-header h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.8rem;
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+.users-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: var(--border-radius, 8px);
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.users-content {
+  padding: 2rem;
+}
+
+.users-controls {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 300px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 2px solid var(--background, #ecf0f1);
+  border-radius: var(--border-radius, 8px);
+  font-size: 1rem;
+  font-family: var(--secondary-font, Arial, sans-serif);
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: var(--secondary, #e74c3c);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text, #666666);
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--background, #ecf0f1);
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+  border-radius: var(--border-radius, 8px);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+.filter-btn:hover {
+  border-color: var(--secondary, #e74c3c);
+  color: var(--secondary, #e74c3c);
+}
+
+.filter-btn.active {
+  background: var(--secondary, #e74c3c);
+  border-color: var(--secondary, #e74c3c);
+  color: var(--accent, #ffffff);
+}
+
+.users-list {
+  background: var(--accent, #ffffff);
+  border-radius: var(--border-radius, 8px);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.users-list-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 2fr;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--primary, #2c3e50);
+  color: var(--accent, #ffffff);
+  font-weight: 600;
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+.user-column {
+  display: flex;
+  align-items: center;
+}
+
+.user-item {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 2fr;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--background, #ecf0f1);
+  transition: background-color 0.3s ease;
+}
+
+.user-item:hover {
+  background: var(--background, #f8f9fa);
+}
+
+.user-item:last-child {
+  border-bottom: none;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-email {
+  font-weight: 600;
+  color: var(--primary, #2c3e50);
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+.user-id {
+  font-size: 0.8rem;
+  color: var(--text, #666666);
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.user-type-badge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.user-type-badge:not(.admin) {
+  background: var(--background, #ecf0f1);
+  color: var(--text, #666666);
+}
+
+.user-type-badge.admin {
+  background: var(--secondary, #e74c3c);
+  color: var(--accent, #ffffff);
+}
+
+.cv-status {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.cv-status.has-cv {
+  background: #d4edda;
+  color: #155724;
+}
+
+.cv-status.no-cv {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.user-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 0.5rem 0.8rem;
+  border: none;
+  border-radius: var(--border-radius, 6px);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--secondary-font, Arial, sans-serif);
+  white-space: nowrap;
+}
+
+.download-btn {
+  background: #28a745;
+  color: white;
+}
+
+.download-btn:hover {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.promote-btn {
+  background: #ffc107;
+  color: #212529;
+}
+
+.promote-btn:hover {
+  background: #e0a800;
+  transform: translateY(-1px);
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+.disabled-btn {
+  background: #6c757d;
+  color: white;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.no-users {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text, #666666);
+  font-style: italic;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+/* ===== ESTILOS EXISTENTES DE CONFIGURACIÓN ===== */
 .admin-section {
   padding: 2rem 0;
   background: var(--background, #ecf0f1);
@@ -842,7 +1533,7 @@ export default {
   align-items: start;
 }
 
-/* ===== SIDEBARS CON ESTILO DE ABOUT.VUE ===== */
+/* ===== SIDEBARS CON ESTILO ===== */
 .color-sidebar,
 .config-sidebar {
   background: var(--accent, #ffffff);
@@ -865,7 +1556,7 @@ export default {
   font-family: inherit;
 }
 
-/* ===== CONTROLES DE COLOR MEJORADOS ===== */
+/* ===== CONTROLES DE COLOR ===== */
 .color-control {
   margin-bottom: 1.5rem;
   padding: 1.25rem;
@@ -1004,7 +1695,7 @@ export default {
   box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
 }
 
-/* ===== TOGGLE SWITCHES MEJORADOS ===== */
+/* ===== TOGGLE SWITCHES ===== */
 .toggle-switch {
   display: flex;
   align-items: center;
@@ -1072,7 +1763,7 @@ input:checked + .toggle-slider:before {
   font-size: 0.85rem;
 }
 
-/* ===== BOTONES MEJORADOS ===== */
+/* ===== BOTONES ===== */
 .reset-btn {
   width: 100%;
   background: var(--secondary, #e74c3c);
@@ -1442,81 +2133,7 @@ input:checked + .toggle-slider:before {
   background: linear-gradient(135deg, #f39c12, #e67e22);
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 1200px) {
-  .config-layout {
-    grid-template-columns: 300px 1fr 300px;
-    gap: 20px;
-  }
-}
-
-@media (max-width: 992px) {
-  .config-layout {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-  
-  .color-sidebar,
-  .config-sidebar {
-    max-height: none;
-  }
-  
-  .preview-container {
-    transform: scale(1);
-    width: 100%;
-    margin-left: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 0 15px;
-  }
-  
-  .admin-header h1 {
-    font-size: 2rem;
-  }
-  
-  .config-layout {
-    gap: 15px;
-  }
-  
-  .preview-stats,
-  .preview-features-grid,
-  .preview-brands-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .preview-auth-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .preview-nav {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .preview-nav-links {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .modal-content {
-    padding: 2rem;
-    margin: 1rem;
-  }
-  
-  .modal-actions {
-    flex-direction: column;
-  }
-  
-  .modal-btn {
-    min-width: auto;
-  }
-}
-
-/* ===== ESTILOS DE LA VISTA PREVIA (se mantienen igual) ===== */
+/* ===== ESTILOS DE LA VISTA PREVIA ===== */
 .preview-header {
   background-color: var(--preview-primary);
   padding: 1rem 0;
@@ -1802,5 +2419,134 @@ input:checked + .toggle-slider:before {
 
 .preview-social-links a:hover {
   color: var(--preview-secondary);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+  .config-layout {
+    grid-template-columns: 300px 1fr 300px;
+    gap: 20px;
+  }
+  
+  .users-list-header,
+  .user-item {
+    grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .config-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .color-sidebar,
+  .config-sidebar {
+    max-height: none;
+  }
+  
+  .preview-container {
+    transform: scale(1);
+    width: 100%;
+    margin-left: 0;
+  }
+  
+  .users-list-header,
+  .user-item {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .users-list-header {
+    display: none;
+  }
+  
+  .user-item {
+    padding: 1.5rem;
+    border: 1px solid var(--background, #ecf0f1);
+    border-radius: var(--border-radius, 8px);
+    margin-bottom: 1rem;
+  }
+  
+  .user-column {
+    justify-content: space-between;
+  }
+  
+  .user-column::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--primary, #2c3e50);
+    font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 15px;
+  }
+  
+  .admin-header h1 {
+    font-size: 2rem;
+  }
+  
+  .admin-navigation {
+    flex-direction: column;
+  }
+  
+  .config-layout {
+    gap: 15px;
+  }
+  
+  .users-controls {
+    flex-direction: column;
+  }
+  
+  .search-box {
+    min-width: auto;
+  }
+  
+  .user-actions {
+    justify-content: center;
+  }
+  
+  .action-btn {
+    flex: 1;
+    text-align: center;
+    min-width: 120px;
+  }
+  
+  .preview-stats,
+  .preview-features-grid,
+  .preview-brands-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .preview-auth-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .preview-nav {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .preview-nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .modal-content {
+    padding: 2rem;
+    margin: 1rem;
+  }
+  
+  .modal-actions {
+    flex-direction: column;
+  }
+  
+  .modal-btn {
+    min-width: auto;
+  }
 }
 </style>
