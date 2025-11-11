@@ -61,6 +61,32 @@
                 <div v-if="currentStep === 1" class="form-section">
                   <h2>Información Personal</h2>
                   
+                  <!-- Campo para subir foto -->
+                  <div class="form-group full-width">
+                    <label>Foto de Perfil (Opcional)</label>
+                    <div class="photo-upload-container">
+                      <div class="photo-preview" v-if="formData.personalInfo.photo">
+                        <img :src="formData.personalInfo.photo" alt="Foto de perfil" class="photo-preview-img">
+                        <button type="button" class="remove-photo-btn" @click="removePhoto">🗑️</button>
+                      </div>
+                      <div class="photo-upload-area" v-else>
+                        <input
+                          type="file"
+                          ref="photoInput"
+                          accept="image/*"
+                          @change="handlePhotoUpload"
+                          class="photo-input"
+                          id="photo-upload"
+                        >
+                        <label for="photo-upload" class="photo-upload-label">
+                          <span class="upload-icon">📷</span>
+                          <span class="upload-text">Haz clic para subir una foto</span>
+                          <span class="upload-hint">Recomendado: 150x150 px</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="form-grid">
                     <div class="form-group">
                       <label>Nombre Completo *</label>
@@ -126,14 +152,51 @@
                   <h2>Perfil Profesional</h2>
                   
                   <div class="form-group">
-                    <label>Perfil *</label>
+                    <label>Perfil * (Máximo 200 caracteres)</label>
                     <textarea
                       v-model="formData.profile"
                       rows="6"
                       placeholder="Describe tu experiencia profesional, habilidades clave y objetivos de carrera..."
                       required
+                      maxlength="200"
+                      :class="{
+                        'char-limit-safe': formData.profile.length <= 180,
+                        'char-limit-warning': formData.profile.length > 180 && formData.profile.length <= 200,
+                        'char-limit-danger': formData.profile.length > 200
+                      }"
                     ></textarea>
-                    <div class="char-count">{{ formData.profile.length }}/500</div>
+                    
+                    <div class="char-counter-container">
+                      <div class="char-progress-bar">
+                        <div 
+                          class="char-progress-fill"
+                          :class="{
+                            'progress-safe': formData.profile.length <= 180,
+                            'progress-warning': formData.profile.length > 180 && formData.profile.length <= 200,
+                            'progress-danger': formData.profile.length > 200
+                          }"
+                          :style="{ width: Math.min((formData.profile.length / 200) * 100, 100) + '%' }"
+                        ></div>
+                      </div>
+                      
+                      <div class="char-count" 
+                          :class="{
+                            'count-safe': formData.profile.length <= 180,
+                            'count-warning': formData.profile.length > 180 && formData.profile.length <= 200,
+                            'count-danger': formData.profile.length > 200
+                          }">
+                        <span class="char-number">{{ formData.profile.length }}/200</span>
+                        <span v-if="formData.profile.length > 180 && formData.profile.length <= 200" class="char-message">
+                          ⚠️ Cerca del límite
+                        </span>
+                        <span v-else-if="formData.profile.length > 200" class="char-message">
+                          ❌ Límite excedido
+                        </span>
+                        <span v-else class="char-message">
+                          ✅ Dentro del límite
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -285,12 +348,15 @@
                 <div v-if="currentStep === 6" class="form-section">
                   <div class="section-header">
                     <h2>Habilidades</h2>
+                    <button class="add-btn" @click="addSkill">
+                      + Añadir Habilidad
+                    </button>
                   </div>
                   <div class="items-list">
                     <div v-for="(skill, index) in formData.skills" :key="index" class="form-item">
                       <div class="item-header">
                         <h3>Habilidad {{ index + 1 }}</h3>
-                        <button class="remove-btn" @click="removeSkill(index)" v-if="formData.skills.length > 1 && (skill.name || index < formData.skills.length - 1)">
+                        <button class="remove-btn" @click="removeSkill(index)" v-if="formData.skills.length > 1">
                           🗑️ Eliminar
                         </button>
                       </div>
@@ -300,13 +366,25 @@
                           <input
                             type="text"
                             v-model="skill.name"
-                            @input="onSkillInput"
                             placeholder="Ej: Trabajo en equipo, Creatividad, Vue.js"
-                            required/>
+                            required
+                          />
                         </div>
                         <div class="form-group">
                           <label>Nivel</label>
-                          <StarRating v-model:rating="skill.rating" :editable="true" />
+                          <div class="rating-selector">
+                            <select v-model="skill.rating" class="rating-dropdown">
+                              <option value="1">⭐ (1 - Básico)</option>
+                              <option value="2">⭐⭐ (2 - Principiante)</option>
+                              <option value="3">⭐⭐⭐ (3 - Intermedio)</option>
+                              <option value="4">⭐⭐⭐⭐ (4 - Avanzado)</option>
+                              <option value="5">⭐⭐⭐⭐⭐ (5 - Experto)</option>
+                            </select>
+                            <div class="rating-preview">
+                              <span class="stars-preview">{{ '⭐'.repeat(skill.rating) }}{{ '☆'.repeat(5 - skill.rating) }}</span>
+                              <span class="rating-text">({{ skill.rating }}/5)</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -377,10 +455,19 @@
               <div class="preview-content" ref="cvPreview">
                 <div class="cv-template-dark">
                   <!-- CABECERA CON PERFIL Y DATOS PERSONALES -->
-                  <div class="cv-header-dark">
-                    <div class="header-main">
-                      <h1>{{ formData.personalInfo.fullName || 'Tu Nombre Completo' }}</h1>
-                      <p class="cv-title-dark">{{ formData.personalInfo.title || 'Tu Profesión' }}</p>
+                                    <div class="cv-header-dark">
+                    <div class="header-main-with-photo">
+                      <!-- Foto de perfil a la izquierda -->
+                      <div class="photo-container" v-if="formData.personalInfo.photo">
+                        <img :src="formData.personalInfo.photo" alt="Foto de perfil" class="profile-photo">
+                      </div>
+                      <!-- Nombre y título centrados -->
+                      <div class="header-text-center">
+                        <h1>{{ formData.personalInfo.fullName || 'Tu Nombre Completo' }}</h1>
+                        <p class="cv-title-dark">{{ formData.personalInfo.title || 'Tu Profesión' }}</p>
+                      </div>
+                      <!-- Espacio vacío a la derecha para balance -->
+                      <div class="photo-placeholder" v-if="!formData.personalInfo.photo"></div>
                     </div>
                     <div class="header-grid">
                       <!-- Izquierda: Perfil -->
@@ -485,7 +572,88 @@
 </template>
 
 <script>
-import html2pdf from 'html2pdf.js';
+import pdfMake from 'pdfmake/build/pdfmake';
+
+// Configuración de fuentes para pdfmake
+let fontsLoaded = false;
+
+async function loadPdfFonts() {
+  if (fontsLoaded) {
+    return true;
+  }
+
+  return new Promise((resolve, reject) => {
+    // Si ya están cargadas, resolver inmediatamente
+    if (pdfMake.vfs && Object.keys(pdfMake.vfs).length > 0) {
+      fontsLoaded = true;
+      console.log('Fuentes ya cargadas:', Object.keys(pdfMake.vfs));
+      resolve(true);
+      return;
+    }
+
+    // Intentar cargar desde CDN
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js';
+    script.onload = () => {
+      console.log('vfs_fonts.js cargado desde CDN');
+      
+      // Dar tiempo para que se procese
+      setTimeout(() => {
+        if (pdfMake.vfs && Object.keys(pdfMake.vfs).length > 0) {
+          fontsLoaded = true;
+          console.log('Fuentes cargadas correctamente:', Object.keys(pdfMake.vfs));
+          
+          // Configurar las fuentes para pdfmake
+          pdfMake.fonts = {
+            Roboto: {
+              normal: 'Roboto-Regular.ttf',
+              bold: 'Roboto-Medium.ttf',
+              italics: 'Roboto-Italic.ttf',
+              bolditalics: 'Roboto-MediumItalic.ttf'
+            }
+          };
+          
+          resolve(true);
+        } else {
+          console.warn('vfs_fonts cargado pero no se detectaron fuentes');
+          // Intentar con fuentes fallback
+          setupFallbackFonts();
+          resolve(true);
+        }
+      }, 100);
+    };
+
+    script.onerror = () => {
+      console.warn('No se pudieron cargar las fuentes desde CDN, usando fallback');
+      setupFallbackFonts();
+      resolve(true);
+    };
+
+    document.head.appendChild(script);
+  });
+}
+
+// Fuentes fallback en caso de que falle la carga desde CDN
+function setupFallbackFonts() {
+  console.log('Configurando fuentes fallback');
+  
+  // Crear VFS básico con fuentes mínimas si no existe
+  if (!pdfMake.vfs) {
+    pdfMake.vfs = {};
+  }
+  
+  // Configurar fuentes básicas
+  pdfMake.fonts = {
+    Roboto: {
+      normal: 'Roboto-Regular.ttf',
+      bold: 'Roboto-Medium.ttf',
+      italics: 'Roboto-Italic.ttf',
+      bolditalics: 'Roboto-MediumItalic.ttf'
+    }
+  };
+  
+  fontsLoaded = true;
+}
 
 const StarRating = {
   props: {
@@ -533,7 +701,8 @@ export default {
           email: '',
           phone: '',
           location: '',
-          website: ''
+          website: '',
+          photo: null // Nuevo campo para la foto
         },
         profile: '',
         experience: [
@@ -577,9 +746,11 @@ export default {
       return personalInfo.fullName && personalInfo.title && personalInfo.email;
     }
   },
-  mounted() {
+  async mounted() {
     this.checkAuthentication();
     this.loadSavedCV();
+    // Precargar fuentes al montar el componente
+    await loadPdfFonts();
   },
   methods: {
     checkAuthentication() {
@@ -618,6 +789,37 @@ export default {
     prevStep() {
       if (this.currentStep > 1) {
         this.currentStep--;
+      }
+    },
+
+    // Métodos para manejar la foto de perfil
+    handlePhotoUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        // Validar tipo de archivo
+        if (!file.type.startsWith('image/')) {
+          alert('Por favor, selecciona un archivo de imagen válido.');
+          return;
+        }
+
+        // Validar tamaño (máximo 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+          alert('La imagen no debe superar los 2MB.');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.formData.personalInfo.photo = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    },
+
+    removePhoto() {
+      this.formData.personalInfo.photo = null;
+      if (this.$refs.photoInput) {
+        this.$refs.photoInput.value = '';
       }
     },
 
@@ -667,31 +869,15 @@ export default {
 
     // Gestión de habilidades
     addSkill() {
-      this.formData.skills.push({ name: '', rating: 3 });
+      this.formData.skills.push({ 
+        name: '', 
+        rating: 3  // Valor por defecto: Intermedio
+      });
     },
 
-    onSkillInput() {
-      // Si NO hay ningún espacio vacío al final, agrega uno
-      const skills = this.formData.skills;
-      if (
-        skills.length === 0 ||
-        skills[skills.length - 1].name.trim() !== ''
-      ) {
-        skills.push({ name: '', rating: 3 });
-      }
-      // Eliminar líneas intermedias vacías que estén duplicadas (excepto la última)
-      for (let i = skills.length - 2; i >= 0; i--) {
-        if (!skills[i].name && !skills[i + 1].name) {
-          skills.splice(i, 1);
-        }
-      }
-    },
     removeSkill(index) {
-      // Solo permite eliminar si hay más de 1, pero nunca elimina la última vacía
       if (this.formData.skills.length > 1) {
         this.formData.skills.splice(index, 1);
-        // Si tras eliminar ya no hay ningún bloque vacío, asegurar uno
-        this.onSkillInput();
       }
     },
 
@@ -715,11 +901,19 @@ export default {
         alert('Por favor completa los campos obligatorios (Nombre, Título y Email)');
         return;
       }
+      
+      // Validación para el límite de caracteres del perfil
+      if (this.formData.profile.length > 200) {
+        alert('El perfil profesional no puede tener más de 200 caracteres. Actualmente tienes ' + this.formData.profile.length + ' caracteres.');
+        return;
+      }
+      
       // Validación para habilidades
       if (!this.formData.skills.some(skill => skill.name.trim() !== '')) {
         alert('Debes agregar al menos una habilidad.');
         return;
       }
+      
       const userCVs = this.getStoredCVs();
       const userCVIndex = userCVs.findIndex(cv => cv.userId === this.user.id);
       const cvData = {
@@ -762,7 +956,8 @@ export default {
             email: this.user?.email || '',
             phone: '',
             location: '',
-            website: ''
+            website: '',
+            photo: null
           },
           profile: '',
           experience: [
@@ -809,21 +1004,527 @@ export default {
         return;
       }
 
-      const element = this.$refs.cvPreview;
-      const opt = {
-        margin: 10,
-        filename: `CV_${this.formData.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+      // Validación para el límite de caracteres del perfil
+      if (this.formData.profile.length > 200) {
+        alert('El perfil profesional no puede tener más de 200 caracteres. Actualmente tienes ' + this.formData.profile.length + ' caracteres. Por favor, acorta tu perfil antes de descargar.');
+        return;
+      }
 
       try {
-        await html2pdf().set(opt).from(element).save();
+        console.log('Iniciando generación de PDF...');
+        
+        // Asegurar que las fuentes estén cargadas
+        await loadPdfFonts();
+        
+        if (!fontsLoaded) {
+          throw new Error('No se pudieron cargar las fuentes para PDF');
+        }
+
+        console.log('Fuentes cargadas, generando documento...');
+        const docDefinition = this.buildPDFDocument();
+        const filename = `CV_${this.formData.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
+        
+        // Crear y descargar el PDF
+        pdfMake.createPdf(docDefinition).download(filename);
+        console.log('PDF generado exitosamente');
+        
       } catch (error) {
-        console.error('Error al generar PDF:', error);
-        alert('Error al generar el PDF. Por favor, intenta nuevamente.');
+        console.error('Error detallado al generar PDF:', error);
+        alert(`Error al generar el PDF: ${error.message}. Por favor, intenta nuevamente.`);
       }
+    },
+
+    // Construir el documento PDF con backdrop cuadrado ajustado
+    buildPDFDocument() {
+      const personalInfo = this.formData.personalInfo;
+      
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [0, 0, 0, 0],
+        background: [
+          // Fondo gris oscuro para la cabecera
+          {
+            canvas: [
+              {
+                type: 'rect',
+                x: 0,
+                y: 0,
+                w: 595.28,
+                h: 220,
+                color: '#2c3e50'
+              }
+            ]
+          }
+        ],
+        content: [
+          // CONTENIDO PRINCIPAL
+          {
+            stack: [
+              // CABECERA CON FONDO OSCURO
+              {
+                stack: [
+                  // Contenedor con foto, nombre y título
+                  {
+                    columns: [
+                      // Foto a la izquierda (si existe)
+                      this.formData.personalInfo.photo ? {
+                        width: 60,
+                        stack: [
+                          {
+                            image: this.formData.personalInfo.photo,
+                            width: 50,
+                            height: 50,
+                            margin: [0, 0, 0, 0]
+                          }
+                        ],
+                        margin: [40, 30, 0, 0]
+                      } : { width: 60, text: '' }, // Espacio reservado si no hay foto
+                      
+                      // Nombre y título centrados
+                      {
+                        width: '*',
+                        stack: [
+                          {
+                            text: personalInfo.fullName || 'Nombre Completo',
+                            style: 'header',
+                            alignment: 'center',
+                            margin: [0, 0, 0, 5]
+                          },
+                          {
+                            text: personalInfo.title || 'Título Profesional',
+                            style: 'subheader',
+                            alignment: 'center',
+                            margin: [0, 0, 0, 25]
+                          }
+                        ]
+                      },
+                      
+                      // Espacio a la derecha para balance
+                      { width: 60, text: '' }
+                    ]
+                  },
+                  
+                  // Grid de dos columnas para perfil y contacto
+                  {
+                    columns: [
+                      // Columna izquierda: Perfil profesional
+                      {
+                        width: '60%',
+                        stack: [
+                          this.formData.profile ? {
+                            text: 'MI PERFIL',
+                            style: 'sectionTitleLight',
+                            margin: [0, 0, 0, 8]
+                          } : null,
+                          
+                          this.formData.profile ? {
+                            text: this.formData.profile,
+                            style: 'profileText',
+                            margin: [0, 0, 0, 0]
+                          } : null
+                        ].filter(Boolean)
+                      },
+                      
+                      // Columna derecha: Datos de contacto
+                      {
+                        width: '40%',
+                        stack: [
+                          personalInfo.phone ? {
+                            text: `📞 ${personalInfo.phone}`,
+                            style: 'contactInfo',
+                            margin: [0, 0, 0, 8]
+                          } : null,
+                          
+                          personalInfo.email ? {
+                            text: `✉️ ${personalInfo.email}`,
+                            style: 'contactInfo',
+                            margin: [0, 0, 0, 8]
+                          } : null,
+                          
+                          personalInfo.website ? {
+                            text: `🌐 ${personalInfo.website}`,
+                            style: 'contactInfo',
+                            margin: [0, 0, 0, 8]
+                          } : null,
+                          
+                          personalInfo.location ? {
+                            text: `📍 ${personalInfo.location}`,
+                            style: 'contactInfo',
+                            margin: [0, 0, 0, 8]
+                          } : null
+                        ].filter(Boolean)
+                      }
+                    ],
+                    margin: [40, 0, 40, 0]
+                  }
+                ]
+              },
+              
+              // CONTENIDO PRINCIPAL CON TÍTULOS CON BACKDROP AJUSTADO
+              {
+                stack: [
+                  {
+                    columns: [
+                      {
+                        width: '60%',
+                        stack: [
+                          // Experiencia Laboral CON BACKDROP AJUSTADO
+                          ...(this.formData.experience.filter(exp => exp.company).length > 0 ? [
+                            {
+                              stack: [
+                                // Fondo cuadrado ajustado para el título
+                                {
+                                  canvas: [
+                                    {
+                                      type: 'rect',
+                                      x: 0,
+                                      y: 0,
+                                      w: 320, // Ancho ajustado para columna izquierda
+                                      h: 20,
+                                      color: '#34495e'
+                                    }
+                                  ]
+                                },
+                                // Título sobre el fondo
+                                {
+                                  text: 'EXPERIENCIA LABORAL',
+                                  style: 'sectionTitleWithBackdrop',
+                                  margin: [10, -15, 0, 12]
+                                }
+                              ],
+                              margin: [0, 25, 0, 12]
+                            },
+                            ...this.formData.experience.filter(exp => exp.company).flatMap((exp, index) => [
+                              {
+                                columns: [
+                                  {
+                                    width: 20,
+                                    text: '✅',
+                                    style: 'icon',
+                                    margin: [0, 2, 5, 0]
+                                  },
+                                  {
+                                    width: '*',
+                                    stack: [
+                                      {
+                                        text: exp.company,
+                                        style: 'itemTitle',
+                                        margin: [0, 0, 0, 2]
+                                      },
+                                      exp.period ? {
+                                        text: exp.period,
+                                        style: 'itemSubtitle',
+                                        margin: [0, 0, 0, 5]
+                                      } : null,
+                                      exp.description ? {
+                                        text: exp.description,
+                                        style: 'body',
+                                        margin: [0, 0, 0, 15]
+                                      } : { text: '', margin: [0, 0, 0, 15] }
+                                    ].filter(Boolean)
+                                  }
+                                ],
+                                margin: [0, 0, 0, 12]
+                              }
+                            ])
+                          ] : []),
+                          
+                          // Formación Académica CON BACKDROP AJUSTADO
+                          ...(this.formData.education.filter(edu => edu.degree).length > 0 ? [
+                            {
+                              stack: [
+                                // Fondo cuadrado ajustado para el título
+                                {
+                                  canvas: [
+                                    {
+                                      type: 'rect',
+                                      x: 0,
+                                      y: 0,
+                                      w: 320, // Ancho ajustado para columna izquierda
+                                      h: 20,
+                                      color: '#34495e'
+                                    }
+                                  ]
+                                },
+                                // Título sobre el fondo
+                                {
+                                  text: 'FORMACIÓN ACADÉMICA',
+                                  style: 'sectionTitleWithBackdrop',
+                                  margin: [10, -15, 0, 12]
+                                }
+                              ],
+                              margin: [0, 20, 0, 12]
+                            },
+                            ...this.formData.education.filter(edu => edu.degree).flatMap((edu, index) => [
+                              {
+                                columns: [
+                                  {
+                                    width: 20,
+                                    text: '✅',
+                                    style: 'icon',
+                                    margin: [0, 2, 5, 0]
+                                  },
+                                  {
+                                    width: '*',
+                                    stack: [
+                                      {
+                                        text: edu.degree,
+                                        style: 'itemTitle',
+                                        margin: [0, 0, 0, 2]
+                                      },
+                                      edu.institution ? {
+                                        text: edu.institution,
+                                        style: 'body',
+                                        margin: [0, 0, 0, 2]
+                                      } : null,
+                                      edu.period ? {
+                                        text: edu.period,
+                                        style: 'itemSubtitle',
+                                        margin: [0, 0, 0, 2]
+                                      } : null,
+                                      edu.specialization ? {
+                                        text: edu.specialization,
+                                        style: 'bodyItalic',
+                                        margin: [0, 0, 0, 15]
+                                      } : { text: '', margin: [0, 0, 0, 15] }
+                                    ].filter(Boolean)
+                                  }
+                                ],
+                                margin: [0, 0, 0, 12]
+                              }
+                            ])
+                          ] : [])
+                        ].filter(Boolean),
+                        margin: [40, 10, 20, 30]
+                      },
+                      
+                      // COLUMNA DERECHA CON TÍTULOS CON BACKDROP AJUSTADO
+                      {
+                        width: '40%',
+                        stack: [
+                          // Idiomas CON BACKDROP AJUSTADO
+                          ...(this.formData.languages.filter(lang => lang.name).length > 0 ? [
+                            {
+                              stack: [
+                                // Fondo cuadrado ajustado para el título
+                                {
+                                  canvas: [
+                                    {
+                                      type: 'rect',
+                                      x: 0,
+                                      y: 0,
+                                      w: 200, // Ancho ajustado para columna derecha
+                                      h: 20,
+                                      color: '#34495e'
+                                    }
+                                  ]
+                                },
+                                // Título sobre el fondo
+                                {
+                                  text: 'IDIOMAS',
+                                  style: 'sectionTitleWithBackdrop',
+                                  margin: [10, -15, 0, 12]
+                                }
+                              ],
+                              margin: [0, 25, 0, 12]
+                            },
+                            {
+                              stack: this.formData.languages
+                                .filter(lang => lang.name)
+                                .map(lang => ({
+                                  columns: [
+                                    {
+                                      width: 20,
+                                      text: '✅',
+                                      style: 'icon',
+                                      margin: [0, 2, 5, 0]
+                                    },
+                                    {
+                                      width: '*',
+                                      text: lang.name,
+                                      style: 'body'
+                                    }
+                                  ],
+                                  margin: [0, 0, 0, 8]
+                                }))
+                            }
+                          ] : []),
+                          
+                          // Competencias CON BACKDROP AJUSTADO
+                          ...(this.formData.competences.filter(comp => comp.name).length > 0 ? [
+                            {
+                              stack: [
+                                // Fondo cuadrado ajustado para el título
+                                {
+                                  canvas: [
+                                    {
+                                      type: 'rect',
+                                      x: 0,
+                                      y: 0,
+                                      w: 200, // Ancho ajustado para columna derecha
+                                      h: 20,
+                                      color: '#34495e'
+                                    }
+                                  ]
+                                },
+                                // Título sobre el fondo
+                                {
+                                  text: 'COMPETENCIAS',
+                                  style: 'sectionTitleWithBackdrop',
+                                  margin: [10, -15, 0, 12]
+                                }
+                              ],
+                              margin: [0, 20, 0, 12]
+                            },
+                            {
+                              ul: this.formData.competences
+                                .filter(comp => comp.name)
+                                .map(comp => ({
+                                  text: comp.name,
+                                  style: 'body',
+                                  margin: [0, 0, 0, 4]
+                                })),
+                              style: 'body',
+                              margin: [0, 0, 0, 15]
+                            }
+                          ] : []),
+                          
+                          // Habilidades CON BACKDROP AJUSTADO
+                          ...(this.formData.skills.filter(skill => skill.name).length > 0 ? [
+                            {
+                              stack: [
+                                // Fondo cuadrado ajustado para el título
+                                {
+                                  canvas: [
+                                    {
+                                      type: 'rect',
+                                      x: 0,
+                                      y: 0,
+                                      w: 200, // Ancho ajustado para columna derecha
+                                      h: 20,
+                                      color: '#34495e'
+                                    }
+                                  ]
+                                },
+                                // Título sobre el fondo
+                                {
+                                  text: 'HABILIDADES',
+                                  style: 'sectionTitleWithBackdrop',
+                                  margin: [10, -15, 0, 12]
+                                }
+                              ],
+                              margin: [0, 20, 0, 12]
+                            },
+                            {
+                              stack: this.formData.skills
+                                .filter(skill => skill.name)
+                                .map(skill => ({
+                                  columns: [
+                                    {
+                                      width: '60%',
+                                      text: skill.name,
+                                      style: 'body'
+                                    },
+                                    {
+                                      width: '40%',
+                                      text: `${'★'.repeat(skill.rating)}${'☆'.repeat(5 - skill.rating)}`,
+                                      style: 'stars'
+                                    }
+                                  ],
+                                  margin: [0, 0, 0, 6]
+                                }))
+                            }
+                          ] : [])
+                        ].filter(Boolean),
+                        margin: [20, 10, 40, 30]
+                      }
+                    ]
+                  }
+                ],
+                margin: [0, -20, 0, 0]
+              }
+            ]
+          }
+        ].filter(Boolean),
+        
+        styles: {
+          // Estilos para texto sobre fondo oscuro
+          header: {
+            fontSize: 24,
+            bold: true,
+            color: '#ffffff'
+          },
+          subheader: {
+            fontSize: 16,
+            bold: true,
+            color: '#e74c3c'
+          },
+          sectionTitleLight: {
+            fontSize: 14,
+            bold: true,
+            color: '#ffffff',
+            margin: [0, 0, 0, 8]
+          },
+          profileText: {
+            fontSize: 10,
+            color: '#ecf0f1',
+            lineHeight: 1.4
+          },
+          contactInfo: {
+            fontSize: 10,
+            color: '#ffffff',
+            lineHeight: 1.3
+          },
+          
+          // NUEVO ESTILO: Títulos con backdrop cuadrado
+          sectionTitleWithBackdrop: {
+            fontSize: 14,
+            bold: true,
+            color: '#ffffff',
+            margin: [0, 2, 0, 0]
+          },
+          
+          // Estilos para contenido sobre fondo blanco
+          itemTitle: {
+            fontSize: 12,
+            bold: true,
+            color: '#2c3e50'
+          },
+          itemSubtitle: {
+            fontSize: 10,
+            color: '#7f8c8d',
+            italics: true
+          },
+          body: {
+            fontSize: 10,
+            color: '#34495e',
+            lineHeight: 1.4
+          },
+          bodyItalic: {
+            fontSize: 10,
+            color: '#34495e',
+            lineHeight: 1.4,
+            italics: true
+          },
+          icon: {
+            fontSize: 8,
+            color: '#27ae60'
+          },
+          stars: {
+            fontSize: 10,
+            color: '#f39c12',
+            bold: true
+          }
+        },
+        
+        defaultStyle: {
+          font: 'Roboto',
+          fontSize: 10,
+          lineHeight: 1.4
+        }
+      };
+
+      return docDefinition;
     }
   }
 }
@@ -906,28 +1607,22 @@ export default {
   gap: 0.8rem !important;
 }
 .cv-layout {
-  display: block;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+  grid-auto-rows: min-content;
 }
 .form-column {
-  margin-bottom: 3.5rem;
+  margin-bottom: 0;
 }
 .preview-column {
-  margin-top: 2.5rem;
+  margin-top: 0;
 }
 @media (max-width: 768px) {
   .header-grid { grid-template-columns: 1fr; }
   .header-right { align-items: flex-start; }
 }
-
-/* Estilos específicos para el template gris oscuro */
-/* CABECERA CON PERFIL Y DATOS PERSONALES */
-/* Ajuste del CSS: header-main encima, luego header-grid */
-/* LAYOUT PRINCIPAL DE 2 COLUMNAS */
-/* ESTILOS GENERALES DE SECCIONES */
-/* ESTILOS PARA LA COLUMNA IZQUIERDA (Experiencia y Formación) */
-/* ESTILOS PARA LA COLUMNA DERECHA (Idiomas y Competencias) */
-/* Responsive para el template */
-
 
 /* Header */
 header {
@@ -1069,8 +1764,12 @@ nav {
 
 /* Layout principal */
 .cv-layout {
-  display: block;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
   margin-bottom: 2rem;
+  grid-auto-rows: min-content;
 }
 
 /* Columna del formulario */
@@ -1327,11 +2026,11 @@ nav {
   background: var(--accent, #ffffff);
   border-radius: var(--border-radius, 12px);
   box-shadow: var(--shadow, 0 2px 10px rgba(0, 0, 0, 0.1));
-  overflow: hidden;
+  overflow: visible;
 }
 
 .preview-container {
-  height: 100%;
+  min-height: fit-content;
   display: flex;
   flex-direction: column;
 }
@@ -1378,8 +2077,9 @@ nav {
 .preview-content {
   flex: 1;
   padding: 2rem;
-  overflow-y: auto;
+  overflow-y: visible;
   background: var(--background, #ecf0f1);
+  min-height: fit-content;
 }
 
 /* Template del CV */
@@ -1524,10 +2224,6 @@ nav {
 @media (max-width: 1024px) {
   .cv-layout {
     grid-template-columns: 1fr;
-  }
-  
-  .preview-column {
-    order: -1;
   }
 }
 
@@ -1698,6 +2394,610 @@ nav {
 @media (max-width: 768px) {
   .cv-content-dark {
     grid-template-columns: 1fr;
+  }
+}
+
+.rating-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rating-dropdown {
+  padding: 0.75rem;
+  border: 2px solid var(--background, #ecf0f1);
+  border-radius: var(--border-radius, 6px);
+  font-size: var(--paragraph-size, 16px);
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+  font-family: var(--secondary-font, Arial, sans-serif);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.rating-dropdown:focus {
+  outline: none;
+  border-color: var(--secondary, #e74c3c);
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.rating-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--background, #f8f9fa);
+  border-radius: var(--border-radius, 4px);
+  font-size: 0.9rem;
+}
+
+.stars-preview {
+  color: #f39c12;
+  font-size: 1.1rem;
+}
+
+.rating-text {
+  color: var(--text, #666666);
+  font-size: 0.8rem;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+@media (max-width: 768px) {
+  .rating-selector {
+    gap: 0.3rem;
+  }
+  
+  .rating-dropdown {
+    font-size: 14px;
+  }
+  
+  .rating-preview {
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
+  }
+}
+
+/* ESTILOS PARA MEJORAR LA LEGIBILIDAD DE TEXTOS LARGOS EN PREVIEW */
+.preview-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Texto del perfil profesional */
+.profile-text {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.6;
+  text-align: justify;
+  font-size: 0.95rem;
+}
+
+/* Descripciones de experiencia laboral */
+.exp-description {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.6;
+  text-align: justify;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  padding-left: 1.5rem;
+}
+
+/* Textos de formación académica */
+.edu-institution,
+.edu-specialization {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+  padding-left: 1.5rem;
+}
+
+/* Ajustes específicos para la estructura de columnas */
+.cv-left-column {
+  min-width: 0; /* Permite que el contenido se ajuste */
+}
+
+.cv-right-column {
+  min-width: 0; /* Permite que el contenido se ajuste */
+}
+
+/* Mejoras en los contenedores de texto */
+.cv-section-dark p,
+.cv-section-dark span:not(.star-rating) {
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+/* Ajustes para los items de experiencia y educación */
+.experience-item-dark,
+.education-item-dark {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Mejoras en la cabecera */
+.header-left {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.header-right {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* Ajustes para textos muy largos en datos de contacto */
+.header-right span {
+  word-break: break-all;
+  font-size: 0.9rem;
+}
+
+/* Estilos para mejorar la legibilidad en móviles */
+@media (max-width: 768px) {
+  .profile-text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  
+  .exp-description {
+    font-size: 0.85rem;
+    padding-left: 1rem;
+  }
+  
+  .header-right span {
+    font-size: 0.85rem;
+    word-break: break-word;
+  }
+  
+  .cv-content-dark {
+    gap: 1rem;
+  }
+}
+
+/* Estilos para la vista previa del CV */
+.cv-template-dark {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Asegurar que los textos no se desborden */
+.cv-header-dark *,
+.cv-content-dark * {
+  max-width: 100%;
+}
+
+/* Estilos específicos para listas */
+.competences-list-dark {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.competence-item-dark {
+  background: #f8f9fa;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  word-break: break-word;
+  border: 1px solid #e9ecef;
+}
+
+/* Mejoras para habilidades con estrellas */
+.skills-list-dark {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.skill-item-dark {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.skill-name {
+  word-break: break-word;
+  flex: 1;
+  margin-right: 1rem;
+}
+
+/* Ajustes para la grid de cabecera en móviles */
+@media (max-width: 768px) {
+  .header-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .header-right {
+    align-items: flex-start;
+  }
+  
+  .competence-item-dark {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 0;
+  }
+}
+
+/* Mejoras para la estructura general */
+.cv-content-dark {
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .cv-content-dark {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Asegurar que los textos no se salgan en impresión */
+@media print {
+  .profile-text,
+  .exp-description,
+  .edu-institution,
+  .edu-specialization {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+}
+
+.char-count {
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--text, #666666);
+  margin-top: 0.25rem;
+  font-family: var(--secondary-font, Arial, sans-serif);
+  transition: color 0.3s;
+}
+
+.char-limit-warning {
+  border-color: #f39c12 !important;
+  box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.1) !important;
+}
+
+.char-limit-exceeded {
+  color: #e74c3c !important;
+  font-weight: bold;
+}
+
+.char-error {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+/* Estilo cuando se acerca al límite */
+.char-count.warning {
+  color: #f39c12;
+  font-weight: 600;
+}
+
+/* Estilo cuando excede el límite */
+.char-count.error {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+/* Mejora visual para el textarea cuando está cerca del límite */
+.form-group textarea.char-limit-warning {
+  border-color: #f39c12;
+  background-color: #fffaf0;
+}
+
+.form-group textarea:invalid {
+  border-color: #e74c3c;
+}
+
+.char-counter-container {
+  margin-top: 0.5rem;
+}
+
+/* Barra de progreso */
+.char-progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.char-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.progress-safe {
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+
+.progress-warning {
+  background: linear-gradient(90deg, #f39c12, #f1c40f);
+  animation: pulse-warning 1.5s infinite;
+}
+
+.progress-danger {
+  background: linear-gradient(90deg, #e74c3c, #c0392b);
+  animation: pulse-danger 1s infinite;
+}
+.photo-upload-container {
+  border: 2px dashed var(--background, #ecf0f1);
+  border-radius: var(--border-radius, 8px);
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s;
+  margin-bottom: 1rem;
+}
+
+.photo-upload-container:hover {
+  border-color: var(--secondary, #e74c3c);
+}
+
+.photo-preview {
+  position: relative;
+  display: inline-block;
+}
+
+.photo-preview-img {
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid var(--secondary, #e74c3c);
+}
+
+.remove-photo-btn {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--secondary, #e74c3c);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.photo-input {
+  display: none;
+}
+
+.photo-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 1rem;
+}
+
+.upload-icon {
+  font-size: 2rem;
+}
+
+.upload-text {
+  font-weight: 600;
+  color: var(--primary, #2c3e50);
+}
+
+.upload-hint {
+  font-size: 0.8rem;
+  color: var(--text, #666666);
+}
+
+/* Vista previa - Foto de perfil */
+.header-main-with-photo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.photo-container {
+  flex-shrink: 0;
+}
+
+.profile-photo {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid var(--secondary, #e74c3c);
+}
+
+.header-text-center {
+  flex: 1;
+  text-align: center;
+}
+
+.photo-placeholder {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+/* Responsive para la foto */
+@media (max-width: 768px) {
+  .header-main-with-photo {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .profile-photo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .photo-placeholder {
+    display: none;
+  }
+  
+  .photo-preview-img {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* Contador de caracteres */
+.char-count {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.count-safe {
+  background-color: #d5f4e6;
+  color: #27ae60;
+  border: 1px solid #27ae60;
+}
+
+.count-warning {
+  background-color: #fef5e7;
+  color: #f39c12;
+  border: 1px solid #f39c12;
+  animation: subtle-pulse 2s infinite;
+}
+
+.count-danger {
+  background-color: #fdeaea;
+  color: #e74c3c;
+  border: 1px solid #e74c3c;
+  animation: shake 0.5s ease-in-out;
+}
+
+.char-number {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.char-message {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* ESTILOS DEL TEXTFIELD - SIN FONDO, SOLO BORDES */
+.char-limit-safe {
+  border-color: #27ae60 !important;
+  box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.1) !important;
+  /* Sin cambio de fondo - se mantiene el original */
+}
+
+.char-limit-warning {
+  border-color: #f39c12 !important;
+  box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.2) !important;
+  animation: border-pulse 2s infinite;
+  /* Sin cambio de fondo - se mantiene el original */
+}
+
+.char-limit-danger {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.3) !important;
+  animation: border-shake 0.5s ease-in-out;
+  /* Sin cambio de fondo - se mantiene el original */
+}
+
+/* Animaciones */
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes pulse-danger {
+  0%, 100% { 
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  50% { 
+    transform: scaleX(1.02);
+    opacity: 0.8;
+  }
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.1);
+  }
+  50% { 
+    transform: scale(1.01);
+    box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.1);
+  }
+}
+
+@keyframes border-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.2);
+  }
+  50% { 
+    box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.3);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+@keyframes border-shake {
+  0%, 100% { 
+    transform: translateX(0);
+    box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.3);
+  }
+  25% { 
+    transform: translateX(-2px);
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.4);
+  }
+  75% { 
+    transform: translateX(2px);
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.4);
+  }
+}
+
+/* Estilos para estados de enfoque mejorados */
+.form-group textarea:focus.char-limit-safe {
+  border-color: #27ae60 !important;
+  box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2) !important;
+}
+
+.form-group textarea:focus.char-limit-warning {
+  border-color: #f39c12 !important;
+  box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.3) !important;
+}
+
+.form-group textarea:focus.char-limit-danger {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.4) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .char-count {
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
+  }
+  
+  .char-progress-bar {
+    height: 4px;
   }
 }
 </style>
