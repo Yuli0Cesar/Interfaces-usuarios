@@ -1034,15 +1034,200 @@ export default {
       }
     },
 
-    // Construir el documento PDF con backdrop cuadrado ajustado
     buildPDFDocument() {
+      // Obtener colores de las variables CSS globales
+      const getCSSVariable = (variableName, fallback) => {
+        if (typeof window !== 'undefined') {
+          const computedStyle = getComputedStyle(document.documentElement);
+          return computedStyle.getPropertyValue(variableName).trim() || fallback;
+        }
+        return fallback;
+      };
+
+      // Colores principales desde variables CSS
+      const primaryColor = getCSSVariable('--primary', '#2c3e50');
+      const secondaryColor = getCSSVariable('--secondary', '#e74c3c');
+      const backgroundColor = getCSSVariable('--background', '#ecf0f1');
+      const accentColor = getCSSVariable('--accent', '#ffffff');
+      const textColor = getCSSVariable('--text', '#2c3e50');
+      
+      // Colores derivados para mejor contraste en PDF
+      const headerBgColor = primaryColor;
+      const headerTextColor = accentColor;
+      const sectionTitleColor = primaryColor;
+      const bodyTextColor = textColor;
+      const highlightColor = secondaryColor;
+
       const personalInfo = this.formData.personalInfo;
       
+      // Función para crear secciones con títulos con fondo
+      const createSection = (title, content, columnWidth) => {
+        return [
+          {
+            stack: [
+              {
+                canvas: [
+                  {
+                    type: 'rect',
+                    x: 0,
+                    y: 0,
+                    w: columnWidth,
+                    h: 20,
+                    color: headerBgColor
+                  }
+                ]
+              },
+              {
+                text: title,
+                style: 'sectionTitleWithBackdrop',
+                margin: [10, -15, 0, 8]
+              }
+            ],
+            margin: [0, 10, 0, 8]
+          },
+          content
+        ];
+      };
+
+      // Construir experiencia laboral
+      const experienceContent = this.formData.experience
+        .filter(exp => exp.company && exp.company.trim() !== '')
+        .flatMap((exp, index) => [
+          {
+            columns: [
+              {
+                width: 20,
+                text: '•',
+                style: 'bullet',
+                margin: [0, 2, 5, 0]
+              },
+              {
+                width: '*',
+                stack: [
+                  {
+                    text: exp.company,
+                    style: 'itemTitle',
+                    margin: [0, 0, 0, 2]
+                  },
+                  exp.period ? {
+                    text: exp.period,
+                    style: 'itemSubtitle',
+                    margin: [0, 0, 0, 2]
+                  } : null,
+                  exp.description ? {
+                    text: exp.description,
+                    style: 'body',
+                    margin: [0, 0, 0, 6]
+                  } : null
+                ].filter(Boolean)
+              }
+            ],
+            margin: [0, 0, 0, 6]
+          }
+        ]);
+
+      // Construir formación académica
+      const educationContent = this.formData.education
+        .filter(edu => edu.degree && edu.degree.trim() !== '')
+        .flatMap((edu, index) => [
+          {
+            columns: [
+              {
+                width: 20,
+                text: '•',
+                style: 'bullet',
+                margin: [0, 2, 5, 0]
+              },
+              {
+                width: '*',
+                stack: [
+                  {
+                    text: edu.degree,
+                    style: 'itemTitle',
+                    margin: [0, 0, 0, 2]
+                  },
+                  edu.institution ? {
+                    text: edu.institution,
+                    style: 'body',
+                    margin: [0, 0, 0, 2]
+                  } : null,
+                  edu.period ? {
+                    text: edu.period,
+                    style: 'itemSubtitle',
+                    margin: [0, 0, 0, 2]
+                  } : null,
+                  edu.specialization ? {
+                    text: `Especialización: ${edu.specialization}`,
+                    style: 'bodyItalic',
+                    margin: [0, 0, 0, 6]
+                  } : null
+                ].filter(Boolean)
+              }
+            ],
+            margin: [0, 0, 0, 6]
+          }
+        ]);
+
+      // Construir idiomas
+      const languagesContent = {
+        stack: this.formData.languages
+          .filter(lang => lang.name && lang.name.trim() !== '')
+          .map(lang => ({
+            columns: [
+              {
+                width: 20,
+                text: '•',
+                style: 'bullet',
+                margin: [0, 2, 5, 0]
+              },
+              {
+                width: '*',
+                text: lang.name,
+                style: 'body'
+              }
+            ],
+            margin: [0, 0, 0, 4]
+          }))
+      };
+
+      // Construir competencias
+      const competencesContent = {
+        ul: this.formData.competences
+          .filter(comp => comp.name && comp.name.trim() !== '')
+          .map(comp => ({
+            text: comp.name,
+            style: 'body',
+            margin: [0, 0, 0, 2]
+          })),
+        style: 'body',
+        margin: [0, 0, 0, 8]
+      };
+
+      // Construir habilidades
+      const skillsContent = {
+        stack: this.formData.skills
+          .filter(skill => skill.name && skill.name.trim() !== '')
+          .map(skill => ({
+            columns: [
+              {
+                width: '60%',
+                text: skill.name,
+                style: 'body'
+              },
+              {
+                width: '40%',
+                text: `${'★'.repeat(skill.rating)}${'☆'.repeat(5 - skill.rating)}`,
+                style: 'stars'
+              }
+            ],
+            margin: [0, 0, 0, 3]
+          }))
+      };
+
       const docDefinition = {
         pageSize: 'A4',
-        pageMargins: [0, 0, 0, 0],
+        pageMargins: [0, 0, 0, 20],
         background: [
-          // Fondo gris oscuro para la cabecera
           {
             canvas: [
               {
@@ -1050,477 +1235,239 @@ export default {
                 x: 0,
                 y: 0,
                 w: 595.28,
-                h: 220,
-                color: '#2c3e50'
+                h: 160,
+                color: headerBgColor
               }
             ]
           }
         ],
         content: [
-          // CONTENIDO PRINCIPAL
+          // CONTENIDO SOBRE EL HEADER
           {
             stack: [
-              // CABECERA CON FONDO OSCURO
+              // PRIMERA FILA: Imagen, Nombre/Título, Datos contacto
               {
-                stack: [
-                  // Contenedor con foto, nombre y título
+                columns: [
+                  // IMAGEN A LA IZQUIERDA
                   {
-                    columns: [
-                      // Foto a la izquierda (si existe)
+                    width: '20%',
+                    stack: [
                       this.formData.personalInfo.photo ? {
-                        width: 60,
-                        stack: [
-                          {
-                            image: this.formData.personalInfo.photo,
-                            width: 50,
-                            height: 50,
-                            margin: [0, 0, 0, 0]
-                          }
-                        ],
-                        margin: [40, 30, 0, 0]
-                      } : { width: 60, text: '' }, // Espacio reservado si no hay foto
-                      
-                      // Nombre y título centrados
-                      {
-                        width: '*',
-                        stack: [
-                          {
-                            text: personalInfo.fullName || 'Nombre Completo',
-                            style: 'header',
-                            alignment: 'center',
-                            margin: [0, 0, 0, 5]
-                          },
-                          {
-                            text: personalInfo.title || 'Título Profesional',
-                            style: 'subheader',
-                            alignment: 'center',
-                            margin: [0, 0, 0, 25]
-                          }
-                        ]
-                      },
-                      
-                      // Espacio a la derecha para balance
-                      { width: 60, text: '' }
+                        image: this.formData.personalInfo.photo,
+                        width: 70,
+                        height: 70,
+                        margin: [40, 25, 0, 0]
+                      } : {
+                        text: '',
+                        width: 70,
+                        height: 70,
+                        margin: [40, 25, 0, 0]
+                      }
                     ]
                   },
                   
-                  // Grid de dos columnas para perfil y contacto
+                  // NOMBRE Y TÍTULO AL CENTRO
                   {
-                    columns: [
-                      // Columna izquierda: Perfil profesional
+                    width: '50%',
+                    stack: [
                       {
-                        width: '60%',
-                        stack: [
-                          this.formData.profile ? {
-                            text: 'MI PERFIL',
-                            style: 'sectionTitleLight',
-                            margin: [0, 0, 0, 8]
-                          } : null,
-                          
-                          this.formData.profile ? {
-                            text: this.formData.profile,
-                            style: 'profileText',
-                            margin: [0, 0, 0, 0]
-                          } : null
-                        ].filter(Boolean)
+                        text: personalInfo.fullName.toUpperCase() || 'NOMBRE COMPLETO',
+                        style: 'headerName',
+                        alignment: 'center',
+                        margin: [0, 30, 0, 3]
                       },
-                      
-                      // Columna derecha: Datos de contacto
                       {
-                        width: '40%',
-                        stack: [
-                          personalInfo.phone ? {
-                            text: `📞 ${personalInfo.phone}`,
-                            style: 'contactInfo',
-                            margin: [0, 0, 0, 8]
-                          } : null,
-                          
-                          personalInfo.email ? {
-                            text: `✉️ ${personalInfo.email}`,
-                            style: 'contactInfo',
-                            margin: [0, 0, 0, 8]
-                          } : null,
-                          
-                          personalInfo.website ? {
-                            text: `🌐 ${personalInfo.website}`,
-                            style: 'contactInfo',
-                            margin: [0, 0, 0, 8]
-                          } : null,
-                          
-                          personalInfo.location ? {
-                            text: `📍 ${personalInfo.location}`,
-                            style: 'contactInfo',
-                            margin: [0, 0, 0, 8]
-                          } : null
-                        ].filter(Boolean)
+                        text: personalInfo.title || 'TÍTULO PROFESIONAL',
+                        style: 'headerTitle',
+                        alignment: 'center',
+                        margin: [0, 0, 0, 0]
                       }
-                    ],
-                    margin: [40, 0, 40, 0]
+                    ]
+                  },
+                  
+                  // DATOS CONTACTO A LA DERECHA
+                  {
+                    width: '30%',
+                    stack: [
+                      personalInfo.email ? {
+                        text: `📧 ${personalInfo.email}`,
+                        style: 'contactInfo',
+                        margin: [0, 45, 40, 2]
+                      } : null,
+                      
+                      personalInfo.phone ? {
+                        text: `📞 ${personalInfo.phone}`,
+                        style: 'contactInfo',
+                        margin: [0, 0, 40, 2]
+                      } : null,
+                      
+                      personalInfo.location ? {
+                        text: `📍 ${personalInfo.location}`,
+                        style: 'contactInfo',
+                        margin: [0, 0, 40, 2]
+                      } : null,
+                      
+                      personalInfo.website ? {
+                        text: `🌐 ${personalInfo.website}`,
+                        style: 'contactInfo',
+                        margin: [0, 0, 40, 2]
+                      } : null
+                    ].filter(Boolean)
                   }
                 ]
               },
               
-              // CONTENIDO PRINCIPAL CON TÍTULOS CON BACKDROP AJUSTADO
-              {
+              // PERFIL PROFESIONAL
+              this.formData.profile ? {
                 stack: [
                   {
-                    columns: [
-                      {
-                        width: '60%',
-                        stack: [
-                          // Experiencia Laboral CON BACKDROP AJUSTADO
-                          ...(this.formData.experience.filter(exp => exp.company).length > 0 ? [
-                            {
-                              stack: [
-                                // Fondo cuadrado ajustado para el título
-                                {
-                                  canvas: [
-                                    {
-                                      type: 'rect',
-                                      x: 0,
-                                      y: 0,
-                                      w: 320, // Ancho ajustado para columna izquierda
-                                      h: 20,
-                                      color: '#34495e'
-                                    }
-                                  ]
-                                },
-                                // Título sobre el fondo
-                                {
-                                  text: 'EXPERIENCIA LABORAL',
-                                  style: 'sectionTitleWithBackdrop',
-                                  margin: [10, -15, 0, 12]
-                                }
-                              ],
-                              margin: [0, 25, 0, 12]
-                            },
-                            ...this.formData.experience.filter(exp => exp.company).flatMap((exp, index) => [
-                              {
-                                columns: [
-                                  {
-                                    width: 20,
-                                    text: '✅',
-                                    style: 'icon',
-                                    margin: [0, 2, 5, 0]
-                                  },
-                                  {
-                                    width: '*',
-                                    stack: [
-                                      {
-                                        text: exp.company,
-                                        style: 'itemTitle',
-                                        margin: [0, 0, 0, 2]
-                                      },
-                                      exp.period ? {
-                                        text: exp.period,
-                                        style: 'itemSubtitle',
-                                        margin: [0, 0, 0, 5]
-                                      } : null,
-                                      exp.description ? {
-                                        text: exp.description,
-                                        style: 'body',
-                                        margin: [0, 0, 0, 15]
-                                      } : { text: '', margin: [0, 0, 0, 15] }
-                                    ].filter(Boolean)
-                                  }
-                                ],
-                                margin: [0, 0, 0, 12]
-                              }
-                            ])
-                          ] : []),
-                          
-                          // Formación Académica CON BACKDROP AJUSTADO
-                          ...(this.formData.education.filter(edu => edu.degree).length > 0 ? [
-                            {
-                              stack: [
-                                // Fondo cuadrado ajustado para el título
-                                {
-                                  canvas: [
-                                    {
-                                      type: 'rect',
-                                      x: 0,
-                                      y: 0,
-                                      w: 320, // Ancho ajustado para columna izquierda
-                                      h: 20,
-                                      color: '#34495e'
-                                    }
-                                  ]
-                                },
-                                // Título sobre el fondo
-                                {
-                                  text: 'FORMACIÓN ACADÉMICA',
-                                  style: 'sectionTitleWithBackdrop',
-                                  margin: [10, -15, 0, 12]
-                                }
-                              ],
-                              margin: [0, 20, 0, 12]
-                            },
-                            ...this.formData.education.filter(edu => edu.degree).flatMap((edu, index) => [
-                              {
-                                columns: [
-                                  {
-                                    width: 20,
-                                    text: '✅',
-                                    style: 'icon',
-                                    margin: [0, 2, 5, 0]
-                                  },
-                                  {
-                                    width: '*',
-                                    stack: [
-                                      {
-                                        text: edu.degree,
-                                        style: 'itemTitle',
-                                        margin: [0, 0, 0, 2]
-                                      },
-                                      edu.institution ? {
-                                        text: edu.institution,
-                                        style: 'body',
-                                        margin: [0, 0, 0, 2]
-                                      } : null,
-                                      edu.period ? {
-                                        text: edu.period,
-                                        style: 'itemSubtitle',
-                                        margin: [0, 0, 0, 2]
-                                      } : null,
-                                      edu.specialization ? {
-                                        text: edu.specialization,
-                                        style: 'bodyItalic',
-                                        margin: [0, 0, 0, 15]
-                                      } : { text: '', margin: [0, 0, 0, 15] }
-                                    ].filter(Boolean)
-                                  }
-                                ],
-                                margin: [0, 0, 0, 12]
-                              }
-                            ])
-                          ] : [])
-                        ].filter(Boolean),
-                        margin: [40, 10, 20, 30]
-                      },
-                      
-                      // COLUMNA DERECHA CON TÍTULOS CON BACKDROP AJUSTADO
-                      {
-                        width: '40%',
-                        stack: [
-                          // Idiomas CON BACKDROP AJUSTADO
-                          ...(this.formData.languages.filter(lang => lang.name).length > 0 ? [
-                            {
-                              stack: [
-                                // Fondo cuadrado ajustado para el título
-                                {
-                                  canvas: [
-                                    {
-                                      type: 'rect',
-                                      x: 0,
-                                      y: 0,
-                                      w: 200, // Ancho ajustado para columna derecha
-                                      h: 20,
-                                      color: '#34495e'
-                                    }
-                                  ]
-                                },
-                                // Título sobre el fondo
-                                {
-                                  text: 'IDIOMAS',
-                                  style: 'sectionTitleWithBackdrop',
-                                  margin: [10, -15, 0, 12]
-                                }
-                              ],
-                              margin: [0, 25, 0, 12]
-                            },
-                            {
-                              stack: this.formData.languages
-                                .filter(lang => lang.name)
-                                .map(lang => ({
-                                  columns: [
-                                    {
-                                      width: 20,
-                                      text: '✅',
-                                      style: 'icon',
-                                      margin: [0, 2, 5, 0]
-                                    },
-                                    {
-                                      width: '*',
-                                      text: lang.name,
-                                      style: 'body'
-                                    }
-                                  ],
-                                  margin: [0, 0, 0, 8]
-                                }))
-                            }
-                          ] : []),
-                          
-                          // Competencias CON BACKDROP AJUSTADO
-                          ...(this.formData.competences.filter(comp => comp.name).length > 0 ? [
-                            {
-                              stack: [
-                                // Fondo cuadrado ajustado para el título
-                                {
-                                  canvas: [
-                                    {
-                                      type: 'rect',
-                                      x: 0,
-                                      y: 0,
-                                      w: 200, // Ancho ajustado para columna derecha
-                                      h: 20,
-                                      color: '#34495e'
-                                    }
-                                  ]
-                                },
-                                // Título sobre el fondo
-                                {
-                                  text: 'COMPETENCIAS',
-                                  style: 'sectionTitleWithBackdrop',
-                                  margin: [10, -15, 0, 12]
-                                }
-                              ],
-                              margin: [0, 20, 0, 12]
-                            },
-                            {
-                              ul: this.formData.competences
-                                .filter(comp => comp.name)
-                                .map(comp => ({
-                                  text: comp.name,
-                                  style: 'body',
-                                  margin: [0, 0, 0, 4]
-                                })),
-                              style: 'body',
-                              margin: [0, 0, 0, 15]
-                            }
-                          ] : []),
-                          
-                          // Habilidades CON BACKDROP AJUSTADO
-                          ...(this.formData.skills.filter(skill => skill.name).length > 0 ? [
-                            {
-                              stack: [
-                                // Fondo cuadrado ajustado para el título
-                                {
-                                  canvas: [
-                                    {
-                                      type: 'rect',
-                                      x: 0,
-                                      y: 0,
-                                      w: 200, // Ancho ajustado para columna derecha
-                                      h: 20,
-                                      color: '#34495e'
-                                    }
-                                  ]
-                                },
-                                // Título sobre el fondo
-                                {
-                                  text: 'HABILIDADES',
-                                  style: 'sectionTitleWithBackdrop',
-                                  margin: [10, -15, 0, 12]
-                                }
-                              ],
-                              margin: [0, 20, 0, 12]
-                            },
-                            {
-                              stack: this.formData.skills
-                                .filter(skill => skill.name)
-                                .map(skill => ({
-                                  columns: [
-                                    {
-                                      width: '60%',
-                                      text: skill.name,
-                                      style: 'body'
-                                    },
-                                    {
-                                      width: '40%',
-                                      text: `${'★'.repeat(skill.rating)}${'☆'.repeat(5 - skill.rating)}`,
-                                      style: 'stars'
-                                    }
-                                  ],
-                                  margin: [0, 0, 0, 6]
-                                }))
-                            }
-                          ] : [])
-                        ].filter(Boolean),
-                        margin: [20, 10, 40, 30]
-                      }
-                    ]
+                    text: 'PERFIL PROFESIONAL',
+                    style: 'profileSectionTitle',
+                    margin: [40, 10, 40, 4]
+                  },
+                  {
+                    text: this.formData.profile,
+                    style: 'profileText',
+                    alignment: 'justify',
+                    margin: [40, 0, 40, 0]
                   }
-                ],
-                margin: [0, -20, 0, 0]
+                ]
+              } : null
+            ],
+            margin: [0, 0, 0, 0]
+          },
+
+          // CONTENIDO PRINCIPAL DEL CV - MUY CERCA DEL HEADER
+          {
+            stack: [
+              {
+                columns: [
+                  // COLUMNA IZQUIERDA (60%)
+                  {
+                    width: '60%',
+                    stack: [
+                      ...(experienceContent.length > 0 ? 
+                        createSection('EXPERIENCIA LABORAL', experienceContent, 320) : 
+                        []
+                      ),
+                      
+                      ...(educationContent.length > 0 ? 
+                        createSection('FORMACIÓN ACADÉMICA', educationContent, 320) : 
+                        []
+                      )
+                    ].filter(Boolean),
+                    margin: [40, 0, 20, 0]
+                  },
+                  
+                  // COLUMNA DERECHA (40%)
+                  {
+                    width: '40%',
+                    stack: [
+                      ...(this.formData.languages.filter(lang => lang.name && lang.name.trim() !== '').length > 0 ? 
+                        createSection('IDIOMAS', languagesContent, 180) : 
+                        []
+                      ),
+                      
+                      ...(this.formData.competences.filter(comp => comp.name && comp.name.trim() !== '').length > 0 ? 
+                        createSection('COMPETENCIAS', competencesContent, 180) : 
+                        []
+                      ),
+                      
+                      ...(this.formData.skills.filter(skill => skill.name && skill.name.trim() !== '').length > 0 ? 
+                        createSection('HABILIDADES', skillsContent, 180) : 
+                        []
+                      )
+                    ].filter(Boolean),
+                    margin: [20, 0, 40, 0]
+                  }
+                ]
               }
-            ]
+            ],
+            margin: [0, 165, 0, 0]
           }
-        ].filter(Boolean),
+        ],
         
         styles: {
-          // Estilos para texto sobre fondo oscuro
-          header: {
-            fontSize: 24,
+          headerName: {
+            fontSize: 20,
             bold: true,
-            color: '#ffffff'
+            color: headerTextColor,
+            margin: [0, 0, 0, 0]
           },
-          subheader: {
-            fontSize: 16,
-            bold: true,
-            color: '#e74c3c'
-          },
-          sectionTitleLight: {
+          headerTitle: {
             fontSize: 14,
             bold: true,
-            color: '#ffffff',
-            margin: [0, 0, 0, 8]
-          },
-          profileText: {
-            fontSize: 10,
-            color: '#ecf0f1',
-            lineHeight: 1.4
+            color: highlightColor,
+            margin: [0, 0, 0, 0]
           },
           contactInfo: {
-            fontSize: 10,
-            color: '#ffffff',
-            lineHeight: 1.3
+            fontSize: 9,
+            color: headerTextColor,
+            lineHeight: 1.2,
+            margin: [0, 0, 0, 0]
           },
-          
-          // NUEVO ESTILO: Títulos con backdrop cuadrado
-          sectionTitleWithBackdrop: {
-            fontSize: 14,
-            bold: true,
-            color: '#ffffff',
-            margin: [0, 2, 0, 0]
-          },
-          
-          // Estilos para contenido sobre fondo blanco
-          itemTitle: {
+          profileSectionTitle: {
             fontSize: 12,
             bold: true,
-            color: '#2c3e50'
+            color: headerTextColor,
+            margin: [0, 0, 0, 0]
+          },
+          profileText: {
+            fontSize: 9,
+            color: headerTextColor,
+            lineHeight: 1.3,
+            margin: [0, 0, 0, 0]
+          },
+          sectionTitleWithBackdrop: {
+            fontSize: 11,
+            bold: true,
+            color: headerTextColor,
+            margin: [0, 2, 0, 0]
+          },
+          itemTitle: {
+            fontSize: 10,
+            bold: true,
+            color: sectionTitleColor,
+            margin: [0, 0, 0, 0]
           },
           itemSubtitle: {
-            fontSize: 10,
+            fontSize: 8,
             color: '#7f8c8d',
-            italics: true
+            italics: true,
+            margin: [0, 0, 0, 0]
           },
           body: {
-            fontSize: 10,
-            color: '#34495e',
-            lineHeight: 1.4
+            fontSize: 8,
+            color: bodyTextColor,
+            lineHeight: 1.3,
+            margin: [0, 0, 0, 0]
           },
           bodyItalic: {
-            fontSize: 10,
-            color: '#34495e',
-            lineHeight: 1.4,
-            italics: true
-          },
-          icon: {
             fontSize: 8,
-            color: '#27ae60'
+            color: bodyTextColor,
+            lineHeight: 1.3,
+            italics: true,
+            margin: [0, 0, 0, 0]
+          },
+          bullet: {
+            fontSize: 10,
+            color: highlightColor,
+            bold: true,
+            margin: [0, 0, 0, 0]
           },
           stars: {
-            fontSize: 10,
+            fontSize: 8,
             color: '#f39c12',
-            bold: true
+            bold: true,
+            margin: [0, 0, 0, 0]
           }
         },
         
         defaultStyle: {
           font: 'Roboto',
-          fontSize: 10,
-          lineHeight: 1.4
+          fontSize: 9,
+          lineHeight: 1.2,
+          margin: [0, 0, 0, 0]
         }
       };
 
@@ -1534,94 +1481,6 @@ export default {
 .user-cv-container {
   min-height: 100vh;
   background: var(--background, #ecf0f1);
-}
-.cv-template-dark {
-  background: #fff;
-  color: #232323;
-  padding: 2rem;
-  border-radius: 8px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.5;
-}
-:root {
-  --background: #ecf0f1;
-  --secondary: #e74c3c;
-}
-.cv-header-dark {
-  background: var(--background, #ecf0f1);
-  color: #fff;
-  margin-bottom: 2rem;
-  border-bottom: 2px solid var(--secondary, #e74c3c);
-  padding-bottom: 1.5rem;
-  border-radius: 8px 8px 0 0;
-  padding-top: 1.2rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-}
-.cv-header-dark *, .cv-header-dark .header-main *, .cv-header-dark .header-left, .cv-header-dark .header-right { color: #fff !important; }
-.header-main h1 {
-  color: #111;
-  font-weight: 800;
-}
-.header-main p, .cv-title-dark {
-  color: #232323;
-  font-weight: 600;
-}
-.cv-header-dark .cv-title-dark {
-  color: var(--secondary, #e74c3c) !important;
-}
-.section-title-dark {
-  color: #222;
-  font-weight: 700;
-}
-.profile-section, .profile-section *, .header-left, .header-right, .header-main, .cv-header-dark, .skill-name, .language-name-dark {
-  color: #232323;
-}
-.cv-section-dark, .experience-item-dark, .education-item-dark, .language-item-dark, .competence-item-dark, .skill-item-dark, .profile-text {
-  color: #232323;
-}
-.header-right span {
-  color: #222;
-}
-.header-grid {
-  gap: 2rem;
-}
-.header-left, .header-right {
-  font-size: 1rem;
-}
-.profile-section .profile-text, .profile-text {
-  font-size: 1rem;
-}
-.cv-section-dark {
-  margin-bottom: 1.5rem !important;
-}
-.experience-item-dark, .education-item-dark, .language-item-dark, .competence-item-dark, .skill-item-dark {
-  padding: 1.2rem;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-}
-.cv-content-dark {
-  gap: 2rem;
-}
-.languages-list-dark, .competences-list-dark, .skills-list-dark {
-  gap: 0.8rem !important;
-}
-.cv-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  align-items: start;
-  grid-auto-rows: min-content;
-}
-.form-column {
-  margin-bottom: 0;
-}
-.preview-column {
-  margin-top: 0;
-}
-@media (max-width: 768px) {
-  .header-grid { grid-template-columns: 1fr; }
-  .header-right { align-items: flex-start; }
 }
 
 /* Header */
@@ -1769,7 +1628,6 @@ nav {
   gap: 2rem;
   align-items: start;
   margin-bottom: 2rem;
-  grid-auto-rows: min-content;
 }
 
 /* Columna del formulario */
@@ -1912,14 +1770,6 @@ nav {
   min-height: 100px;
 }
 
-.char-count {
-  text-align: right;
-  font-size: 0.8rem;
-  color: var(--text, #666666);
-  margin-top: 0.25rem;
-  font-family: var(--secondary-font, Arial, sans-serif);
-}
-
 /* Items de lista */
 .items-list {
   display: flex;
@@ -1962,22 +1812,6 @@ nav {
 
 .remove-btn:hover {
   background: var(--primary, #2c3e50);
-}
-
-/* Checkbox */
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--text, #666666);
-  cursor: pointer;
-  font-family: var(--secondary-font, Arial, sans-serif);
-}
-
-.checkbox-label input {
-  margin: 0;
 }
 
 /* Navegación */
@@ -2026,11 +1860,11 @@ nav {
   background: var(--accent, #ffffff);
   border-radius: var(--border-radius, 12px);
   box-shadow: var(--shadow, 0 2px 10px rgba(0, 0, 0, 0.1));
-  overflow: visible;
+  overflow: hidden;
 }
 
 .preview-container {
-  min-height: fit-content;
+  min-height: 800px;
   display: flex;
   flex-direction: column;
 }
@@ -2077,295 +1911,94 @@ nav {
 .preview-content {
   flex: 1;
   padding: 2rem;
-  overflow-y: visible;
+  overflow-y: auto;
   background: var(--background, #ecf0f1);
-  min-height: fit-content;
 }
 
-/* Template del CV */
-.cv-template {
-  background: var(--accent, #ffffff);
+/* Template del CV - VISTA PREVIA */
+.cv-template-dark {
+  background: #fff;
+  color: #232323;
   padding: 2rem;
-  border-radius: var(--border-radius, 8px);
-  box-shadow: var(--shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
-  color: var(--text, #2c3e50);
-  line-height: 1.6;
+  border-radius: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  min-height: 1000px;
 }
 
-.cv-header-preview {
-  text-align: center;
+.cv-header-dark {
+  background: #2c3e50;
+  color: #fff;
   margin-bottom: 2rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 2px solid var(--primary, #2c3e50);
+  border-bottom: 2px solid #e74c3c;
+  padding: 1.5rem;
+  border-radius: 8px 8px 0 0;
 }
 
-.cv-header-preview h1 {
-  color: var(--primary, #2c3e50);
-  margin: 0 0 0.5rem 0;
-  font-size: 2rem;
-  font-weight: 700;
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
-}
-
-.cv-title {
-  color: var(--secondary, #e74c3c);
-  font-size: 1.2rem;
-  font-weight: 500;
-  margin: 0 0 1rem 0;
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
-}
-
-.contact-info {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  font-size: 0.9rem;
-  color: var(--text, #666666);
-  font-family: var(--secondary-font, Arial, sans-serif);
-}
-
-.cv-section {
-  margin-bottom: 1.5rem;
-}
-
-.cv-section h2 {
-  color: var(--primary, #2c3e50);
-  border-bottom: 1px solid var(--background, #ecf0f1);
-  padding-bottom: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 1.3rem;
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
-}
-
-.experience-item,
-.education-item {
-  margin-bottom: 1.5rem;
-}
-
-.exp-header,
-.edu-header {
+.header-main-with-photo {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0.25rem;
+  margin-bottom: 1.5rem;
+  min-height: 120px;
 }
 
-.exp-header h3,
-.edu-header h3 {
-  color: var(--text, #2c3e50);
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+.photo-container {
+  flex-shrink: 0;
+  align-self: center;
 }
 
-.exp-dates,
-.edu-year {
-  color: var(--text, #666666);
-  font-size: 0.9rem;
-  white-space: nowrap;
-  font-family: var(--secondary-font, Arial, sans-serif);
+.profile-photo {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid #e74c3c;
 }
 
-.company,
-.institution {
-  color: var(--secondary, #e74c3c);
-  font-weight: 500;
-  margin: 0 0 0.5rem 0;
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
-}
-
-.description {
-  color: var(--text, #555555);
-  margin: 0;
-  line-height: 1.5;
-  font-family: var(--secondary-font, Arial, sans-serif);
-}
-
-.skills-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.skill-tag {
-  background: var(--background, #ecf0f1);
-  border: 1px solid var(--primary, #2c3e50);
-  padding: 0.3rem 0.8rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-family: var(--secondary-font, Arial, sans-serif);
-}
-
-.languages-list {
+.header-text-center {
+  flex: 1;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  margin-top: 10px;
 }
 
-.language-item {
-  display: flex;
-  justify-content: space-between;
+.header-text-center h1 {
+  margin: 0 0 5px 0;
+  line-height: 1.2;
+  color: #fff;
+  font-size: 2rem;
 }
 
-.language-name {
-  font-weight: 500;
-  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+.header-text-center .cv-title-dark {
+  margin: 0;
+  line-height: 1.2;
+  color: #e74c3c;
+  font-size: 1.2rem;
 }
 
-.language-level {
-  color: var(--text, #666666);
-  font-family: var(--secondary-font, Arial, sans-serif);
+.photo-placeholder {
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .cv-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .builder-header {
-    padding: 1.5rem;
-  }
-  
-  .header-actions {
-    flex-direction: column;
-  }
-  
-  .action-btn {
-    width: 100%;
-    text-align: center;
-  }
-  
-  .steps-navigation {
-    flex-wrap: wrap;
-  }
-  
-  .step-tab {
-    flex: 1;
-    min-width: 120px;
-    justify-content: center;
-  }
-  
-  .form-content {
-    padding: 1.5rem;
-  }
-  
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .section-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-  
-  .form-navigation {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav-btn {
-    width: 100%;
-    text-align: center;
-  }
-  
-  .preview-content {
-    padding: 1.5rem;
-  }
-  
-  .cv-template {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .builder-header h1 {
-    font-size: calc(var(--title-size, 24px) * 0.9);
-  }
-  
-  .form-section h2 {
-    font-size: calc(var(--title-size, 24px) * 0.8);
-  }
-  
-  .form-item {
-    padding: 1rem;
-  }
-  
-  .item-header {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-  
-  .contact-info {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: center;
-  }
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-@media print {
-  body, html, #app, .user-cv-container {
-    background: #fff !important;
-    color: #000 !important;
-  }
-  .user-cv-container {
-    min-height: unset;
-    padding: 0!important;
-  }
-  header, .builder-header, .steps-navigation, .form-column, .header-actions, .action-btn, .form-navigation, .preview-btn, .add-btn, .remove-btn, .form-section:not(.preview-column) {
-    display: none !important;
-    visibility: hidden !important;
-  }
-  .preview-column, .preview-container, .preview-content, .cv-template-dark {
-    box-shadow: none !important;
-    background: #fff !important;
-    color: #000 !important;
-    border-radius: 0 !important;
-    padding: 0 !important;
-  }
-  .cv-content-dark {
-    display: block !important;
-  }
-  .cv-section-dark, .section-title-dark, .experience-item-dark, .education-item-dark, .skill-item-dark, .competence-item-dark, .language-item-dark {
-    background: none !important;
-    color: #000 !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-  }
-  .star-rating span {
-    color: #eab308 !important;
-    font-size: 1.2em !important;
-  }
-  @page {
-    size: A4 portrait;
-    margin: 1.1cm !important;
-  }
-}
-/* CSS para nueva estructura de cabecera */
 .header-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 2rem;
 }
+
 .header-left {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
 }
+
 .header-right {
   display: flex;
   flex-direction: column;
@@ -2373,30 +2006,182 @@ nav {
   align-items: flex-end;
   gap: 0.7rem;
   font-size: 1rem;
-}
-@media (max-width: 768px) {
-  .header-grid { grid-template-columns: 1fr; }
-  .header-right { align-items: flex-start; }
+  color: #fff;
 }
 
-/* CSS para columnas */
+.profile-section h2.section-title-dark {
+  color: #fff;
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.profile-text {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.6;
+  text-align: justify;
+  font-size: 0.95rem;
+  color: #ecf0f1;
+}
+
 .cv-content-dark {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 2rem;
   align-items: start;
 }
-.cv-left-column, .cv-right-column {
+
+.cv-left-column,
+.cv-right-column {
   display: flex;
   flex-direction: column;
   gap: 2rem;
 }
-@media (max-width: 768px) {
-  .cv-content-dark {
-    grid-template-columns: 1fr;
-  }
+
+.cv-section-dark {
+  margin-bottom: 1.5rem;
 }
 
+.section-title-dark {
+  color: #2c3e50;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e74c3c;
+}
+
+.experience-list-dark,
+.education-list-dark {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.experience-item-dark,
+.education-item-dark {
+  background: #f8f9fa;
+  padding: 1.2rem;
+  border-radius: 6px;
+  border-left: 4px solid #e74c3c;
+}
+
+.exp-header-dark,
+.edu-header-dark {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.exp-check,
+.edu-check {
+  font-size: 0.9rem;
+  margin-top: 0.2rem;
+}
+
+.exp-info,
+.edu-info {
+  flex: 1;
+}
+
+.company-name,
+.edu-degree {
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.exp-period,
+.edu-period {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.exp-description {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.6;
+  color: #34495e;
+  margin-top: 0.5rem;
+  padding-left: 1.5rem;
+}
+
+.edu-institution,
+.edu-specialization {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.5;
+  color: #34495e;
+  margin-top: 0.25rem;
+  padding-left: 1.5rem;
+}
+
+.languages-list-dark,
+.competences-list-dark,
+.skills-list-dark {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.language-item-dark {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.language-check {
+  font-size: 0.9rem;
+}
+
+.language-name-dark {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.competences-list-dark {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.competence-item-dark {
+  background: #f8f9fa;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  border: 1px solid #e9ecef;
+}
+
+.skills-list-dark {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.skill-item-dark {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.skill-name {
+  color: #2c3e50;
+  font-weight: 500;
+  flex: 1;
+}
+
+/* Rating Selector */
 .rating-selector {
   display: flex;
   flex-direction: column;
@@ -2442,294 +2227,7 @@ nav {
   font-family: var(--secondary-font, Arial, sans-serif);
 }
 
-@media (max-width: 768px) {
-  .rating-selector {
-    gap: 0.3rem;
-  }
-  
-  .rating-dropdown {
-    font-size: 14px;
-  }
-  
-  .rating-preview {
-    flex-direction: column;
-    gap: 0.25rem;
-    text-align: center;
-  }
-}
-
-/* ESTILOS PARA MEJORAR LA LEGIBILIDAD DE TEXTOS LARGOS EN PREVIEW */
-.preview-content {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-
-/* Texto del perfil profesional */
-.profile-text {
-  white-space: pre-line;
-  word-break: break-word;
-  line-height: 1.6;
-  text-align: justify;
-  font-size: 0.95rem;
-}
-
-/* Descripciones de experiencia laboral */
-.exp-description {
-  white-space: pre-line;
-  word-break: break-word;
-  line-height: 1.6;
-  text-align: justify;
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-  padding-left: 1.5rem;
-}
-
-/* Textos de formación académica */
-.edu-institution,
-.edu-specialization {
-  white-space: pre-line;
-  word-break: break-word;
-  line-height: 1.5;
-  font-size: 0.9rem;
-  margin-top: 0.25rem;
-  padding-left: 1.5rem;
-}
-
-/* Ajustes específicos para la estructura de columnas */
-.cv-left-column {
-  min-width: 0; /* Permite que el contenido se ajuste */
-}
-
-.cv-right-column {
-  min-width: 0; /* Permite que el contenido se ajuste */
-}
-
-/* Mejoras en los contenedores de texto */
-.cv-section-dark p,
-.cv-section-dark span:not(.star-rating) {
-  max-width: 100%;
-  word-wrap: break-word;
-}
-
-/* Ajustes para los items de experiencia y educación */
-.experience-item-dark,
-.education-item-dark {
-  break-inside: avoid;
-  page-break-inside: avoid;
-}
-
-/* Mejoras en la cabecera */
-.header-left {
-  min-width: 0;
-  overflow-wrap: break-word;
-}
-
-.header-right {
-  min-width: 0;
-  overflow-wrap: break-word;
-}
-
-/* Ajustes para textos muy largos en datos de contacto */
-.header-right span {
-  word-break: break-all;
-  font-size: 0.9rem;
-}
-
-/* Estilos para mejorar la legibilidad en móviles */
-@media (max-width: 768px) {
-  .profile-text {
-    font-size: 0.9rem;
-    line-height: 1.5;
-  }
-  
-  .exp-description {
-    font-size: 0.85rem;
-    padding-left: 1rem;
-  }
-  
-  .header-right span {
-    font-size: 0.85rem;
-    word-break: break-word;
-  }
-  
-  .cv-content-dark {
-    gap: 1rem;
-  }
-}
-
-/* Estilos para la vista previa del CV */
-.cv-template-dark {
-  max-width: 100%;
-  overflow: hidden;
-}
-
-/* Asegurar que los textos no se desborden */
-.cv-header-dark *,
-.cv-content-dark * {
-  max-width: 100%;
-}
-
-/* Estilos específicos para listas */
-.competences-list-dark {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.competence-item-dark {
-  background: #f8f9fa;
-  padding: 0.4rem 0.8rem;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  word-break: break-word;
-  border: 1px solid #e9ecef;
-}
-
-/* Mejoras para habilidades con estrellas */
-.skills-list-dark {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
-.skill-item-dark {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem;
-  background: #f8f9fa;
-  border-radius: 4px;
-  border: 1px solid #e9ecef;
-}
-
-.skill-name {
-  word-break: break-word;
-  flex: 1;
-  margin-right: 1rem;
-}
-
-/* Ajustes para la grid de cabecera en móviles */
-@media (max-width: 768px) {
-  .header-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .header-right {
-    align-items: flex-start;
-  }
-  
-  .competence-item-dark {
-    flex: 1 1 calc(50% - 0.5rem);
-    min-width: 0;
-  }
-}
-
-/* Mejoras para la estructura general */
-.cv-content-dark {
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-  align-items: start;
-}
-
-@media (max-width: 1024px) {
-  .cv-content-dark {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-}
-
-/* Asegurar que los textos no se salgan en impresión */
-@media print {
-  .profile-text,
-  .exp-description,
-  .edu-institution,
-  .edu-specialization {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
-  }
-}
-
-.char-count {
-  text-align: right;
-  font-size: 0.8rem;
-  color: var(--text, #666666);
-  margin-top: 0.25rem;
-  font-family: var(--secondary-font, Arial, sans-serif);
-  transition: color 0.3s;
-}
-
-.char-limit-warning {
-  border-color: #f39c12 !important;
-  box-shadow: 0 0 0 2px rgba(243, 156, 18, 0.1) !important;
-}
-
-.char-limit-exceeded {
-  color: #e74c3c !important;
-  font-weight: bold;
-}
-
-.char-error {
-  color: #e74c3c;
-  font-weight: bold;
-}
-
-/* Estilo cuando se acerca al límite */
-.char-count.warning {
-  color: #f39c12;
-  font-weight: 600;
-}
-
-/* Estilo cuando excede el límite */
-.char-count.error {
-  color: #e74c3c;
-  font-weight: bold;
-}
-
-/* Mejora visual para el textarea cuando está cerca del límite */
-.form-group textarea.char-limit-warning {
-  border-color: #f39c12;
-  background-color: #fffaf0;
-}
-
-.form-group textarea:invalid {
-  border-color: #e74c3c;
-}
-
-.char-counter-container {
-  margin-top: 0.5rem;
-}
-
-/* Barra de progreso */
-.char-progress-bar {
-  width: 100%;
-  height: 6px;
-  background-color: #e9ecef;
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 0.5rem;
-}
-
-.char-progress-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: all 0.3s ease;
-}
-
-.progress-safe {
-  background: linear-gradient(90deg, #27ae60, #2ecc71);
-}
-
-.progress-warning {
-  background: linear-gradient(90deg, #f39c12, #f1c40f);
-  animation: pulse-warning 1.5s infinite;
-}
-
-.progress-danger {
-  background: linear-gradient(90deg, #e74c3c, #c0392b);
-  animation: pulse-danger 1s infinite;
-}
+/* Photo Upload */
 .photo-upload-container {
   border: 2px dashed var(--background, #ecf0f1);
   border-radius: var(--border-radius, 8px);
@@ -2749,8 +2247,8 @@ nav {
 }
 
 .photo-preview-img {
-  width: 150px;
-  height: 150px;
+  width: 180px;
+  height: 180px;
   object-fit: cover;
   border-radius: 50%;
   border: 3px solid var(--secondary, #e74c3c);
@@ -2784,74 +2282,55 @@ nav {
 }
 
 .upload-icon {
-  font-size: 2rem;
+  font-size: 2.5rem;
 }
 
 .upload-text {
   font-weight: 600;
   color: var(--primary, #2c3e50);
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
 }
 
 .upload-hint {
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--text, #666666);
 }
 
-/* Vista previa - Foto de perfil */
-.header-main-with-photo {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+/* Character Counter */
+.char-counter-container {
+  margin-top: 0.5rem;
 }
 
-.photo-container {
-  flex-shrink: 0;
+.char-progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
 }
 
-.profile-photo {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 50%;
-  border: 3px solid var(--secondary, #e74c3c);
+.char-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: all 0.3s ease;
 }
 
-.header-text-center {
-  flex: 1;
-  text-align: center;
+.progress-safe {
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
 }
 
-.photo-placeholder {
-  width: 80px;
-  height: 80px;
-  flex-shrink: 0;
+.progress-warning {
+  background: linear-gradient(90deg, #f39c12, #f1c40f);
+  animation: pulse-warning 1.5s infinite;
 }
 
-/* Responsive para la foto */
-@media (max-width: 768px) {
-  .header-main-with-photo {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
-  }
-  
-  .profile-photo {
-    width: 60px;
-    height: 60px;
-  }
-  
-  .photo-placeholder {
-    display: none;
-  }
-  
-  .photo-preview-img {
-    width: 120px;
-    height: 120px;
-  }
+.progress-danger {
+  background: linear-gradient(90deg, #e74c3c, #c0392b);
+  animation: pulse-danger 1s infinite;
 }
 
-/* Contador de caracteres */
 .char-count {
   display: flex;
   justify-content: space-between;
@@ -2893,28 +2372,24 @@ nav {
   font-weight: 600;
 }
 
-/* ESTILOS DEL TEXTFIELD - SIN FONDO, SOLO BORDES */
 .char-limit-safe {
   border-color: #27ae60 !important;
   box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.1) !important;
-  /* Sin cambio de fondo - se mantiene el original */
 }
 
 .char-limit-warning {
   border-color: #f39c12 !important;
   box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.2) !important;
   animation: border-pulse 2s infinite;
-  /* Sin cambio de fondo - se mantiene el original */
 }
 
 .char-limit-danger {
   border-color: #e74c3c !important;
   box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.3) !important;
   animation: border-shake 0.5s ease-in-out;
-  /* Sin cambio de fondo - se mantiene el original */
 }
 
-/* Animaciones */
+/* Animations */
 @keyframes pulse-warning {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
@@ -2972,24 +2447,107 @@ nav {
   }
 }
 
-/* Estilos para estados de enfoque mejorados */
-.form-group textarea:focus.char-limit-safe {
-  border-color: #27ae60 !important;
-  box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.2) !important;
-}
-
-.form-group textarea:focus.char-limit-warning {
-  border-color: #f39c12 !important;
-  box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.3) !important;
-}
-
-.form-group textarea:focus.char-limit-danger {
-  border-color: #e74c3c !important;
-  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.4) !important;
-}
-
 /* Responsive */
+@media (max-width: 1024px) {
+  .cv-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .cv-content-dark {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
+  .builder-header {
+    padding: 1.5rem;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+  }
+  
+  .action-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .steps-navigation {
+    flex-wrap: wrap;
+  }
+  
+  .step-tab {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+  
+  .form-content {
+    padding: 1.5rem;
+  }
+  
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .form-navigation {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .nav-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .preview-content {
+    padding: 1.5rem;
+  }
+  
+  .cv-template-dark {
+    padding: 1.5rem;
+  }
+  
+  .header-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-right {
+    align-items: flex-start;
+  }
+  
+  .header-main-with-photo {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+    min-height: auto;
+  }
+  
+  .profile-photo {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .header-text-center {
+    height: auto;
+    margin-top: 0;
+  }
+  
+  .photo-placeholder {
+    display: none;
+  }
+  
+  .photo-preview-img {
+    width: 140px;
+    height: 140px;
+  }
+  
   .char-count {
     flex-direction: column;
     gap: 0.25rem;
@@ -2998,6 +2556,95 @@ nav {
   
   .char-progress-bar {
     height: 4px;
+  }
+  
+  .rating-selector {
+    gap: 0.3rem;
+  }
+  
+  .rating-dropdown {
+    font-size: 14px;
+  }
+  
+  .rating-preview {
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: center;
+  }
+  
+  .competence-item-dark {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .builder-header h1 {
+    font-size: calc(var(--title-size, 24px) * 0.9);
+  }
+  
+  .form-section h2 {
+    font-size: calc(var(--title-size, 24px) * 0.8);
+  }
+  
+  .form-item {
+    padding: 1rem;
+  }
+  
+  .item-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Print Styles */
+@media print {
+  body, html, #app, .user-cv-container {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .user-cv-container {
+    min-height: unset;
+    padding: 0!important;
+  }
+  header, .builder-header, .steps-navigation, .form-column, .header-actions, .action-btn, .form-navigation, .preview-btn, .add-btn, .remove-btn {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  .preview-column, .preview-container, .preview-content, .cv-template-dark {
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  .cv-content-dark {
+    display: block !important;
+  }
+  .cv-section-dark, .section-title-dark, .experience-item-dark, .education-item-dark, .skill-item-dark, .competence-item-dark, .language-item-dark {
+    background: none !important;
+    color: #000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    page-break-inside: avoid;
+  }
+  .star-rating span {
+    color: #eab308 !important;
+    font-size: 1.2em !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 1cm !important;
   }
 }
 </style>
