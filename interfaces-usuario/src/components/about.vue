@@ -1,5 +1,11 @@
 <template>
   <div id="app">
+    <TangramLoader 
+      v-if="isLoading"
+      :loading-text="loaderText"
+      :animation-speed="2000"
+    />
+    <div v-if="!isLoading">
     <header>
       <div class="container">
         <nav>
@@ -364,9 +370,12 @@
       </div>
     </footer>
   </div>
+  </div>
 </template>
 
 <script>
+// Importar el componente Loader
+import TangramLoader from './TangramLoader.vue';
 // Importar el componente Admin
 import ConfigAdmin from './assets/configadmin.vue';
 // Importar el componente UserCV
@@ -375,11 +384,15 @@ import UserCV from './UserCV.vue';
 export default {
   name: 'AboutJdmTuning',
   components: {
+    TangramLoader,
     ConfigAdmin,
     UserCV
   },
   data() {
     return {
+      isLoading: true,
+      loaderText: 'Cargando JDM Tuning...',
+      loaderDuration: 13000, // 3 segundos de loader
       mobileMenuOpen: false,
       showLoginModal: false,
       showRegisterModal: false,
@@ -482,6 +495,9 @@ export default {
     }
   },
   mounted() {
+    setTimeout(() => {
+      this.isLoading = false;
+    }, this.loaderDuration);
     this.initializeSampleUsers();
     this.checkStoredAuth();
     this.loadGlobalStyles(); // Cargar estilos guardados al iniciar
@@ -710,6 +726,25 @@ export default {
 </script>
 
 <style scoped>
+#app {
+  position: relative;
+}
+
+.content-enter-active {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Variables CSS globales - ahora se definen en el ConfigAdmin */
 :root {
   --primary: #2c3e50;
