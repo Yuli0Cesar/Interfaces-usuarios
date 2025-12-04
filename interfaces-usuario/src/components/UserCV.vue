@@ -26,6 +26,30 @@
         <div class="builder-header">
           <h1>Creador de Currículum Profesional</h1>
           <p>Crea tu currículum profesional con tu color personalizado</p>
+          
+          <!-- Selector de plantilla -->
+          <div class="template-selector">
+            <label>Selecciona una plantilla:</label>
+            <div class="template-options">
+              <button 
+                class="template-option" 
+                :class="{ active: selectedTemplate === 1 }"
+                @click="selectedTemplate = 1"
+              >
+                <span class="template-icon">📄</span>
+                <span>Plantilla Clásica</span>
+              </button>
+              <button 
+                class="template-option" 
+                :class="{ active: selectedTemplate === 2 }"
+                @click="selectedTemplate = 2"
+              >
+                <span class="template-icon">🎨</span>
+                <span>Plantilla Moderna</span>
+              </button>
+            </div>
+          </div>
+
           <div class="header-actions">
             <button class="action-btn secondary" @click="resetForm">
               🔄 Reiniciar
@@ -465,7 +489,7 @@
           <div class="preview-column">
             <div class="preview-container">
               <div class="preview-header">
-                <h2>Vista Previa - Color Personalizado</h2>
+                <h2>Vista Previa - {{ selectedTemplate === 1 ? 'Plantilla Clásica' : 'Plantilla Moderna' }}</h2>
                 <div class="preview-actions">
                   <button class="preview-btn" @click="downloadCV" :disabled="!isFormValid">
                     📄 Descargar PDF
@@ -474,7 +498,8 @@
               </div>
               
               <div class="preview-content" ref="cvPreview">
-                <div class="cv-template-custom" :style="cvStyles">
+                <!-- Plantilla 1: Clásica -->
+                <div v-if="selectedTemplate === 1" class="cv-template-custom" :style="cvStyles">
                   <!-- CABECERA CON PERFIL Y DATOS PERSONALES -->
                   <div class="cv-header-custom">
                     <div class="header-main-with-photo">
@@ -581,6 +606,113 @@
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <!-- Plantilla 2: Moderna -->
+                <div v-else-if="selectedTemplate === 2" class="cv-template-two" :style="cvStyles">
+                  <!-- Encabezado con cuadro CV -->
+                  <div class="cv-header-two">
+                    <div class="header-main-two">
+                      <div class="cv-box" :style="{ backgroundColor: formData.selectedColor }">CV</div>
+                      <div class="header-text-two">
+                        <h1>{{ formData.personalInfo.fullName || 'Tu Nombre Completo' }}</h1>
+                        <p class="cv-title-two">{{ formData.personalInfo.title || 'Tu Profesión' }}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="cv-content-two">
+                    <!-- Sección de Datos Personales -->
+                    <section class="cv-section-two" v-if="hasPersonalInfo">
+                      <h2 class="section-title-two">Datos personales</h2>
+                      <hr class="section-divider" />
+                      <div class="personal-info-list">
+                        <p v-if="formData.personalInfo.fullName">
+                          <strong>Nombre</strong> {{ formData.personalInfo.fullName }}
+                        </p>
+                        <p v-if="formData.personalInfo.email">
+                          <strong>Correo electrónico</strong> {{ formData.personalInfo.email }}
+                        </p>
+                        <p v-if="formData.personalInfo.phone">
+                          <strong>Teléfono</strong> {{ formData.personalInfo.phone }}
+                        </p>
+                        <p v-if="formData.personalInfo.location">
+                          <strong>Dirección</strong> {{ formData.personalInfo.location }}
+                        </p>
+                        <p v-if="formData.personalInfo.website">
+                          <strong>Sitio web</strong> {{ formData.personalInfo.website }}
+                        </p>
+                      </div>
+                    </section>
+
+                    <!-- Sección de Perfil Profesional -->
+                    <section class="cv-section-two" v-if="formData.profile">
+                      <h2 class="section-title-two">Perfil Profesional</h2>
+                      <hr class="section-divider" />
+                      <p class="profile-text-two">{{ formData.profile }}</p>
+                    </section>
+
+                    <!-- Sección de Experiencia Laboral -->
+                    <section class="cv-section-two" v-if="formData.experience.some(exp => exp.company)">
+                      <h2 class="section-title-two">Experiencia Laboral</h2>
+                      <hr class="section-divider" />
+                      <div class="experience-list-two">
+                        <div class="experience-item-two" v-for="(exp, index) in formData.experience.filter(exp => exp.company)" :key="index">
+                          <h3 class="company-name-two">{{ exp.company }}</h3>
+                          <p class="exp-period-two" v-if="exp.period">{{ exp.period }}</p>
+                          <p class="exp-description-two" v-if="exp.description">{{ exp.description }}</p>
+                        </div>
+                      </div>
+                    </section>
+
+                    <!-- Sección de Formación Académica -->
+                    <section class="cv-section-two" v-if="formData.education.some(edu => edu.degree)">
+                      <h2 class="section-title-two">Formación Académica</h2>
+                      <hr class="section-divider" />
+                      <div class="education-list-two">
+                        <div class="education-item-two" v-for="(edu, index) in formData.education.filter(edu => edu.degree)" :key="index">
+                          <h3 class="edu-degree-two">{{ edu.degree }}</h3>
+                          <p class="edu-institution-two" v-if="edu.institution">{{ edu.institution }}</p>
+                          <p class="edu-period-two" v-if="edu.period">{{ edu.period }}</p>
+                          <p class="edu-specialization-two" v-if="edu.specialization">{{ edu.specialization }}</p>
+                        </div>
+                      </div>
+                    </section>
+
+                    <!-- Sección de Idiomas -->
+                    <section class="cv-section-two" v-if="formData.languages.some(lang => lang.name)">
+                      <h2 class="section-title-two">Idiomas</h2>
+                      <hr class="section-divider" />
+                      <ul class="languages-list-two">
+                        <li v-for="(lang, index) in formData.languages.filter(lang => lang.name)" :key="index">
+                          {{ lang.name }}
+                        </li>
+                      </ul>
+                    </section>
+
+                    <!-- Sección de Competencias -->
+                    <section class="cv-section-two" v-if="formData.competences.some(comp => comp.name)">
+                      <h2 class="section-title-two">Competencias</h2>
+                      <hr class="section-divider" />
+                      <ul class="competences-list-two">
+                        <li v-for="(comp, index) in formData.competences.filter(comp => comp.name)" :key="index">
+                          {{ comp.name }}
+                        </li>
+                      </ul>
+                    </section>
+
+                    <!-- Sección de Habilidades -->
+                    <section class="cv-section-two" v-if="formData.skills && formData.skills.some(skill => skill.name)">
+                      <h2 class="section-title-two">Habilidades</h2>
+                      <hr class="section-divider" />
+                      <div class="skills-list-two">
+                        <div class="skill-item-two" v-for="(skill, index) in formData.skills.filter(skill => skill.name)" :key="index">
+                          <span class="skill-name-two">{{ skill.name }}</span>
+                          <span class="skill-rating-two">{{ '★'.repeat(skill.rating) }}{{ '☆'.repeat(5 - skill.rating) }}</span>
+                        </div>
+                      </div>
+                    </section>
                   </div>
                 </div>
               </div>
@@ -706,6 +838,7 @@ export default {
     return {
       user: null,
       currentStep: 1,
+      selectedTemplate: 1, // 1: Clásica, 2: Moderna
       steps: [
         { id: 1, icon: '👤', title: 'Personal' },
         { id: 2, icon: '📝', title: 'Perfil' },
@@ -775,6 +908,11 @@ export default {
         '--cv-secondary-color': this.lightenColor(this.formData.selectedColor, 20),
         '--cv-accent-color': this.darkenColor(this.formData.selectedColor, 10)
       };
+    },
+    
+    hasPersonalInfo() {
+      const info = this.formData.personalInfo;
+      return info.fullName || info.email || info.phone || info.location || info.website;
     }
   },
   async mounted() {
@@ -1019,6 +1157,7 @@ export default {
       const userCVIndex = userCVs.findIndex(cv => cv.userId === this.user.id);
       const cvData = {
         ...this.formData,
+        selectedTemplate: this.selectedTemplate,
         userId: this.user.id,
         lastUpdated: new Date().toISOString()
       };
@@ -1039,6 +1178,9 @@ export default {
       
       if (userCV) {
         this.formData = { ...userCV };
+        if (userCV.selectedTemplate) {
+          this.selectedTemplate = userCV.selectedTemplate;
+        }
       }
     },
 
@@ -1095,6 +1237,7 @@ export default {
             }
           ]
         };
+        this.selectedTemplate = 1;
         this.currentStep = 1;
       }
     },
@@ -1123,7 +1266,7 @@ export default {
         }
 
         console.log('Fuentes cargadas, generando documento...');
-        const docDefinition = this.buildPDFDocument();
+        const docDefinition = this.selectedTemplate === 1 ? this.buildPDFDocumentTemplate1() : this.buildPDFDocumentTemplate2();
         const filename = `CV_${this.formData.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
         
         // Crear y descargar el PDF
@@ -1136,7 +1279,8 @@ export default {
       }
     },
 
-    buildPDFDocument() {
+    buildPDFDocumentTemplate1() {
+      // Implementación existente para la plantilla 1
       const primaryColor = this.formData.selectedColor;
       const secondaryColor = this.lightenColor(primaryColor, 20);
       const backgroundColor = '#ffffff';
@@ -1564,6 +1708,457 @@ export default {
       };
 
       return docDefinition;
+    },
+
+    buildPDFDocumentTemplate2() {
+      // Implementación para la plantilla 2 (moderna)
+      const primaryColor = this.formData.selectedColor;
+      const textColor = '#2c3e50';
+      const lightBgColor = '#fdfbf9';
+      
+      const personalInfo = this.formData.personalInfo;
+
+      const docDefinition = {
+        pageSize: 'A4',
+        pageMargins: [40, 40, 40, 40],
+        background: function(currentPage, pageSize) {
+          return [
+            {
+              canvas: [
+                {
+                  type: 'rect',
+                  x: 0,
+                  y: 0,
+                  w: pageSize.width,
+                  h: 120,
+                  color: primaryColor
+                }
+              ]
+            }
+          ];
+        },
+        content: [
+          // Header con cuadro CV
+          {
+            stack: [
+              {
+                columns: [
+                  {
+                    width: 80,
+                    stack: [
+                      {
+                        canvas: [
+                          {
+                            type: 'rect',
+                            x: 0,
+                            y: 0,
+                            w: 70,
+                            h: 70,
+                            color: primaryColor
+                          }
+                        ]
+                      },
+                      {
+                        text: 'CV',
+                        absolutePosition: { x: 55, y: 25 },
+                        fontSize: 18,
+                        bold: true,
+                        color: '#ffffff'
+                      }
+                    ]
+                  },
+                  {
+                    width: '*',
+                    stack: [
+                      {
+                        text: personalInfo.fullName.toUpperCase() || 'NOMBRE COMPLETO',
+                        style: 'headerName',
+                        alignment: 'center',
+                        margin: [0, 20, 0, 5]
+                      },
+                      {
+                        text: personalInfo.title || 'TÍTULO PROFESIONAL',
+                        style: 'headerTitle',
+                        alignment: 'center',
+                        margin: [0, 0, 0, 0]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            margin: [0, 0, 0, 30]
+          },
+
+          // Contenido principal
+          {
+            stack: [
+              // Datos personales
+              ...(this.hasPersonalInfo ? [
+                {
+                  text: 'DATOS PERSONALES',
+                  style: 'sectionTitle',
+                  margin: [0, 0, 0, 10]
+                },
+                {
+                  canvas: [
+                    {
+                      type: 'line',
+                      x1: 0, y1: 0,
+                      x2: 515, y2: 0,
+                      lineWidth: 1,
+                      lineColor: '#cccccc'
+                    }
+                  ],
+                  margin: [0, 0, 0, 10]
+                },
+                {
+                  columns: [
+                    {
+                      width: '50%',
+                      stack: [
+                        personalInfo.fullName ? {
+                          text: [
+                            { text: 'Nombre: ', style: 'label' },
+                            personalInfo.fullName
+                          ],
+                          margin: [0, 0, 0, 5]
+                        } : null,
+                        personalInfo.email ? {
+                          text: [
+                            { text: 'Correo electrónico: ', style: 'label' },
+                            personalInfo.email
+                          ],
+                          margin: [0, 0, 0, 5]
+                        } : null
+                      ].filter(Boolean)
+                    },
+                    {
+                      width: '50%',
+                      stack: [
+                        personalInfo.phone ? {
+                          text: [
+                            { text: 'Teléfono: ', style: 'label' },
+                            personalInfo.phone
+                          ],
+                          margin: [0, 0, 0, 5]
+                        } : null,
+                        personalInfo.location ? {
+                          text: [
+                            { text: 'Dirección: ', style: 'label' },
+                            personalInfo.location
+                          ],
+                          margin: [0, 0, 0, 5]
+                        } : null
+                      ].filter(Boolean)
+                    }
+                  ].filter(Boolean),
+                  margin: [0, 0, 0, 15]
+                }
+              ] : []),
+
+              // Perfil profesional
+              ...(this.formData.profile ? [
+                {
+                  text: 'PERFIL PROFESIONAL',
+                  style: 'sectionTitle',
+                  margin: [0, 20, 0, 10]
+                },
+                {
+                  canvas: [
+                    {
+                      type: 'line',
+                      x1: 0, y1: 0,
+                      x2: 515, y2: 0,
+                      lineWidth: 1,
+                      lineColor: '#cccccc'
+                    }
+                  ],
+                  margin: [0, 0, 0, 10]
+                },
+                {
+                  text: this.formData.profile,
+                  style: 'body',
+                  margin: [0, 0, 0, 15]
+                }
+              ] : []),
+
+              // Experiencia laboral
+              ...(this.formData.experience.some(exp => exp.company) ? [
+                {
+                  text: 'EXPERIENCIA LABORAL',
+                  style: 'sectionTitle',
+                  margin: [0, 20, 0, 10]
+                },
+                {
+                  canvas: [
+                    {
+                      type: 'line',
+                      x1: 0, y1: 0,
+                      x2: 515, y2: 0,
+                      lineWidth: 1,
+                      lineColor: '#cccccc'
+                    }
+                  ],
+                  margin: [0, 0, 0, 10]
+                },
+                {
+                  stack: this.formData.experience
+                    .filter(exp => exp.company && exp.company.trim() !== '')
+                    .map(exp => ({
+                      stack: [
+                        {
+                          text: exp.company,
+                          style: 'itemTitle',
+                          margin: [0, 0, 0, 2]
+                        },
+                        exp.period ? {
+                          text: exp.period,
+                          style: 'itemSubtitle',
+                          margin: [0, 0, 0, 2]
+                        } : null,
+                        exp.description ? {
+                          text: exp.description,
+                          style: 'body',
+                          margin: [0, 0, 0, 10]
+                        } : null
+                      ].filter(Boolean)
+                    }))
+                }
+              ] : []),
+
+              // Formación académica
+              ...(this.formData.education.some(edu => edu.degree) ? [
+                {
+                  text: 'FORMACIÓN ACADÉMICA',
+                  style: 'sectionTitle',
+                  margin: [0, 20, 0, 10]
+                },
+                {
+                  canvas: [
+                    {
+                      type: 'line',
+                      x1: 0, y1: 0,
+                      x2: 515, y2: 0,
+                      lineWidth: 1,
+                      lineColor: '#cccccc'
+                    }
+                  ],
+                  margin: [0, 0, 0, 10]
+                },
+                {
+                  stack: this.formData.education
+                    .filter(edu => edu.degree && edu.degree.trim() !== '')
+                    .map(edu => ({
+                      stack: [
+                        {
+                          text: edu.degree,
+                          style: 'itemTitle',
+                          margin: [0, 0, 0, 2]
+                        },
+                        edu.institution ? {
+                          text: edu.institution,
+                          style: 'body',
+                          margin: [0, 0, 0, 2]
+                        } : null,
+                        edu.period ? {
+                          text: edu.period,
+                          style: 'itemSubtitle',
+                          margin: [0, 0, 0, 2]
+                        } : null,
+                        edu.specialization ? {
+                          text: `Especialización: ${edu.specialization}`,
+                          style: 'bodyItalic',
+                          margin: [0, 0, 0, 10]
+                        } : null
+                      ].filter(Boolean)
+                    }))
+                }
+              ] : []),
+
+              // Columnas para idiomas, competencias y habilidades
+              {
+                columns: [
+                  // Columna izquierda
+                  {
+                    width: '50%',
+                    stack: [
+                      // Idiomas
+                      ...(this.formData.languages.some(lang => lang.name) ? [
+                        {
+                          text: 'IDIOMAS',
+                          style: 'sectionTitle',
+                          margin: [0, 20, 0, 10]
+                        },
+                        {
+                          canvas: [
+                            {
+                              type: 'line',
+                              x1: 0, y1: 0,
+                              x2: 235, y2: 0,
+                              lineWidth: 1,
+                              lineColor: '#cccccc'
+                            }
+                          ],
+                          margin: [0, 0, 0, 10]
+                        },
+                        {
+                          ul: this.formData.languages
+                            .filter(lang => lang.name && lang.name.trim() !== '')
+                            .map(lang => lang.name),
+                          style: 'body',
+                          margin: [0, 0, 0, 15]
+                        }
+                      ] : []),
+
+                      // Competencias
+                      ...(this.formData.competences.some(comp => comp.name) ? [
+                        {
+                          text: 'COMPETENCIAS',
+                          style: 'sectionTitle',
+                          margin: [0, 20, 0, 10]
+                        },
+                        {
+                          canvas: [
+                            {
+                              type: 'line',
+                              x1: 0, y1: 0,
+                              x2: 235, y2: 0,
+                              lineWidth: 1,
+                              lineColor: '#cccccc'
+                            }
+                          ],
+                          margin: [0, 0, 0, 10]
+                        },
+                        {
+                          ul: this.formData.competences
+                            .filter(comp => comp.name && comp.name.trim() !== '')
+                            .map(comp => comp.name),
+                          style: 'body',
+                          margin: [0, 0, 0, 15]
+                        }
+                      ] : [])
+                    ]
+                  },
+
+                  // Columna derecha
+                  {
+                    width: '50%',
+                    stack: [
+                      // Habilidades
+                      ...(this.formData.skills && this.formData.skills.some(skill => skill.name) ? [
+                        {
+                          text: 'HABILIDADES',
+                          style: 'sectionTitle',
+                          margin: [0, 20, 0, 10]
+                        },
+                        {
+                          canvas: [
+                            {
+                              type: 'line',
+                              x1: 0, y1: 0,
+                              x2: 235, y2: 0,
+                              lineWidth: 1,
+                              lineColor: '#cccccc'
+                            }
+                          ],
+                          margin: [0, 0, 0, 10]
+                        },
+                        {
+                          stack: this.formData.skills
+                            .filter(skill => skill.name && skill.name.trim() !== '')
+                            .map(skill => ({
+                              columns: [
+                                {
+                                  width: '60%',
+                                  text: skill.name,
+                                  style: 'body'
+                                },
+                                {
+                                  width: '40%',
+                                  text: `${'★'.repeat(skill.rating)}${'☆'.repeat(5 - skill.rating)}`,
+                                  style: 'stars'
+                                }
+                              ],
+                              margin: [0, 0, 0, 3]
+                            }))
+                        }
+                      ] : [])
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        
+        styles: {
+          headerName: {
+            fontSize: 20,
+            bold: true,
+            color: '#ffffff',
+            margin: [0, 0, 0, 0]
+          },
+          headerTitle: {
+            fontSize: 14,
+            bold: true,
+            color: '#ffffff',
+            opacity: 0.9,
+            margin: [0, 0, 0, 0]
+          },
+          sectionTitle: {
+            fontSize: 12,
+            bold: true,
+            color: primaryColor,
+            margin: [0, 0, 0, 0]
+          },
+          label: {
+            fontSize: 9,
+            bold: true,
+            color: primaryColor
+          },
+          itemTitle: {
+            fontSize: 10,
+            bold: true,
+            color: textColor,
+            margin: [0, 0, 0, 0]
+          },
+          itemSubtitle: {
+            fontSize: 8,
+            color: '#7f8c8d',
+            italics: true,
+            margin: [0, 0, 0, 0]
+          },
+          body: {
+            fontSize: 9,
+            color: textColor,
+            lineHeight: 1.3,
+            margin: [0, 0, 0, 0]
+          },
+          bodyItalic: {
+            fontSize: 9,
+            color: textColor,
+            lineHeight: 1.3,
+            italics: true,
+            margin: [0, 0, 0, 0]
+          },
+          stars: {
+            fontSize: 8,
+            color: '#f39c12',
+            bold: true,
+            margin: [0, 0, 0, 0]
+          }
+        },
+        
+        defaultStyle: {
+          font: 'Roboto',
+          fontSize: 9,
+          lineHeight: 1.2,
+          color: textColor
+        }
+      };
+
+      return docDefinition;
     }
   }
 }
@@ -1667,6 +2262,59 @@ nav {
   margin: 0 0 1.5rem 0;
   font-size: var(--paragraph-size, 16px);
   font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+/* Selector de plantilla */
+.template-selector {
+  margin-bottom: 1.5rem;
+}
+
+.template-selector label {
+  display: block;
+  font-weight: 600;
+  color: var(--primary, #2c3e50);
+  margin-bottom: 0.5rem;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.template-options {
+  display: flex;
+  gap: 1rem;
+}
+
+.template-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--background, #ecf0f1);
+  border: 2px solid var(--background, #ecf0f1);
+  border-radius: var(--border-radius, 8px);
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: var(--font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
+}
+
+.template-option:hover {
+  border-color: var(--primary, #2c3e50);
+  transform: translateY(-2px);
+}
+
+.template-option.active {
+  border-color: var(--secondary, #e74c3c);
+  background: var(--accent, #ffffff);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2);
+}
+
+.template-icon {
+  font-size: 2rem;
+}
+
+.template-option span:last-child {
+  font-weight: 600;
+  color: var(--primary, #2c3e50);
 }
 
 .header-actions {
@@ -2050,7 +2698,7 @@ nav {
   background: var(--background, #ecf0f1);
 }
 
-/* Template del CV con color personalizado */
+/* ===== PLANTILLA 1: CLÁSICA ===== */
 .cv-template-custom {
   background: #fff;
   color: #232323;
@@ -2316,6 +2964,186 @@ nav {
   color: var(--cv-primary-color, #2c3e50);
   font-weight: 500;
   flex: 1;
+}
+
+/* ===== PLANTILLA 2: MODERNA ===== */
+.cv-template-two {
+  background-color: #fdfbf9;
+  color: #333;
+  padding: 2rem;
+  border-radius: 8px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  min-height: 1000px;
+}
+
+.cv-header-two {
+  margin-bottom: 2rem;
+}
+
+.header-main-two {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.cv-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 110px;
+  height: 110px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 24px;
+  border-radius: 4px;
+}
+
+.header-text-two {
+  text-align: center;
+  margin: 0 auto;
+}
+
+.header-text-two h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: var(--cv-primary-color, #2c3e50);
+}
+
+.cv-title-two {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--cv-primary-color, #2c3e50);
+  opacity: 0.8;
+}
+
+.cv-content-two {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cv-section-two {
+  margin-bottom: 1.5rem;
+}
+
+.section-title-two {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--cv-primary-color, #2c3e50);
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin-bottom: 1rem;
+}
+
+.personal-info-list p {
+  margin: 0.5rem 0;
+  display: flex;
+}
+
+.personal-info-list strong {
+  color: var(--cv-primary-color, #2c3e50);
+  margin-right: 0.5rem;
+  min-width: 150px;
+}
+
+.profile-text-two {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.6;
+  text-align: justify;
+}
+
+.experience-list-two,
+.education-list-two {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.experience-item-two,
+.education-item-two {
+  padding: 0.5rem 0;
+}
+
+.company-name-two,
+.edu-degree-two {
+  color: var(--cv-primary-color, #2c3e50);
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.exp-period-two,
+.edu-period-two {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.exp-description-two,
+.edu-institution-two,
+.edu-specialization-two {
+  white-space: pre-line;
+  word-break: break-word;
+  line-height: 1.5;
+  color: #34495e;
+  margin-top: 0.25rem;
+}
+
+.languages-list-two,
+.competences-list-two {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.languages-list-two li,
+.competences-list-two li {
+  margin: 0.5rem 0;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.languages-list-two li::before,
+.competences-list-two li::before {
+  content: "•";
+  color: var(--cv-primary-color, #2c3e50);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.skills-list-two {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.skill-item-two {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.skill-name-two {
+  color: var(--cv-primary-color, #2c3e50);
+  font-weight: 500;
+}
+
+.skill-rating-two {
+  color: #f39c12;
+  font-size: 1.1rem;
 }
 
 /* Rating Selector */
@@ -2600,6 +3428,10 @@ nav {
     padding: 1.5rem;
   }
   
+  .template-options {
+    flex-direction: column;
+  }
+  
   .header-actions {
     flex-direction: column;
   }
@@ -2647,7 +3479,8 @@ nav {
     padding: 1.5rem;
   }
   
-  .cv-template-custom {
+  .cv-template-custom,
+  .cv-template-two {
     padding: 1.5rem;
   }
   
@@ -2713,6 +3546,32 @@ nav {
     flex: 1 1 calc(50% - 0.5rem);
     min-width: 0;
   }
+  
+  /* Responsive para la segunda plantilla */
+  .header-main-two {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .cv-box {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+  
+  .personal-info-list p {
+    flex-direction: column;
+  }
+  
+  .personal-info-list strong {
+    min-width: auto;
+    margin-bottom: 0.25rem;
+  }
+  
+  .skill-item-two {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2755,7 +3614,7 @@ nav {
     display: none !important;
     visibility: hidden !important;
   }
-  .preview-column, .preview-container, .preview-content, .cv-template-custom {
+  .preview-column, .preview-container, .preview-content, .cv-template-custom, .cv-template-two {
     box-shadow: none !important;
     background: #fff !important;
     color: #000 !important;
@@ -2767,7 +3626,8 @@ nav {
   .cv-content-custom {
     display: block !important;
   }
-  .cv-section-custom, .section-title-custom, .experience-item-custom, .education-item-custom, .skill-item-custom, .competence-item-custom, .language-item-custom {
+  .cv-section-custom, .section-title-custom, .experience-item-custom, .education-item-custom, .skill-item-custom, .competence-item-custom, .language-item-custom,
+  .cv-section-two, .section-title-two, .experience-item-two, .education-item-two, .skill-item-two {
     background: none !important;
     color: #000 !important;
     border: none !important;
@@ -2784,4 +3644,6 @@ nav {
     margin: 1cm !important;
   }
 }
+
+
 </style>
