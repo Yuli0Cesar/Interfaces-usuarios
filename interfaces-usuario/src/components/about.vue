@@ -1,10 +1,11 @@
 <template>
   <div id="app">
-    <TangramLoader 
-      v-if="isLoading"
-      :loading-text="loaderText"
-      :animation-speed="2000"
-    />
+      <TangramLoader 
+        v-if="isLoading"
+        :loading-text="loaderText"
+        :animation-speed="2000"
+        :tangram-colors="currentTangramColors"
+      />
     <div v-if="!isLoading">
     <header>
       <div class="container">
@@ -492,7 +493,19 @@ export default {
     },
     adminUsers() {
       return this.allUsers.filter(user => user.isAdmin).length;
-    }
+    },
+    currentTangramColors() {
+    return [
+      getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
+      getComputedStyle(document.documentElement).getPropertyValue('--secondary').trim(),
+      getComputedStyle(document.documentElement).getPropertyValue('--background').trim(),
+      getComputedStyle(document.documentElement).getPropertyValue('--text').trim(),
+      getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+      getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
+      getComputedStyle(document.documentElement).getPropertyValue('--secondary').trim()
+    ];
+  }
+
   },
   mounted() {
     setTimeout(() => {
@@ -720,6 +733,15 @@ export default {
           console.error('Error al cargar estilos globales:', e);
         }
       }
+    },
+    watch: {
+      '$root.globalStyles': {
+        handler() {
+          if (this.isLoading) {
+          }
+        },
+        deep: true
+      }
     }
   }
 }
@@ -745,7 +767,6 @@ export default {
   }
 }
 
-/* Variables CSS globales - ahora se definen en el ConfigAdmin */
 :root {
   --primary: #2c3e50;
   --secondary: #e74c3c;

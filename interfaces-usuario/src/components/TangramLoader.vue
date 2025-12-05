@@ -1,4 +1,4 @@
-<!-- TangramLoader.vue -->
+<!-- TangramLoader.vue - Versión simplificada -->
 <template>
   <div class="tangram-loader" v-if="showLoader">
     <canvas ref="canvas"></canvas>
@@ -36,45 +36,26 @@ export default {
       duracionAnimacion: 2000,
       tiempoEntreFiguras: 1000,
       figurasDisponibles: ['cuadrado', 'figura1', 'figura2', 'figura3', 'figura4'],
-      indiceFiguraActual: 0
+      indiceFiguraActual: 0,
+      checkInterval: null
     }
   },
   mounted() {
-    this.loadColorsFromCSS();
     this.initCanvas();
     this.startAnimation();
+    
+    // Verificar cambios en colores cada 500ms
+    this.checkInterval = setInterval(() => {
+      this.updateTangramColors();
+    }, 500);
   },
   beforeUnmount() {
     this.stopAnimation();
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+    }
   },
   methods: {
-    loadColorsFromCSS() {
-      // Obtener los colores de las variables CSS
-      const rootStyles = getComputedStyle(document.documentElement);
-      
-      // Los 5 colores principales
-      const primaryColor = rootStyles.getPropertyValue('--primary').trim();
-      const secondaryColor = rootStyles.getPropertyValue('--secondary').trim();
-      const backgroundColor = rootStyles.getPropertyValue('--background').trim();
-      const textColor = rootStyles.getPropertyValue('--text').trim();
-      const accentColor = rootStyles.getPropertyValue('--accent').trim();
-      
-      // Si algún color no está definido, usar valores por defecto
-      const defaultColors = ['#2c3e50', '#e74c3c', '#ecf0f1', '#2c3e50', '#ffffff'];
-      
-      this.tangramColors = [
-        primaryColor || defaultColors[0],      // Color 1 - primary
-        secondaryColor || defaultColors[1],    // Color 2 - secondary
-        backgroundColor || defaultColors[2],   // Color 3 - background
-        textColor || defaultColors[3],         // Color 4 - text
-        accentColor || defaultColors[4],       // Color 5 - accent
-        primaryColor || defaultColors[0],      // Color 6 - primary (repetido)
-        secondaryColor || defaultColors[1]     // Color 7 - secondary (repetido)
-      ];
-      
-      console.log('Colores del Tangram cargados:', this.tangramColors);
-    },
-
     initCanvas() {
       this.canvas = this.$refs.canvas;
       if (!this.canvas) return;
@@ -83,40 +64,41 @@ export default {
       this.canvas.width = 400;
       this.canvas.height = 400;
 
+      // Inicializar puntos con colores del CSS
       this.points = [
         {
           p: [{x: 0, y: 0}, {x: 200, y: 0}, {x: 100, y: 100}], 
-          color: this.tangramColors[0], // Color 1 - primary
+          color: this.getCSSColor('--primary'),
           transform: { translateX: 0, translateY: 0, rotation: 0, scaleX: 1, scaleY: 1 }
         },
         {
           p: [{x: 0, y: 0}, {x: 100, y: 100}, {x: 0, y: 200}], 
-          color: this.tangramColors[1], // Color 2 - secondary
+          color: this.getCSSColor('--secondary'),
           transform: { translateX: 0, translateY: 0, rotation: 0, scaleX: 1, scaleY: 1 }
         },
         {
           p: [{x: 200, y: 0}, {x: 200, y: 100}, {x: 150, y: 150}, {x: 150, y: 50}],
-          color: this.tangramColors[2], // Color 3 - background
+          color: this.getCSSColor('--background'),
           transform: { translateX: 0, translateY: 0, rotation: 0, scaleX: 1, scaleY: 1 }
         },
         {
           p: [{x: 150, y: 50}, {x: 150, y: 150}, {x: 100, y: 100}],
-          color: this.tangramColors[3], // Color 4 - text
+          color: this.getCSSColor('--text'),
           transform: { translateX: 0, translateY: 0, rotation: 0, scaleX: 1, scaleY: 1 }
         },
         {
           p: [{x: 100, y: 100}, {x: 150, y: 150}, {x: 100, y: 200}, {x: 50, y: 150}],
-          color: this.tangramColors[4], // Color 5 - accent
+          color: this.getCSSColor('--accent'),
           transform: { translateX: 0, translateY: 0, rotation: 0, scaleX: 1, scaleY: 1 }
         },
         {
           p: [{x: 50, y: 150}, {x: 100, y: 200}, {x: 0, y: 200}],
-          color: this.tangramColors[5], // Color 6 - primary (repetido)
+          color: this.getCSSColor('--primary'), // Repetido primary
           transform: { translateX: 0, translateY: 0, rotation: 0, scaleX: 1, scaleY: 1 }
         },
         {
           p: [{x: 200, y: 100}, {x: 200, y: 200}, {x: 100, y: 200}],
-          color: this.tangramColors[6], // Color 7 - secondary (repetido)
+          color: this.getCSSColor('--secondary'), // Repetido secondary
           transform: { translateX: 0, translateY: 0, rotation: 0, scaleX: 1, scaleY: 1 }
         }
       ];
@@ -177,6 +159,30 @@ export default {
       this.duracionAnimacion = this.animationSpeed;
     },
 
+    getCSSColor(variableName) {
+      const rootStyles = getComputedStyle(document.documentElement);
+      const color = rootStyles.getPropertyValue(variableName).trim();
+      
+      console.log(`Variable ${variableName}: "${color}"`);
+      return color || 'transparent';
+    },
+
+    updateTangramColors() {
+      // Actualizar colores de todas las piezas
+      this.points[0].color = this.getCSSColor('--primary');
+      this.points[1].color = this.getCSSColor('--secondary');
+      this.points[2].color = this.getCSSColor('--background');
+      this.points[3].color = this.getCSSColor('--text');
+      this.points[4].color = this.getCSSColor('--accent');
+      this.points[5].color = this.getCSSColor('--primary');
+      this.points[6].color = this.getCSSColor('--secondary');
+      
+      // Redibujar con los nuevos colores
+      if (this.context && this.canvas) {
+        this.draw();
+      }
+    },
+
     drawFigure(figure) {
       this.context.save();
       
@@ -213,21 +219,6 @@ export default {
         scaleX: inicio.scaleX + (fin.scaleX - inicio.scaleX) * progreso,
         scaleY: inicio.scaleY + (fin.scaleY - inicio.scaleY) * progreso
       };
-    },
-
-    updateColors() {
-      // Actualizar los colores de las piezas cuando cambian las variables CSS
-      this.loadColorsFromCSS();
-      
-      // Actualizar colores de las piezas existentes
-      this.points.forEach((point, index) => {
-        point.color = this.tangramColors[index];
-      });
-      
-      // Redibujar con los nuevos colores
-      if (this.context && this.canvas) {
-        this.draw();
-      }
     },
 
     startAnimation() {
@@ -301,10 +292,8 @@ export default {
     draw() {
       if (!this.context || !this.canvas) return;
       
-      // Limpiar el lienzo con color semitransparente
+      // Limpiar el lienzo
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      this.context.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
       
       // Dibujar cada figura con sus transformaciones individuales
       for (let i = 0; i < this.points.length; i++) {
@@ -318,22 +307,6 @@ export default {
       }
     }
   },
-
-    
-    observeCSSChanges() {
-      // Observar cambios en las variables CSS
-      const observer = new MutationObserver(() => {
-        this.updateColors();
-      });
-      
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['style', 'class']
-      });
-      
-      return observer;
-    },
-    
   watch: {
     showLoader(newVal) {
       if (newVal) {
