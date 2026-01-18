@@ -273,7 +273,9 @@
       <div class="container">
         <div class="section-title">
           <h2>Galería JDM</h2>
-          <p>Próximamente: Una impresionante colección de los mejores coches JDM tuning.</p>
+        </div>
+        <div class="gallery-content">
+          <CarouselPreview />
         </div>
       </div>
     </section>
@@ -381,13 +383,16 @@ import TangramLoader from './TangramLoader.vue';
 import ConfigAdmin from './assets/configadmin.vue';
 // Importar el componente UserCV
 import UserCV from './UserCV.vue';
+// Preview carousel
+import CarouselPreview from './CarouselPreviewFixed.vue';
 
 export default {
   name: 'AboutJdmTuning',
   components: {
     TangramLoader,
     ConfigAdmin,
-    UserCV
+    UserCV,
+    CarouselPreview
   },
   data() {
     return {

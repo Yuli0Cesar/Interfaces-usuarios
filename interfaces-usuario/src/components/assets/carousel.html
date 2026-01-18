@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrusel con Editor de Imágenes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #1a2a6c, #b21f1f);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+        
+        @media (min-width: 992px) {
+            .content {
+                flex-direction: row;
+            }
+        }
+        
+        .upload-section {
+            flex: 1;
+            padding: 20px;
+            border-right: 1px solid #eee;
+        }
+        
+        .carousel-section {
+            flex: 2;
+            padding: 20px;
+        }
+        
+        .section-title {
+            color: #1a2a6c;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #fdbb2d;
+            font-size: 1.8rem;
+        }
+        
+        .upload-area {
+            border: 3px dashed #b21f1f;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+            background-color: #f9f9f9;
+        }
+        
+        .upload-area:hover {
+            background-color: #fff5f5;
+            border-color: #1a2a6c;
+        }
+        
+        .upload-icon {
+            font-size: 4rem;
+            color: #b21f1f;
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            background: linear-gradient(90deg, #1a2a6c, #b21f1f);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(90deg, #fdbb2d, #b21f1f);
+        }
+        
+        .crop-container {
+            width: 100%;
+            max-height: 400px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        #imagePreview {
+            max-width: 100%;
+            max-height: 400px;
+            display: block;
+        }
+        
+        .crop-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        .carousel-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            height: 400px;
+            background-color: #f5f5f5;
+        }
+        
+        .carousel-wrapper {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .carousel {
+            display: flex;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            width: 100%;
+        }
+        
+        .carousel-item {
+            flex: 0 0 33.333%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            position: relative;
+        }
+        
+        .carousel-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+            display: block;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.5s ease;
+        }
+        
+        .carousel-item.active .carousel-image {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border: 3px solid #1a2a6c;
+        }
+        
+        .empty-carousel {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            width: 100%;
+            flex: 0 0 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .empty-icon {
+            font-size: 5rem;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+        
+        .carousel-controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+            gap: 15px;
+        }
+        
+        .carousel-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(90deg, #1a2a6c, #b21f1f);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .carousel-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        
+        .indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ccc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .indicator.active {
+            background-color: #1a2a6c;
+            transform: scale(1.3);
+        }
+        
+        .image-counter {
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .carousel-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 10px;
+            text-align: center;
+            color: #333;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f0f7ff;
+            border-radius: 15px;
+            border-left: 5px solid #1a2a6c;
+        }
+        
+        .instructions h3 {
+            color: #1a2a6c;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.2);
+            margin-top: 30px;
+            border-radius: 0 0 20px 20px;
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        
+        .delete-btn:hover {
+            background-color: rgba(255, 0, 0, 1);
+            transform: scale(1.1);
+        }
+        
+        .crop-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(26, 42, 108, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 0.7rem;
+        }
+        
+        .auto-rotate-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .auto-rotate-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .toggle-switch {
+            width: 50px;
+            height: 26px;
+            background-color: #ccc;
+            border-radius: 13px;
+            position: relative;
+            transition: background-color 0.3s ease;
+        }
+        
+        .toggle-switch.active {
+            background-color: #1a2a6c;
+        }
+        
+        .toggle-slider {
+            width: 22px;
+            height: 22px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .speed-slider {
+            width: 100px;
+        }
+        
+        .carousel-status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1a2a6c;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .image-position {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            z-index: 5;
+        }
+        
+        .image-stats {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            z-index: 5;
+            max-width: 200px;
+            text-align: left;
+        }
+        
+        .image-stats h4 {
+            margin-bottom: 5px;
+            color: #fdbb2d;
+            font-size: 0.9rem;
+        }
+        
+        .image-stats p {
+            margin: 2px 0;
+        }
+        
+        .stats-toggle {
+            position: absolute;
+            top: 10px;
+            right: 50px;
+            background-color: rgba(26, 42, 108, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        
+        .stats-toggle:hover {
+            background-color: rgba(26, 42, 108, 1);
+            transform: scale(1.1);
+        }
+        
+        /* Estilos para grupos de imágenes */
+        .carousel-group {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .carousel-item-group {
+            flex: 0 0 33.333%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            position: relative;
+        }
+        
+        /* Ajustes para cuando hay menos de 3 imágenes */
+        .carousel-item.single {
+            flex: 0 0 100%;
+        }
+        
+        .carousel-item.double {
+            flex: 0 0 50%;
+        }
+        
+        .carousel-item.triple {
+            flex: 0 0 33.333%;
+        }
+        
+        /* Para pantallas pequeñas */
+        @media (max-width: 768px) {
+            .carousel-item {
+                flex: 0 0 100%;
+            }
+            
+            .carousel-container {
+                height: 300px;
+            }
+        }
+        
+        .group-info {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            z-index: 5;
+        }
+        
+        .current-group {
+            text-align: center;
+            margin-top: 10px;
+            color: #1a2a6c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-images"></i> Carrusel de Imágenes</h1>
+            <p class="subtitle">Sube, recorta y visualiza tus imágenes en grupos de 3</p>
+        </header>
+        
+        <div class="content">
+            <div class="upload-section">
+                <h2 class="section-title">Editor de Imágenes</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <p class="upload-text">Arrastra y suelta tus imágenes aquí</p>
+                    <p>o haz clic para seleccionar archivos</p>
+                    <p class="upload-text">Formatos: JPG, PNG, GIF, WEBP</p>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*" multiple>
+                </div>
+                
+                <div class="image-info" id="imageInfo" style="display: none;">
+                    <h3>Información de la imagen:</h3>
+                    <p id="fileSize">Tamaño del archivo: </p>
+                    <p id="dimensions">Dimensiones: </p>
+                    <p id="memorySize">Tamaño en memoria: </p>
+                </div>
+                
+                <div class="crop-container" id="cropContainer">
+                    <img id="imagePreview" alt="Vista previa de la imagen">
+                </div>
+                
+                <div class="crop-controls" id="cropControls" style="display: none;">
+                    <button class="btn" id="cropBtn">
+                        <i class="fas fa-crop-alt"></i> Recortar y Agregar
+                    </button>
+                    <button class="btn btn-secondary" id="cancelCropBtn">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                </div>
+                
+                <div class="instructions">
+                    <h3>Instrucciones:</h3>
+                    <ol>
+                        <li>Selecciona una imagen haciendo clic en el área de arriba o arrastra y suelta</li>
+                        <li>Usa el recuadro para seleccionar el área que deseas conservar</li>
+                        <li>Haz clic en "Recortar y Agregar" para agregarla al carrusel</li>
+                        <li>El carrusel mostrará 3 imágenes a la vez en grupos</li>
+                        <li>Cuando hay más de 3 imágenes, se rotará entre grupos de 3</li>
+                        <li>Puedes eliminar imágenes haciendo clic en el botón rojo (X)</li>
+                        <li>Haz clic en el botón de estadísticas (📊) para ver detalles de la imagen</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="carousel-section">
+                <h2 class="section-title">Carrusel de Imágenes</h2>
+                
+                <div class="carousel-container">
+                    <div class="carousel-wrapper">
+                        <div class="carousel" id="carousel">
+                            <!-- Las imágenes se agregarán aquí dinámicamente -->
+                            <div class="carousel-item empty-carousel" id="emptyCarousel">
+                                <div>
+                                    <i class="fas fa-images empty-icon"></i>
+                                    <h3>No hay imágenes en el carrusel</h3>
+                                    <p>Sube tu primera imagen usando el panel izquierdo</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="current-group" id="currentGroup">Grupo 1 de 1</div>
+                
+                <div class="carousel-controls">
+                    <button class="carousel-btn" id="prevBtn" style="display: none;">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="carousel-btn" id="nextBtn" style="display: none;">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <div class="carousel-indicators" id="indicators">
+                    <!-- Los indicadores se agregarán aquí dinámicamente -->
+                </div>
+                
+                <div class="image-counter" id="imageCounter">0 imágenes</div>
+                
+                <div class="auto-rotate-controls">
+                    <div class="auto-rotate-toggle" id="autoRotateToggle">
+                        <span>Rotación automática:</span>
+                        <div class="toggle-switch active" id="toggleSwitch">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="speed-control">
+                        <span>Velocidad:</span>
+                        <input type="range" min="1" max="10" value="5" class="speed-slider" id="speedSlider">
+                        <span id="speedValue">5s</span>
+                    </div>
+                </div>
+                
+                <div class="carousel-status" id="carouselStatus">Agrega imágenes para comenzar</div>
+                
+                <div class="carousel-info">
+                    <p>El carrusel muestra <strong>3 imágenes a la vez</strong> en grupos.</p>
+                    <p>Cuando hay más de 3 imágenes, se mostrarán en grupos que rotarán automáticamente.</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Carrusel con Editor de Imágenes &copy; 2023 | Compatible con JPG, PNG, GIF y WEBP</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script>
+        // Variables globales
+        let cropper = null;
+        let images = [];
+        let currentGroupIndex = 0;
+        let autoRotateInterval = null;
+        let rotateSpeed = 5000; // 5 segundos por defecto
+        let autoRotateEnabled = true;
+        let currentFile = null;
+        
+        // Elementos del DOM
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const cropContainer = document.getElementById('cropContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const cropControls = document.getElementById('cropControls');
+        const cropBtn = document.getElementById('cropBtn');
+        const cancelCropBtn = document.getElementById('cancelCropBtn');
+        const carousel = document.getElementById('carousel');
+        const emptyCarousel = document.getElementById('emptyCarousel');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const indicators = document.getElementById('indicators');
+        const imageCounter = document.getElementById('imageCounter');
+        const autoRotateToggle = document.getElementById('autoRotateToggle');
+        const toggleSwitch = document.getElementById('toggleSwitch');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const carouselStatus = document.getElementById('carouselStatus');
+        const imageInfo = document.getElementById('imageInfo');
+        const fileSizeInfo = document.getElementById('fileSize');
+        const dimensionsInfo = document.getElementById('dimensions');
+        const memorySizeInfo = document.getElementById('memorySize');
+        const currentGroup = document.getElementById('currentGroup');
+        
+        // Función para calcular tamaño en memoria
+        function calculateMemorySize(base64String) {
+            // Fórmula aproximada para calcular el tamaño en memoria de una imagen base64
+            const base64Length = base64String.length;
+            const padding = base64String.endsWith('==') ? 2 : base64String.endsWith('=') ? 1 : 0;
+            const fileSize = (base64Length * 3) / 4 - padding;
+            
+            return formatBytes(fileSize);
+        }
+        
+        // Función para formatear bytes a unidades legibles
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+        
+        // Función para obtener dimensiones de imagen
+        function getImageDimensions(url) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    resolve({
+                        width: this.width,
+                        height: this.height
+                    });
+                };
+                img.src = url;
+            });
+        }
+        
+        // Función para calcular el número total de grupos
+        function getTotalGroups() {
+            return Math.ceil(images.length / 3);
+        }
+        
+        // Función para obtener las imágenes del grupo actual
+        function getCurrentGroupImages() {
+            const startIndex = currentGroupIndex * 3;
+            const endIndex = Math.min(startIndex + 3, images.length);
+            return images.slice(startIndex, endIndex);
+        }
+        
+        // Inicializar controles de velocidad
+        speedSlider.addEventListener('input', function() {
+            rotateSpeed = (11 - this.value) * 1000;
+            speedValue.textContent = `${this.value}s`;
+            
+            // Reiniciar la rotación automática si está activa
+            if (autoRotateEnabled && images.length > 3) {
+                stopAutoRotate();
+                startAutoRotate();
+            }
+        });
+        
+        // Control de rotación automática
+        autoRotateToggle.addEventListener('click', function() {
+            autoRotateEnabled = !autoRotateEnabled;
+            
+            if (autoRotateEnabled) {
+                toggleSwitch.classList.add('active');
+                if (images.length > 3) {
+                    carouselStatus.textContent = 'Rotación automática activada';
+                    startAutoRotate();
+                } else {
+                    carouselStatus.textContent = 'Agrega más de 3 imágenes para activar la rotación';
+                }
+            } else {
+                toggleSwitch.classList.remove('active');
+                carouselStatus.textContent = 'Rotación automática desactivada';
+                stopAutoRotate();
+            }
+        });
+        
+        // Función para iniciar la rotación automática (entre grupos)
+        function startAutoRotate() {
+            if (images.length <= 3) return;
+            
+            stopAutoRotate(); // Detener cualquier intervalo previo
+            
+            autoRotateInterval = setInterval(() => {
+                nextGroup();
+            }, rotateSpeed);
+        }
+        
+        // Función para detener la rotación automática
+        function stopAutoRotate() {
+            if (autoRotateInterval) {
+                clearInterval(autoRotateInterval);
+                autoRotateInterval = null;
+            }
+        }
+        
+        // Evento para abrir el selector de archivos al hacer clic en el área de carga
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // Evento para arrastrar y soltar archivos
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '#fff0f0';
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.backgroundColor = '#f9f9f9';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.backgroundColor = '#f9f9f9';
+            
+            if (e.dataTransfer.files.length > 0) {
+                handleImageFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        // Evento para seleccionar archivos
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleImageFile(e.target.files[0]);
+            }
+        });
+        
+        // Función para manejar el archivo de imagen
+        async function handleImageFile(file) {
+            currentFile = file;
+            
+            // Validar que sea una imagen
+            if (!file.type.match('image.*')) {
+                alert('Por favor, selecciona un archivo de imagen (JPG, PNG, GIF, etc.)');
+                return;
+            }
+            
+            // Mostrar información del archivo
+            fileSizeInfo.textContent = `Tamaño del archivo: ${formatBytes(file.size)}`;
+            imageInfo.style.display = 'block';
+            
+            const reader = new FileReader();
+            
+            reader.onload = async (e) => {
+                // Mostrar la imagen para recortar
+                imagePreview.src = e.target.result;
+                cropContainer.style.display = 'block';
+                cropControls.style.display = 'flex';
+                
+                // Ocultar área de carga
+                uploadArea.style.display = 'none';
+                
+                // Obtener dimensiones
+                const dimensions = await getImageDimensions(e.target.result);
+                dimensionsInfo.textContent = `Dimensiones: ${dimensions.width} x ${dimensions.height}px`;
+                
+                // Calcular tamaño en memoria
+                memorySizeInfo.textContent = `Tamaño en memoria: ${calculateMemorySize(e.target.result)}`;
+                
+                // Inicializar Cropper
+                if (cropper) {
+                    cropper.destroy();
+                }
+                
+                cropper = new Cropper(imagePreview, {
+                    aspectRatio: 4 / 3,
+                    viewMode: 1,
+                    autoCropArea: 0.8,
+                    responsive: true,
+                    guides: true,
+                    highlight: false,
+                    background: false,
+                    modal: true,
+                    dragMode: 'move'
+                });
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        // Evento para recortar la imagen
+        cropBtn.addEventListener('click', async () => {
+            if (!cropper) return;
+            
+            // Obtener la imagen recortada como data URL
+            const croppedCanvas = cropper.getCroppedCanvas({
+                width: 600,
+                height: 450
+            });
+            
+            const croppedImageUrl = croppedCanvas.toDataURL('image/jpeg', 0.9);
+            
+            // Obtener información de la imagen recortada
+            const dimensions = await getImageDimensions(croppedImageUrl);
+            const memorySize = calculateMemorySize(croppedImageUrl);
+            
+            // Agregar la imagen recortada al array de imágenes
+            images.push({
+                url: croppedImageUrl,
+                cropped: true,
+                dimensions: dimensions,
+                memorySize: memorySize,
+                originalSize: currentFile ? formatBytes(currentFile.size) : 'N/A'
+            });
+            
+            // Actualizar el carrusel
+            updateCarousel();
+            
+            // Ajustar el índice del grupo si es necesario
+            const totalGroups = getTotalGroups();
+            if (currentGroupIndex >= totalGroups) {
+                currentGroupIndex = totalGroups - 1;
+            }
+            
+            // Iniciar rotación automática si hay suficientes imágenes
+            if (autoRotateEnabled && images.length > 3) {
+                startAutoRotate();
+            }
+            
+            // Restablecer la interfaz
+            resetCropInterface();
+        });
+        
+        // Evento para cancelar el recorte
+        cancelCropBtn.addEventListener('click', resetCropInterface);
+        
+        // Función para restablecer la interfaz de recorte
+        function resetCropInterface() {
+            // Ocultar contenedor de recorte
+            cropContainer.style.display = 'none';
+            cropControls.style.display = 'none';
+            imageInfo.style.display = 'none';
+            
+            // Mostrar área de carga
+            uploadArea.style.display = 'block';
+            
+            // Destruir cropper
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
+            
+            // Limpiar input de archivo
+            fileInput.value = '';
+            currentFile = null;
+        }
+        
+        // Eventos para los controles del carrusel
+        prevBtn.addEventListener('click', prevGroup);
+        nextBtn.addEventListener('click', nextGroup);
+        
+        // Función para mostrar el grupo anterior
+        function prevGroup() {
+            if (getTotalGroups() <= 1) return;
+            
+            currentGroupIndex = (currentGroupIndex - 1 + getTotalGroups()) % getTotalGroups();
+            updateCarouselView();
+            
+            // Reiniciar temporizador de rotación automática
+            if (autoRotateEnabled && images.length > 3) {
+                stopAutoRotate();
+                startAutoRotate();
+            }
+        }
+        
+        // Función para mostrar el siguiente grupo
+        function nextGroup() {
+            if (getTotalGroups() <= 1) return;
+            
+            currentGroupIndex = (currentGroupIndex + 1) % getTotalGroups();
+            updateCarouselView();
+        }
+        
+        // Función para eliminar una imagen del carrusel
+        function deleteImage(index) {
+            images.splice(index, 1);
+            
+            // Ajustar el índice del grupo si es necesario
+            const totalGroups = getTotalGroups();
+            if (totalGroups === 0) {
+                currentGroupIndex = 0;
+            } else if (currentGroupIndex >= totalGroups) {
+                currentGroupIndex = totalGroups - 1;
+            }
+            
+            updateCarousel();
+            
+            // Actualizar rotación automática
+            if (autoRotateEnabled && images.length > 3) {
+                startAutoRotate();
+            } else {
+                stopAutoRotate();
+                if (images.length <= 3) {
+                    carouselStatus.textContent = 'Agrega más de 3 imágenes para activar la rotación';
+                }
+            }
+        }
+        
+        // Función para actualizar el carrusel (estructura completa)
+        function updateCarousel() {
+            // Limpiar carrusel
+            carousel.innerHTML = '';
+            indicators.innerHTML = '';
+            
+            // Si no hay imágenes, mostrar el mensaje vacío
+            if (images.length === 0) {
+                carousel.appendChild(emptyCarousel);
+                emptyCarousel.style.display = 'flex';
+                currentGroup.textContent = 'Sin imágenes';
+                
+                // Ocultar controles
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                imageCounter.textContent = '0 imágenes';
+                carouselStatus.textContent = 'Agrega imágenes para comenzar';
+                return;
+            }
+            
+            const totalGroups = getTotalGroups();
+            const groupImages = getCurrentGroupImages();
+            
+            // Mostrar controles si hay más de 3 imágenes (más de un grupo)
+            if (images.length > 3) {
+                prevBtn.style.display = 'flex';
+                nextBtn.style.display = 'flex';
+            } else {
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+            }
+            
+            // Actualizar información del grupo
+            currentGroup.textContent = `Grupo ${currentGroupIndex + 1} de ${totalGroups}`;
+            
+            // Crear elementos del carrusel para el grupo actual
+            for (let i = 0; i < 3; i++) {
+                const carouselItem = document.createElement('div');
+                
+                if (images.length === 1) {
+                    carouselItem.className = 'carousel-item single';
+                } else if (images.length === 2) {
+                    carouselItem.className = 'carousel-item double';
+                } else {
+                    carouselItem.className = 'carousel-item triple';
+                }
+                
+                if (i < groupImages.length) {
+                    const imageIndex = currentGroupIndex * 3 + i;
+                    const imageData = images[imageIndex];
+                    
+                    carouselItem.dataset.index = imageIndex;
+                    
+                    // Añadir información del grupo
+                    const groupInfo = document.createElement('div');
+                    groupInfo.className = 'group-info';
+                    groupInfo.textContent = `Imagen ${i + 1} del grupo`;
+                    carouselItem.appendChild(groupInfo);
+                    
+                    // Botón de eliminar (para cada imagen)
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'delete-btn';
+                    deleteButton.innerHTML = '<i class="fas fa-times"></i>';
+                    deleteButton.title = 'Eliminar imagen';
+                    deleteButton.addEventListener('click', () => deleteImage(imageIndex));
+                    carouselItem.appendChild(deleteButton);
+                    
+                    // Botón de estadísticas
+                    const statsButton = document.createElement('button');
+                    statsButton.className = 'stats-toggle';
+                    statsButton.innerHTML = '<i class="fas fa-chart-bar"></i>';
+                    statsButton.title = 'Ver estadísticas de la imagen';
+                    let statsVisible = false;
+                    let statsDiv = null;
+                    
+                    statsButton.addEventListener('click', () => {
+                        if (!statsVisible) {
+                            // Mostrar estadísticas
+                            statsDiv = document.createElement('div');
+                            statsDiv.className = 'image-stats';
+                            statsDiv.innerHTML = `
+                                <h4>Información de la imagen</h4>
+                                <p><strong>Posición:</strong> ${imageIndex + 1} de ${images.length}</p>
+                                <p><strong>Tamaño original:</strong> ${imageData.originalSize || 'N/A'}</p>
+                                <p><strong>Dimensiones:</strong> ${imageData.dimensions?.width || 0} x ${imageData.dimensions?.height || 0}px</p>
+                                <p><strong>Tamaño en memoria:</strong> ${imageData.memorySize || 'N/A'}</p>
+                                <p><strong>Estado:</strong> ${imageData.cropped ? 'Recortada' : 'Original'}</p>
+                            `;
+                            carouselItem.appendChild(statsDiv);
+                            statsVisible = true;
+                            statsButton.innerHTML = '<i class="fas fa-times"></i>';
+                            statsButton.title = 'Ocultar estadísticas';
+                        } else {
+                            // Ocultar estadísticas
+                            if (statsDiv) {
+                                statsDiv.remove();
+                            }
+                            statsVisible = false;
+                            statsButton.innerHTML = '<i class="fas fa-chart-bar"></i>';
+                            statsButton.title = 'Ver estadísticas de la imagen';
+                        }
+                    });
+                    carouselItem.appendChild(statsButton);
+                    
+                    // Añadir etiqueta si fue recortada
+                    if (imageData.cropped) {
+                        const croppedLabel = document.createElement('div');
+                        croppedLabel.className = 'crop-label';
+                        croppedLabel.innerHTML = '<i class="fas fa-crop-alt"></i> Recortada';
+                        carouselItem.appendChild(croppedLabel);
+                    }
+                    
+                    // Crear imagen
+                    const img = document.createElement('img');
+                    img.src = imageData.url;
+                    img.alt = `Imagen ${imageIndex + 1}`;
+                    img.className = 'carousel-image';
+                    
+                    carouselItem.appendChild(img);
+                } else {
+                    // Espacio vacío para completar el grupo de 3
+                    carouselItem.style.backgroundColor = '#f0f0f0';
+                    carouselItem.style.display = 'flex';
+                    carouselItem.style.justifyContent = 'center';
+                    carouselItem.style.alignItems = 'center';
+                    carouselItem.innerHTML = '<i class="fas fa-image" style="font-size: 3rem; color: #ccc;"></i>';
+                }
+                
+                carousel.appendChild(carouselItem);
+            }
+            
+            // Crear indicadores de grupo
+            for (let i = 0; i < totalGroups; i++) {
+                const indicator = document.createElement('div');
+                indicator.className = 'indicator';
+                if (i === currentGroupIndex) {
+                    indicator.classList.add('active');
+                }
+                
+                indicator.addEventListener('click', () => {
+                    currentGroupIndex = i;
+                    updateCarouselView();
+                    
+                    // Reiniciar temporizador de rotación automática
+                    if (autoRotateEnabled && images.length > 3) {
+                        stopAutoRotate();
+                        startAutoRotate();
+                    }
+                });
+                
+                indicators.appendChild(indicator);
+            }
+            
+            // Actualizar contador
+            imageCounter.textContent = `${images.length} imagen${images.length !== 1 ? 'es' : ''}`;
+            
+            // Actualizar estado de rotación automática
+            if (images.length > 3 && autoRotateEnabled) {
+                carouselStatus.textContent = 'Rotación automática entre grupos activada';
+            } else if (images.length <= 3 && autoRotateEnabled) {
+                carouselStatus.textContent = 'Agrega más de 3 imágenes para activar la rotación entre grupos';
+            }
+        }
+        
+        // Función para actualizar solo la vista del carrusel (sin reconstruir todo)
+        function updateCarouselView() {
+            // Para simplificar, reconstruimos todo cuando cambiamos la vista
+            updateCarousel();
+        }
+        
+        // También permitir agregar imágenes sin recortar
+        document.addEventListener('keydown', async (e) => {
+            // Atajo de teclado: Ctrl + Enter para agregar sin recortar
+            if (e.ctrlKey && e.key === 'Enter' && cropper) {
+                // Obtener la imagen original sin recortar
+                const originalImageUrl = imagePreview.src;
+                
+                // Obtener información de la imagen
+                const dimensions = await getImageDimensions(originalImageUrl);
+                const memorySize = calculateMemorySize(originalImageUrl);
+                
+                // Agregar la imagen original al array de imágenes
+                images.push({
+                    url: originalImageUrl,
+                    cropped: false,
+                    dimensions: dimensions,
+                    memorySize: memorySize,
+                    originalSize: currentFile ? formatBytes(currentFile.size) : 'N/A'
+                });
+                
+                // Actualizar el carrusel
+                updateCarousel();
+                
+                // Ajustar el índice del grupo si es necesario
+                const totalGroups = getTotalGroups();
+                if (currentGroupIndex >= totalGroups) {
+                    currentGroupIndex = totalGroups - 1;
+                }
+                
+                // Iniciar rotación automática si hay suficientes imágenes
+                if (autoRotateEnabled && images.length > 3) {
+                    startAutoRotate();
+                }
+                
+                // Restablecer la interfaz
+                resetCropInterface();
+            }
+        });
+        
+        // Inicializar el carrusel vacío
+        updateCarousel();
+    </script>
+</body>
+</html>

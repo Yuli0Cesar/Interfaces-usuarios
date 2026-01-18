@@ -23,6 +23,13 @@
         >
           🎨 Configuración
         </button>
+        <button 
+          class="admin-nav-btn"
+          :class="{ active: currentAdminSection === 'carousel' }"
+          @click="currentAdminSection = 'carousel'"
+        >
+          🖼️ Carousel
+        </button>
       </div>
 
       <!-- Sección de Gestión de Usuarios con DataTable -->
@@ -85,6 +92,16 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- Sección de Gestión del Carousel -->
+      <div v-if="currentAdminSection === 'carousel'" class="carousel-management-section">
+        <div class="users-header">
+          <h2>🖼️ Gestión del Carousel</h2>
+        </div>
+        <div class="users-content">
+          <CarouselManager />
         </div>
       </div>
 
@@ -478,9 +495,13 @@
 import $ from 'jquery';
 import 'datatables.net';
 import 'datatables.net-dt';
+import CarouselManager from '../CarouselManager.vue';
 
 export default {
   name: 'ConfigAdmin',
+  components: {
+    CarouselManager
+  },
   props: {
     user: {
       type: Object,
