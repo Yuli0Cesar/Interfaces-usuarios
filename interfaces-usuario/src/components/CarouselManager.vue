@@ -29,7 +29,7 @@
 
 <script>
 import Cropper from 'cropperjs';
-import 'cropperjs/dist/cropper.css';
+import 'cropperjs/dist/cropper.js';
 
 export default {
   name: 'CarouselManager',
@@ -53,6 +53,13 @@ export default {
     onFileChange(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+      
+      // Validar tamaño máximo (ej: 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen es demasiado grande. Máximo 5MB.');
+        return;
+      }
+      
       const reader = new FileReader();
       reader.onload = (ev) => {
         this.srcImage = ev.target.result;
@@ -76,33 +83,68 @@ export default {
     },
     cropAndAdd() {
       if (!this.cropper) return;
+      
       const canvas = this.cropper.getCroppedCanvas({
-        maxWidth: 1600,
-        maxHeight: 900,
-        imageSmoothingQuality: 'high'
+        width: 800, // Reducir tamaño para ahorrar espacio
+        height: 450,
+        imageSmoothingQuality: 'medium' // Reducir calidad para ahorrar espacio
       });
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      
+      // Comprimir más la imagen
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // 0.7 calidad
+      
+      // Validar límite de localStorage (≈5MB)
+      if (dataUrl.length > 500000) { // ≈500KB por imagen
+        alert('La imagen resultante es demasiado grande. Intenta con una imagen más pequeña.');
+        return;
+      }
+      
       this.addImage(dataUrl);
       this.clearCrop();
     },
     addImage(dataUrl) {
+      // Limitar número máximo de imágenes
+      const maxImages = 10;
+      if (this.images.length >= maxImages) {
+        alert(`Máximo ${maxImages} imágenes permitidas. Elimina alguna antes de añadir más.`);
+        return;
+      }
+      
       this.images.push(dataUrl);
-      localStorage.setItem('admin_carousel_images', JSON.stringify(this.images));
-      window.dispatchEvent(new Event('carousel-updated'));
+      this.saveImages();
     },
     removeImage(i) {
-      this.images.splice(i, 1);
-      localStorage.setItem('admin_carousel_images', JSON.stringify(this.images));
-      window.dispatchEvent(new Event('carousel-updated'));
+      if (confirm('¿Eliminar esta imagen del carrusel?')) {
+        this.images.splice(i, 1);
+        this.saveImages();
+      }
+    },
+    saveImages() {
+      try {
+        localStorage.setItem('admin_carousel_images', JSON.stringify(this.images));
+        window.dispatchEvent(new Event('carousel-updated'));
+        console.log('Imágenes guardadas correctamente. Total:', this.images.length);
+      } catch (e) {
+        alert('Error al guardar imágenes. Es posible que haya excedido el límite de almacenamiento.');
+        console.error('Error en localStorage:', e);
+      }
     },
     loadImages() {
-      const stored = localStorage.getItem('admin_carousel_images');
-      this.images = stored ? JSON.parse(stored) : [];
+      try {
+        const stored = localStorage.getItem('admin_carousel_images');
+        this.images = stored ? JSON.parse(stored) : [];
+        console.log('Imágenes cargadas:', this.images.length);
+      } catch (e) {
+        console.error('Error al cargar imágenes:', e);
+        this.images = [];
+      }
     },
     clearCrop() {
-      if (this.cropper) { this.cropper.destroy(); this.cropper = null; }
+      if (this.cropper) { 
+        this.cropper.destroy(); 
+        this.cropper = null; 
+      }
       this.srcImage = null;
-      // clear file input value if present
       const input = this.$el.querySelector('input[type=file]');
       if (input) input.value = '';
     }

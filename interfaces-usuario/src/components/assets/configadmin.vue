@@ -30,6 +30,13 @@
         >
           🖼️ Carousel
         </button>
+        <button 
+          class="admin-nav-btn" 
+          :class="{ active: currentAdminSection === 'videos' }"
+          @click="currentAdminSection = 'videos'"
+        >
+          🎬 Gestión de Videos
+        </button>
       </div>
 
       <!-- Sección de Gestión de Usuarios con DataTable -->
@@ -102,6 +109,286 @@
         </div>
         <div class="users-content">
           <CarouselManager />
+        </div>
+      </div>
+
+      <!-- Sección de Gestión de Videos -->
+      <div v-if="currentAdminSection === 'videos'" class="videos-management-section">
+        <div class="users-header">
+          <h2>🎬 Gestión de Videos</h2>
+          <div class="users-stats">
+            <div class="stat-card">
+              <div class="stat-number">{{ totalVideos }}</div>
+              <div class="stat-label">Videos Totales</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">{{ videosWithAllTracks }}</div>
+              <div class="stat-label">Completos</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">{{ totalStorage }}</div>
+              <div class="stat-label">Espacio Usado</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="users-content">
+          <!-- Controles de subida -->
+          <div class="upload-section">
+            <h3>Subir Nuevo Video</h3>
+            <div class="upload-form">
+              <div class="form-group">
+                <label for="videoTitle">Título del Video</label>
+                <input type="text" id="videoTitle" v-model="newVideo.title" placeholder="Ej: Tutorial de tuning" class="form-input">
+              </div>
+              
+              <div class="form-group">
+                <label for="videoDescription">Descripción</label>
+                <textarea id="videoDescription" v-model="newVideo.description" placeholder="Descripción del video..." class="form-textarea" rows="3"></textarea>
+              </div>
+              
+              <!-- Selector de categoría -->
+              <div class="form-group">
+                <label for="videoCategory">Categoría</label>
+                <select id="videoCategory" v-model="newVideo.category" class="form-select">
+                  <option value="tutorial">Tutorial</option>
+                  <option value="review">Review</option>
+                  <option value="evento">Evento</option>
+                  <option value="entrevista">Entrevista</option>
+                  <option value="otros">Otros</option>
+                </select>
+              </div>
+
+              <!-- Archivo principal del video -->
+              <div class="file-upload-group">
+                <label class="file-label">
+                  <span class="file-icon">🎥</span>
+                  <span class="file-text">Video Principal (MP4)</span>
+                  <input type="file" @change="handleVideoUpload" accept="video/mp4" class="file-input">
+                </label>
+                <div v-if="newVideo.videoFile" class="file-info">
+                  {{ newVideo.videoFile.name }} ({{ formatFileSize(newVideo.videoFile.size) }})
+                </div>
+              </div>
+
+              <!-- Pistas de audio (requeridas: 2) -->
+              <div class="audio-tracks-section">
+                <h4>Pistas de Audio (2 requeridas)</h4>
+                <div class="audio-track-group">
+                  <div class="file-upload-group">
+                    <label class="file-label">
+                      <span class="file-icon">🔊</span>
+                      <span class="file-text">Pista de Audio 1 (ES)</span>
+                      <input type="file" @change="handleAudioUpload($event, 0)" accept="audio/mpeg,audio/wav,audio/ogg" class="file-input">
+                    </label>
+                    <div v-if="newVideo.audioTracks[0]" class="file-info">
+                      {{ newVideo.audioTracks[0].name }} ({{ formatFileSize(newVideo.audioTracks[0].size) }})
+                    </div>
+                  </div>
+
+                  <div class="file-upload-group">
+                    <label class="file-label">
+                      <span class="file-icon">🔊</span>
+                      <span class="file-text">Pista de Audio 2 (EN)</span>
+                      <input type="file" @change="handleAudioUpload($event, 1)" accept="audio/mpeg,audio/wav,audio/ogg" class="file-input">
+                    </label>
+                    <div v-if="newVideo.audioTracks[1]" class="file-info">
+                      {{ newVideo.audioTracks[1].name }} ({{ formatFileSize(newVideo.audioTracks[1].size) }})
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Subtítulos DTT (requeridos: 2) -->
+              <div class="subtitles-section">
+                <h4>Archivos de Subtítulos DTT (2 requeridos)</h4>
+                <div class="subtitles-group">
+                  <div class="file-upload-group">
+                    <label class="file-label">
+                      <span class="file-icon">📄</span>
+                      <span class="file-text">Subtítulos Español (.dtt)</span>
+                      <input type="file" @change="handleSubtitleUpload($event, 0)" accept=".dtt,.srt,.vtt" class="file-input">
+                    </label>
+                    <div v-if="newVideo.subtitles[0]" class="file-info">
+                      {{ newVideo.subtitles[0].name }} ({{ formatFileSize(newVideo.subtitles[0].size) }})
+                    </div>
+                  </div>
+
+                  <div class="file-upload-group">
+                    <label class="file-label">
+                      <span class="file-icon">📄</span>
+                      <span class="file-text">Subtítulos Inglés (.dtt)</span>
+                      <input type="file" @change="handleSubtitleUpload($event, 1)" accept=".dtt,.srt,.vtt" class="file-input">
+                    </label>
+                    <div v-if="newVideo.subtitles[1]" class="file-info">
+                      {{ newVideo.subtitles[1].name }} ({{ formatFileSize(newVideo.subtitles[1].size) }})
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Validación de archivos -->
+              <div class="validation-status" :class="{ 'valid': isUploadValid, 'invalid': !isUploadValid }">
+                <div v-if="!isUploadValid" class="validation-error">
+                  <span>⚠️ Para subir el video necesitas:</span>
+                  <ul>
+                    <li v-if="!newVideo.videoFile">- Archivo de video principal</li>
+                    <li v-if="newVideo.audioTracks.filter(track => track).length < 2">- 2 pistas de audio ({{ newVideo.audioTracks.filter(track => track).length }}/2)</li>
+                    <li v-if="newVideo.subtitles.filter(sub => sub).length < 2">- 2 archivos de subtítulos ({{ newVideo.subtitles.filter(sub => sub).length }}/2)</li>
+                  </ul>
+                </div>
+                <div v-else class="validation-success">
+                  ✅ Todos los archivos están listos para subir
+                </div>
+              </div>
+
+              <!-- Botón de subida -->
+              <button 
+                @click="uploadVideo" 
+                :disabled="!isUploadValid || isUploading" 
+                class="upload-btn"
+                :class="{ 'loading': isUploading }"
+              >
+                <span v-if="!isUploading">⬆️ Subir Video</span>
+                <span v-else>⏳ Subiendo...</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Lista de videos existentes -->
+          <div class="videos-list-section">
+            <h3>Videos Subidos</h3>
+            <div class="videos-table-container">
+              <table class="videos-table">
+                <thead>
+                  <tr>
+                    <th>Título</th>
+                    <th>Categoría</th>
+                    <th>Pistas de Audio</th>
+                    <th>Subtítulos</th>
+                    <th>Tamaño</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="video in storedVideos" :key="video.id">
+                    <td>{{ video.title }}</td>
+                    <td><span class="category-badge" :class="video.category">{{ video.category }}</span></td>
+                    <td>
+                      <div class="tracks-status">
+                        <span v-for="(track, index) in video.audioTracks" :key="index" 
+                              class="track-indicator" :class="{ 'has-track': track }">
+                          {{ index + 1 }}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="subtitles-status">
+                        <span v-for="(subtitle, index) in video.subtitles" :key="index" 
+                              class="subtitle-indicator" :class="{ 'has-subtitle': subtitle }">
+                          {{ index + 1 }}
+                        </span>
+                      </div>
+                    </td>
+                    <td>{{ formatFileSize(video.size) }}</td>
+                    <td>{{ formatDate(video.uploadDate) }}</td>
+                    <td>
+                      <div class="video-actions">
+                        <button @click="previewVideo(video)" class="action-btn preview-btn" title="Previsualizar">
+                          👁️
+                        </button>
+                        <button @click="editVideo(video)" class="action-btn edit-btn" title="Editar">
+                          ✏️
+                        </button>
+                        <button @click="deleteVideo(video.id)" class="action-btn delete-btn" title="Eliminar">
+                          🗑️
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-if="storedVideos.length === 0" class="empty-videos">
+                No hay videos subidos aún
+              </div>
+            </div>
+          </div>
+
+          <!-- Modal de previsualización -->
+          <div v-if="showPreviewModal" class="modal-overlay" @click="closePreviewModal">
+            <div class="modal-content video-preview-modal" @click.stop>
+              <h3 class="modal-title">{{ previewVideo.title }}</h3>
+              <div class="video-preview-container">
+                <!-- Reproductor de video -->
+                <div class="player-container">
+                  <video 
+                    :id="'previewVideo-' + previewVideo.id" 
+                    :poster="previewVideo.thumbnail || 'https://via.placeholder.com/800x450/000000/FFFFFF/?text=Video+Player'"
+                    controls
+                  >
+                    <source :src="previewVideo.videoUrl" type="video/mp4">
+                    Tu navegador no soporta video HTML5.
+                  </video>
+                  
+                  <!-- Controles personalizados -->
+                  <div class="controls">
+                    <button @click="togglePlayPause(previewVideo.id)" class="control-btn" title="Reproducir/Pausar">
+                      {{ isPlaying(previewVideo.id) ? '⏸️' : '▶️' }}
+                    </button>
+                    <button @click="stopVideo(previewVideo.id)" class="control-btn" title="Detener">⏹️</button>
+                    
+                    <div class="progress-container">
+                      <input 
+                        type="range" 
+                        :id="'progressBar-' + previewVideo.id" 
+                        class="progress-bar" 
+                        min="0" 
+                        max="100" 
+                        step="0.1"
+                        @input="seekVideo(previewVideo.id, $event)"
+                      >
+                      <div class="time-display">
+                        <span :id="'currentTime-' + previewVideo.id">00:00</span> / 
+                        <span :id="'duration-' + previewVideo.id">00:00</span>
+                      </div>
+                    </div>
+
+                    <!-- Selector de pista de audio -->
+                    <select @change="changeAudioTrack(previewVideo.id, $event)" class="audio-track-select">
+                      <option value="0">Audio Español</option>
+                      <option value="1">Audio Inglés</option>
+                    </select>
+
+                    <!-- Selector de subtítulos -->
+                    <select @change="changeSubtitle(previewVideo.id, $event)" class="subtitle-select">
+                      <option value="none">Sin subtítulos</option>
+                      <option value="0">Subtítulos Español</option>
+                      <option value="1">Subtítulos Inglés</option>
+                    </select>
+
+                    <button @click="toggleMute(previewVideo.id)" class="control-btn" title="Silenciar">
+                      {{ isMuted(previewVideo.id) ? '🔇' : '🔊' }}
+                    </button>
+                    <input 
+                      type="range" 
+                      :id="'volBar-' + previewVideo.id" 
+                      min="0" 
+                      max="1" 
+                      step="0.1" 
+                      value="1"
+                      @input="changeVolume(previewVideo.id, $event)"
+                      class="volume-bar"
+                      title="Volumen"
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button class="modal-btn secondary" @click="closePreviewModal">Cerrar</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -551,7 +838,22 @@ export default {
       // Notificaciones
       showNotification: false,
       notificationMessage: '',
-      notificationClass: 'success'
+      notificationClass: 'success',
+
+      currentAdminSection: 'users',
+      newVideo: {
+        title: '',
+        description: '',
+        category: 'tutorial',
+        videoFile: null,
+        audioTracks: [null, null], // 2 pistas requeridas
+        subtitles: [null, null]    // 2 subtítulos requeridos
+      },
+      isUploading: false,
+      showPreviewModal: false,
+      previewVideo: null,
+      activeVideos: {}, // Para rastrear estado de reproducción
+      storedVideos: []  // Videos almacenados en localStorage
     }
   },
   computed: {
@@ -605,12 +907,37 @@ export default {
 
     currentUser() {
       return this.user;
+    },
+    totalVideos() {
+      return this.storedVideos.length;
+    },
+    
+    videosWithAllTracks() {
+      return this.storedVideos.filter(video => 
+        video.audioTracks.every(track => track) && 
+        video.subtitles.every(sub => sub)
+      ).length;
+    },
+    
+    totalStorage() {
+      const totalBytes = this.storedVideos.reduce((sum, video) => sum + video.size, 0);
+      return this.formatFileSize(totalBytes);
+    },
+    
+    isUploadValid() {
+      return (
+        this.newVideo.title.trim() !== '' &&
+        this.newVideo.videoFile &&
+        this.newVideo.audioTracks.filter(track => track).length === 2 &&
+        this.newVideo.subtitles.filter(sub => sub).length === 2
+      );
     }
   },
   mounted() {
     this.loadConfigsFromStorage();
     this.loadGlobalStyles();
     this.applyStylesToGlobal();
+    this.loadVideosFromStorage();
     this.$nextTick(() => {
       this.initializeDataTable();
     });
@@ -1316,6 +1643,300 @@ export default {
         hour: '2-digit',
         minute: '2-digit'
       });
+    },
+
+    // Métodos para subida de archivos
+    handleVideoUpload(event) {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('video/')) {
+        this.newVideo.videoFile = file;
+      } else {
+        this.showNotification('Por favor, selecciona un archivo de video válido (MP4)', 'error');
+      }
+    },
+    
+    handleAudioUpload(event, index) {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('audio/')) {
+        this.newVideo.audioTracks[index] = file;
+      } else {
+        this.showNotification('Por favor, selecciona un archivo de audio válido', 'error');
+      }
+    },
+    
+    handleSubtitleUpload(event, index) {
+      const file = event.target.files[0];
+      const validExtensions = ['.dtt', '.srt', '.vtt'];
+      const fileName = file.name.toLowerCase();
+      
+      if (file && validExtensions.some(ext => fileName.endsWith(ext))) {
+        this.newVideo.subtitles[index] = file;
+      } else {
+        this.showNotification('Por favor, selecciona un archivo de subtítulos válido (.dtt, .srt, .vtt)', 'error');
+      }
+    },
+    
+    async uploadVideo() {
+      if (!this.isUploadValid) {
+        this.showNotification('Por favor, completa todos los campos requeridos', 'error');
+        return;
+      }
+      
+      this.isUploading = true;
+      
+      try {
+        // Simular subida al servidor (en producción, usar API real)
+        const videoId = Date.now().toString();
+        
+        // Convertir archivos a URLs de datos para simulación
+        const videoUrl = await this.fileToDataURL(this.newVideo.videoFile);
+        const audioUrls = await Promise.all(
+          this.newVideo.audioTracks.map(track => track ? this.fileToDataURL(track) : null)
+        );
+        const subtitleUrls = await Promise.all(
+          this.newVideo.subtitles.map(sub => sub ? this.fileToDataURL(sub) : null)
+        );
+        
+        const videoData = {
+          id: videoId,
+          title: this.newVideo.title,
+          description: this.newVideo.description,
+          category: this.newVideo.category,
+          videoUrl: videoUrl,
+          audioTracks: audioUrls,
+          subtitles: subtitleUrls,
+          size: this.newVideo.videoFile.size + 
+                this.newVideo.audioTracks.reduce((sum, track) => sum + (track?.size || 0), 0) +
+                this.newVideo.subtitles.reduce((sum, sub) => sum + (sub?.size || 0), 0),
+          uploadDate: new Date().toISOString(),
+          uploader: this.user.email
+        };
+        
+        // Guardar en localStorage
+        this.storedVideos.unshift(videoData);
+        this.saveVideosToStorage();
+        
+        // Resetear formulario
+        this.resetUploadForm();
+        
+        this.showNotification('Video subido exitosamente', 'success');
+        
+      } catch (error) {
+        console.error('Error al subir video:', error);
+        this.showNotification('Error al subir el video', 'error');
+      } finally {
+        this.isUploading = false;
+      }
+    },
+    
+    async fileToDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    },
+    
+    resetUploadForm() {
+      this.newVideo = {
+        title: '',
+        description: '',
+        category: 'tutorial',
+        videoFile: null,
+        audioTracks: [null, null],
+        subtitles: [null, null]
+      };
+      
+      // Limpiar inputs de archivos
+      const fileInputs = document.querySelectorAll('.file-input');
+      fileInputs.forEach(input => {
+        if (input) input.value = '';
+      });
+    },
+    
+    loadVideosFromStorage() {
+      const saved = localStorage.getItem('jdmTuningVideos');
+      if (saved) {
+        try {
+          this.storedVideos = JSON.parse(saved);
+        } catch (e) {
+          console.error('Error al cargar videos:', e);
+          this.storedVideos = [];
+        }
+      }
+    },
+    
+    saveVideosToStorage() {
+      localStorage.setItem('jdmTuningVideos', JSON.stringify(this.storedVideos));
+    },
+    
+    formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+    
+    // Métodos para el reproductor
+    previewVideo(video) {
+      this.previewVideo = video;
+      this.showPreviewModal = true;
+      
+      // Inicializar reproductor después de que el modal se muestre
+      this.$nextTick(() => {
+        this.initializeVideoPlayer(video.id);
+      });
+    },
+    
+    initializeVideoPlayer(videoId) {
+      const videoElement = document.getElementById(`previewVideo-${videoId}`);
+      if (!videoElement) return;
+      
+      // Inicializar estado del video
+      this.activeVideos[videoId] = {
+        isPlaying: false,
+        isMuted: false,
+        currentTime: 0,
+        duration: 0
+      };
+      
+      // Configurar eventos
+      videoElement.addEventListener('timeupdate', () => {
+        this.updateProgress(videoId);
+      });
+      
+      videoElement.addEventListener('loadedmetadata', () => {
+        this.updateDuration(videoId);
+      });
+    },
+    
+    togglePlayPause(videoId) {
+      const videoElement = document.getElementById(`previewVideo-${videoId}`);
+      if (!videoElement) return;
+      
+      if (videoElement.paused) {
+        videoElement.play();
+        this.activeVideos[videoId].isPlaying = true;
+      } else {
+        videoElement.pause();
+        this.activeVideos[videoId].isPlaying = false;
+      }
+    },
+    
+    isPlaying(videoId) {
+      return this.activeVideos[videoId]?.isPlaying || false;
+    },
+    
+    stopVideo(videoId) {
+      const videoElement = document.getElementById(`previewVideo-${videoId}`);
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.currentTime = 0;
+        this.activeVideos[videoId].isPlaying = false;
+      }
+    },
+    
+    toggleMute(videoId) {
+      const videoElement = document.getElementById(`previewVideo-${videoId}`);
+      if (videoElement) {
+        videoElement.muted = !videoElement.muted;
+        this.activeVideos[videoId].isMuted = videoElement.muted;
+      }
+    },
+    
+    isMuted(videoId) {
+      return this.activeVideos[videoId]?.isMuted || false;
+    },
+    
+    changeVolume(videoId, event) {
+      const videoElement = document.getElementById(`previewVideo-${videoId}`);
+      if (videoElement) {
+        videoElement.volume = event.target.value;
+      }
+    },
+    
+    seekVideo(videoId, event) {
+      const videoElement = document.getElementById(`previewVideo-${videoId}`);
+      if (videoElement) {
+        const seekTime = (videoElement.duration / 100) * event.target.value;
+        videoElement.currentTime = seekTime;
+      }
+    },
+    
+    updateProgress(videoId) {
+      const videoElement = document.getElementById(`previewVideo-${videoId}`);
+      if (!videoElement) return;
+      
+      const progressBar = document.getElementById(`progressBar-${videoId}`);
+      const currentTimeEl = document.getElementById(`currentTime-${videoId}`);
+      
+      if (progressBar) {
+        progressBar.value = (videoElement.currentTime / videoElement.duration) * 100;
+      }
+      
+      if (currentTimeEl) {
+        currentTimeEl.textContent = this.formatTime(videoElement.currentTime);
+      }
+    },
+    
+    updateDuration(videoId) {
+      const videoElement = document.getElementById(`previewVideo-${videoId}`);
+      const durationEl = document.getElementById(`duration-${videoId}`);
+      
+      if (videoElement && durationEl) {
+        durationEl.textContent = this.formatTime(videoElement.duration);
+      }
+    },
+    
+    changeAudioTrack(videoId, event) {
+      // En una implementación real, cambiaría la pista de audio del video
+      const trackIndex = parseInt(event.target.value);
+      this.showNotification(`Cambiando a pista de audio ${trackIndex === 0 ? 'Español' : 'Inglés'}`, 'info');
+    },
+    
+    changeSubtitle(videoId, event) {
+      const subtitleIndex = event.target.value;
+      if (subtitleIndex === 'none') {
+        this.showNotification('Subtítulos desactivados', 'info');
+      } else {
+        const lang = subtitleIndex === '0' ? 'Español' : 'Inglés';
+        this.showNotification(`Subtítulos en ${lang} activados`, 'info');
+      }
+    },
+    
+    closePreviewModal() {
+      this.showPreviewModal = false;
+      this.previewVideo = null;
+      
+      // Detener todos los videos
+      Object.keys(this.activeVideos).forEach(videoId => {
+        const videoElement = document.getElementById(`previewVideo-${videoId}`);
+        if (videoElement) {
+          videoElement.pause();
+        }
+      });
+      this.activeVideos = {};
+    },
+    
+    editVideo(video) {
+      // Implementar edición de video
+      this.showNotification(`Editando video: ${video.title}`, 'info');
+    },
+    
+    deleteVideo(videoId) {
+      if (confirm('¿Estás seguro de que quieres eliminar este video? Esta acción no se puede deshacer.')) {
+        this.storedVideos = this.storedVideos.filter(video => video.id !== videoId);
+        this.saveVideosToStorage();
+        this.showNotification('Video eliminado exitosamente', 'success');
+      }
+    },
+    
+    formatTime(seconds) {
+      const minutes = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
     }
   }
 }
@@ -2562,6 +3183,488 @@ input:checked + .toggle-slider:before {
 
 .preview-social-links a:hover {
   color: var(--preview-secondary);
+}
+
+.videos-management-section {
+  background: var(--accent, #ffffff);
+  border-radius: var(--border-radius, 12px);
+  box-shadow: var(--shadow, 0 2px 10px rgba(0, 0, 0, 0.1));
+  overflow: hidden;
+}
+
+.upload-section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: var(--background, #f8f9fa);
+  border-radius: var(--border-radius, 8px);
+  border: 2px dashed var(--primary, #2c3e50);
+}
+
+.upload-section h3 {
+  color: var(--primary, #2c3e50);
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  font-family: var(--font-family, 'Segoe UI', sans-serif);
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--primary, #2c3e50);
+  font-family: var(--font-family, 'Segoe UI', sans-serif);
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  padding: 0.75rem;
+  border: 2px solid var(--accent, #ddd);
+  border-radius: var(--border-radius, 6px);
+  font-family: var(--secondary-font, Arial, sans-serif);
+  font-size: 1rem;
+  background: var(--accent, #ffffff);
+  color: var(--text, #2c3e50);
+  transition: all 0.3s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  border-color: var(--secondary, #e74c3c);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.file-upload-group {
+  margin-bottom: 1rem;
+}
+
+.file-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--accent, #ffffff);
+  border: 2px dashed var(--primary, #2c3e50);
+  border-radius: var(--border-radius, 8px);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.file-label:hover {
+  background: var(--background, #f8f9fa);
+  border-color: var(--secondary, #e74c3c);
+}
+
+.file-icon {
+  font-size: 1.2rem;
+}
+
+.file-text {
+  font-weight: 600;
+  color: var(--primary, #2c3e50);
+}
+
+.file-input {
+  display: none;
+}
+
+.file-info {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--background, #f8f9fa);
+  border-radius: var(--border-radius, 6px);
+  font-size: 0.9rem;
+  color: var(--text, #666666);
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.audio-tracks-section,
+.subtitles-section {
+  padding: 1.5rem;
+  background: var(--background, #f8f9fa);
+  border-radius: var(--border-radius, 8px);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.audio-tracks-section h4,
+.subtitles-section h4 {
+  color: var(--primary, #2c3e50);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-family: var(--font-family, 'Segoe UI', sans-serif);
+}
+
+.audio-track-group,
+.subtitles-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.validation-status {
+  padding: 1rem;
+  border-radius: var(--border-radius, 8px);
+  margin: 1rem 0;
+}
+
+.validation-status.valid {
+  background: rgba(46, 204, 113, 0.1);
+  border: 2px solid #2ecc71;
+}
+
+.validation-status.invalid {
+  background: rgba(231, 76, 60, 0.1);
+  border: 2px solid #e74c3c;
+}
+
+.validation-error span {
+  font-weight: 600;
+  color: #e74c3c;
+  display: block;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-family, 'Segoe UI', sans-serif);
+}
+
+.validation-error ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #e74c3c;
+}
+
+.validation-error li {
+  margin-bottom: 0.25rem;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.validation-success {
+  color: #2ecc71;
+  font-weight: 600;
+  text-align: center;
+  font-family: var(--font-family, 'Segoe UI', sans-serif);
+}
+
+.upload-btn {
+  padding: 1rem;
+  background: var(--secondary, #e74c3c);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius, 8px);
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-family: var(--font-family, 'Segoe UI', sans-serif);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.upload-btn:hover:not(:disabled) {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3);
+}
+
+.upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.upload-btn.loading {
+  opacity: 0.8;
+}
+
+/* ===== LISTA DE VIDEOS ===== */
+.videos-list-section {
+  margin-top: 2rem;
+}
+
+.videos-list-section h3 {
+  color: var(--primary, #2c3e50);
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  font-family: var(--font-family, 'Segoe UI', sans-serif);
+}
+
+.videos-table-container {
+  background: var(--accent, #ffffff);
+  border-radius: var(--border-radius, 8px);
+  box-shadow: var(--shadow, 0 2px 10px rgba(0,0,0,0.1));
+  overflow: hidden;
+}
+
+.videos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.videos-table thead {
+  background: var(--primary, #2c3e50);
+  color: var(--accent, #ffffff);
+}
+
+.videos-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-family: var(--font-family, 'Segoe UI', sans-serif);
+}
+
+.videos-table tbody tr {
+  border-bottom: 1px solid var(--background, #ecf0f1);
+  transition: background 0.3s ease;
+}
+
+.videos-table tbody tr:hover {
+  background: var(--background, #f8f9fa);
+}
+
+.videos-table td {
+  padding: 1rem;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.category-badge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.category-badge.tutorial {
+  background: #3498db;
+  color: white;
+}
+
+.category-badge.review {
+  background: #9b59b6;
+  color: white;
+}
+
+.category-badge.evento {
+  background: #e67e22;
+  color: white;
+}
+
+.category-badge.entrevista {
+  background: #1abc9c;
+  color: white;
+}
+
+.category-badge.otros {
+  background: #95a5a6;
+  color: white;
+}
+
+.tracks-status,
+.subtitles-status {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.track-indicator,
+.subtitle-indicator {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #e74c3c;
+  color: white;
+}
+
+.track-indicator.has-track,
+.subtitle-indicator.has-subtitle {
+  background: #27ae60;
+}
+
+.video-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  padding: 0.5rem;
+  border: none;
+  border-radius: var(--border-radius, 4px);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  background: transparent;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+}
+
+.preview-btn:hover {
+  background: #3498db;
+  color: white;
+}
+
+.edit-btn:hover {
+  background: #f39c12;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.empty-videos {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text, #7f8c8d);
+  font-style: italic;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+/* ===== MODAL DE PREVISUALIZACIÓN ===== */
+.video-preview-modal {
+  max-width: 900px;
+  width: 90%;
+}
+
+.video-preview-container {
+  margin: 1.5rem 0;
+}
+
+.player-container {
+  width: 100%;
+  background: #000;
+  border-radius: var(--border-radius, 12px);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.player-container video {
+  width: 100%;
+  display: block;
+}
+
+.player-container .controls {
+  padding: 15px;
+  background: #333;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.control-btn {
+  background: none;
+  border: 1px solid #555;
+  color: white;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 5px;
+  transition: background 0.3s;
+  font-size: 1rem;
+}
+
+.control-btn:hover {
+  background: #555;
+}
+
+.progress-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.progress-bar {
+  width: 100%;
+  cursor: pointer;
+}
+
+.time-display {
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-top: 5px;
+  text-align: right;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.audio-track-select,
+.subtitle-select,
+.volume-bar {
+  padding: 0.5rem;
+  border: 1px solid #555;
+  border-radius: 5px;
+  background: #222;
+  color: white;
+  cursor: pointer;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.audio-track-select:focus,
+.subtitle-select:focus {
+  outline: none;
+  border-color: var(--secondary, #e74c3c);
+}
+
+/* ===== RESPONSIVE PARA VIDEOS ===== */
+@media (max-width: 768px) {
+  .audio-track-group,
+  .subtitles-group {
+    grid-template-columns: 1fr;
+  }
+  
+  .videos-table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  .player-container .controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .audio-track-select,
+  .subtitle-select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .upload-section {
+    padding: 1rem;
+  }
+  
+  .videos-table th,
+  .videos-table td {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+  
+  .video-actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .action-btn {
+    padding: 0.4rem;
+    font-size: 0.8rem;
+  }
 }
 
 /* ===== RESPONSIVE ===== */
