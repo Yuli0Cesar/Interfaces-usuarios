@@ -258,7 +258,7 @@
                   :src="localVideoUrl"
                   controls
                   class="jdm-video-player"
-                  poster="https://via.placeholder.com/400x300/2c3e50/ecf0f1?text=JDM+Tuning+Video"
+                  :poster="uploadedVideoInfo?.thumbnail || 'https://via.placeholder.com/400x300/2c3e50/ecf0f1?text=JDM+Tuning+Video'"
                   @timeupdate="updateVideoProgress"
                   @loadedmetadata="updateVideoDuration"
                   @play="isPlaying = true"
@@ -271,65 +271,7 @@
                   <div class="video-placeholder-content">
                     <span class="video-icon">🎬</span>
                     <p>Reproductor JDM Tuning</p>
-                    <small>Sube un video local para verlo aquí</small>
-                    
-                    <!-- Botón para cargar video local -->
-                    <div class="video-upload-container">
-                      <label for="localVideoUpload" class="video-upload-btn">
-                        📁 Subir Video Local
-                      </label>
-                      <input 
-                        type="file" 
-                        id="localVideoUpload" 
-                        accept="video/*"
-                        @change="handleVideoUpload"
-                        style="display: none;"
-                      >
-                      
-                      <!-- Botón para cargar video por URL -->
-                      <div class="url-upload-section">
-                        <input 
-                          type="text" 
-                          v-model="videoUrlInput"
-                          placeholder="O pega una URL de video"
-                          class="video-url-input"
-                          @keyup.enter="loadVideoFromUrl"
-                        >
-                        <button @click="loadVideoFromUrl" class="url-load-btn">
-                          Cargar
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div v-if="uploadedVideoInfo" class="video-info">
-                      <small>📼 Video cargado: {{ uploadedVideoInfo.name }}</small>
-                      <small>📏 Tamaño: {{ formatFileSize(uploadedVideoInfo.size) }}</small>
-                      <small v-if="uploadedVideoInfo.lastLoaded">🕒 Última carga: {{ formatDate(uploadedVideoInfo.lastLoaded) }}</small>
-                    </div>
-                    
-                    <!-- Mostrar videos guardados -->
-                    <div v-if="savedVideos.length > 0" class="saved-videos">
-                      <p class="saved-videos-title">Videos Guardados:</p>
-                      <div class="saved-videos-list">
-                        <div 
-                          v-for="video in savedVideos" 
-                          :key="video.id"
-                          class="saved-video-item"
-                          @click="loadSavedVideoItem(video)"
-                        >
-                          <span class="saved-video-icon">📹</span>
-                          <span class="saved-video-name">{{ video.name || 'Video sin nombre' }}</span>
-                          <span class="saved-video-date">{{ formatDate(video.date) }}</span>
-                          <button 
-                            @click.stop="deleteSavedVideo(video.id)" 
-                            class="delete-video-btn"
-                            title="Eliminar video"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    <small>No hay videos para reproducir, en configadmin</small>
                   </div>
                 </div>
               </div>
@@ -346,12 +288,23 @@
                   <button @click="toggleMute" class="video-control-btn">
                     {{ isMuted ? '🔇 Silenciado' : '🔊 Sonido' }}
                   </button>
-                  <button @click="saveCurrentVideo" class="video-control-btn save-btn">
-                    💾 Guardar Video
-                  </button>
-                  <button @click="removeVideo" class="video-control-btn remove-btn">
-                    🗑️ Eliminar
-                  </button>
+                  <!-- Guardar/Eliminar deshabilitados en vista pública -->
+                </div>
+                <div class="track-controls" style="display:flex;gap:0.75rem;justify-content:center;margin-bottom:1rem;">
+                  <label style="color:var(--accent);font-family:var(--secondary-font);">
+                    Audio:
+                    <select v-model.number="activeAudioIndex" @change="onAudioChange" style="margin-left:0.5rem;padding:0.25rem;border-radius:6px;">
+                      <option :value="-1">Usar audio del video</option>
+                      <option v-for="opt in availableAudioOptions" :key="opt.index" :value="opt.index">{{ opt.label }}</option>
+                    </select>
+                  </label>
+                  <label style="color:var(--accent);font-family:var(--secondary-font);">
+                    Subtítulos:
+                    <select v-model.number="activeSubtitleIndex" @change="onSubtitleChange" style="margin-left:0.5rem;padding:0.25rem;border-radius:6px;">
+                      <option :value="-1">Sin subtítulos</option>
+                      <option v-for="opt in availableSubtitleOptions" :key="opt.index" :value="opt.index">{{ opt.label }}</option>
+                    </select>
+                  </label>
                 </div>
                 <div class="video-progress">
                   <input 
@@ -618,6 +571,12 @@ export default {
       localVideoUrl: null,
       videoUrlInput: '',
       uploadedVideoInfo: null,
+      currentVideoObj: null,
+      audioTracks: [],
+      subtitleTracks: [],
+      activeAudioIndex: -1,
+      activeSubtitleIndex: -1,
+      audioElements: [],
       isPlaying: false,
       isMuted: false,
       currentTime: 0,
@@ -648,8 +607,23 @@ export default {
       getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
       getComputedStyle(document.documentElement).getPropertyValue('--secondary').trim()
     ];
-  }
-
+  },
+    availableAudioOptions() {
+      const res = [];
+      (this.audioTracks || []).forEach((t, i) => {
+        if (t) res.push({ index: i, label: `Pista ${i + 1}` });
+      });
+      return res;
+    },
+    
+    availableSubtitleOptions() {
+      const res = [];
+      (this.subtitleTracks || []).forEach((t, i) => {
+        if (t) res.push({ index: i, label: `Sub ${i + 1}` });
+      });
+      return res;
+    }
+    
   },
   mounted() {
     setTimeout(() => {
@@ -659,8 +633,30 @@ export default {
     this.checkStoredAuth();
     this.loadGlobalStyles(); // Cargar estilos guardados al iniciar
     
+    // Escuchar actualizaciones de videos desde el admin
+    window.addEventListener('videos-updated', this.loadVideosFromAdmin);
+    window.addEventListener('default-video-updated', this.applyDefaultVideo);
+    // Cargar videos subidos desde el admin
+    this.loadVideosFromAdmin();
+    // Aplicar video por defecto (si existe)
+    this.applyDefaultVideo();
     // Inicializar el reproductor de video
     this.initializeVideoPlayer();
+  },
+  watch: {
+    localVideoUrl(newVal) {
+      if (newVal) {
+        // small delay to ensure DOM updated
+        setTimeout(() => { try { this.setupTracks(); } catch(e){ console.error('setupTracks watcher error', e); } }, 250);
+      }
+    }
+  },
+  beforeUnmount() {
+    window.removeEventListener('videos-updated', this.loadVideosFromAdmin);
+    window.removeEventListener('default-video-updated', this.applyDefaultVideo);
+    try {
+      this.cleanupTracks();
+    } catch (e) {}
   },
   methods: {
     setActiveView(view) {
@@ -921,96 +917,15 @@ export default {
     },
 
     handleVideoUpload(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      
-      // Verificar que sea un video
-      if (!file.type.startsWith('video/')) {
-        alert('Por favor, selecciona un archivo de video válido');
-        return;
-      }
-      
-      // Limitar tamaño (opcional, 50MB máximo)
-      const maxSize = 50 * 1024 * 1024; // 50MB
-      if (file.size > maxSize) {
-        alert('El video es demasiado grande. Máximo 50MB.');
-        return;
-      }
-      
-      // Crear URL local para el video
-      const videoUrl = URL.createObjectURL(file);
-      this.localVideoUrl = videoUrl;
-      
-      // Guardar información del video
-      this.uploadedVideoInfo = {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        lastLoaded: new Date().toISOString()
-      };
-      
-      // Guardar en localStorage
-      const videoData = {
-        id: Date.now().toString(),
-        name: file.name,
-        type: 'local',
-        dataUrl: videoUrl,
-        size: file.size,
-        timestamp: new Date().toISOString(),
-        date: new Date().toISOString()
-      };
-      
-      this.saveVideoToLocalStorage(videoData);
-      this.saveVideoToList(videoData);
-      
-      // Limpiar input
-      event.target.value = '';
-      
-      // Inicializar controles
-      this.$nextTick(() => {
-        const videoElement = this.$refs.videoPlayer;
-        if (videoElement) {
-          videoElement.volume = this.volume;
-        }
-      });
+      // Subida desde la vista pública deshabilitada — usar panel admin
+      alert('La subida de videos solo está permitida desde el Panel de Administración (Admin → Gestión de Videos).');
+      // Si existe un input, limpiarlo
+      try { if (event && event.target) event.target.value = ''; } catch(e) {}
     },
 
     loadVideoFromUrl() {
-      if (!this.videoUrlInput.trim()) {
-        alert('Por favor, introduce una URL de video');
-        return;
-      }
-      
-      // Validar URL
-      try {
-        new URL(this.videoUrlInput);
-      } catch (e) {
-        alert('Por favor, introduce una URL válida');
-        return;
-      }
-      
-      this.localVideoUrl = this.videoUrlInput;
-      
-      // Guardar información
-      this.uploadedVideoInfo = {
-        name: 'Video desde URL',
-        source: this.videoUrlInput,
-        lastLoaded: new Date().toISOString()
-      };
-      
-      // Guardar en localStorage
-      const videoData = {
-        id: Date.now().toString(),
-        name: 'Video desde URL',
-        type: 'url',
-        url: this.videoUrlInput,
-        timestamp: new Date().toISOString(),
-        date: new Date().toISOString()
-      };
-      
-      this.saveVideoToLocalStorage(videoData);
-      this.saveVideoToList(videoData);
-      
+      // Carga por URL deshabilitada en la vista pública
+      alert('La carga de videos por URL solo está permitida desde el Panel de Administración (Admin → Gestión de Videos).');
       this.videoUrlInput = '';
     },
 
@@ -1081,6 +996,270 @@ export default {
       }
     },
 
+    // --- Audio/Subtitles support ---
+    setupTracks() {
+      console.debug('setupTracks called', 'audioTracks.len=', (this.audioTracks||[]).length, 'subtitleTracks.len=', (this.subtitleTracks||[]).length);
+      this.cleanupTracks();
+      const videoElement = this.$refs.videoPlayer;
+      if (!videoElement) return;
+
+      // Add subtitle <track> elements
+      try {
+        // remove any existing track elements
+        const existing = videoElement.querySelectorAll('track');
+        existing.forEach(t => t.remove());
+
+        (this.subtitleTracks || []).forEach((subSrc, idx) => {
+          if (!subSrc) return;
+          const track = document.createElement('track');
+          track.kind = 'subtitles';
+          track.label = `Sub ${idx + 1}`;
+          track.srclang = 'es';
+          const real = this.getBlobUrlIfNeeded(subSrc);
+          track.src = real;
+          if (real !== subSrc) this._createdObjectUrls.push(real);
+          track.default = false;
+          track.mode = 'disabled';
+          videoElement.appendChild(track);
+          track.addEventListener && track.addEventListener('load', () => {
+            console.debug('track loaded', idx, track.src);
+          });
+        });
+      } catch (e) {
+        console.error('Error al configurar subtítulos:', e);
+      }
+      // Force the browser to load newly appended tracks and poll for textTracks
+      try {
+        videoElement.load();
+        const maxRetries = 15;
+        let attempts = 0;
+        const poll = () => {
+          const tt = videoElement.textTracks || [];
+          if (tt && tt.length > 0) {
+            console.debug('textTracks populated, count=', tt.length);
+            for (let i = 0; i < tt.length; i++) {
+              try { tt[i].mode = 'disabled'; } catch(e) {}
+            }
+            return;
+          }
+          attempts++;
+          if (attempts < maxRetries) {
+            setTimeout(poll, 200);
+          } else {
+            console.warn('textTracks did not populate after polling');
+          }
+        };
+        setTimeout(poll, 200);
+      } catch (e) {
+        console.warn('Unable to reload video for tracks:', e);
+      }
+
+      // Setup audio elements for external audio tracks
+      try {
+        this.audioElements = (this.audioTracks || []).map(src => {
+          if (!src) return null;
+          const realSrc = this.getBlobUrlIfNeeded(src);
+          if (realSrc !== src) this._createdObjectUrls.push(realSrc);
+          const a = new Audio(realSrc);
+          a.preload = 'auto';
+          a.crossOrigin = 'anonymous';
+          a.addEventListener && a.addEventListener('canplaythrough', () => { console.debug('audio canplaythrough', realSrc); });
+          a.addEventListener && a.addEventListener('error', (ev) => { console.error('audio element error', realSrc, ev); });
+          return a;
+        });
+        console.debug('audioElements created count=', (this.audioElements||[]).filter(Boolean).length);
+        console.debug('createdObjectUrls=', this._createdObjectUrls);
+      } catch (e) {
+        console.error('Error al crear pistas de audio:', e);
+        this.audioElements = [];
+      }
+
+      // Sync handlers
+      const onPlay = () => {
+        console.debug('video play event, activeAudioIndex=', this.activeAudioIndex);
+        if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
+          const a = this.audioElements[this.activeAudioIndex];
+          try { a.currentTime = videoElement.currentTime; } catch(e){}
+          if (videoElement.paused === false) {
+            a.play().then(() => {
+              console.debug('external audio playing');
+              videoElement.muted = true;
+              this.isMuted = true;
+            }).catch(err => {
+              console.error('external audio play failed', err);
+              // fallback: unmute video
+              videoElement.muted = false;
+              this.isMuted = false;
+            });
+          }
+        }
+      };
+
+      const onPause = () => {
+        console.debug('video pause event');
+        if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
+          const a = this.audioElements[this.activeAudioIndex];
+          a.pause();
+        }
+      };
+
+      const onSeeked = () => {
+        if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
+          const a = this.audioElements[this.activeAudioIndex];
+          try { a.currentTime = videoElement.currentTime; } catch(e){}
+        }
+      };
+
+      const onTime = () => {
+        const idx = this.activeAudioIndex;
+        if (idx !== -1 && this.audioElements[idx]) {
+          const a = this.audioElements[idx];
+          const diff = Math.abs((a.currentTime || 0) - (videoElement.currentTime || 0));
+          if (diff > 0.3) {
+            try { a.currentTime = videoElement.currentTime; } catch(e){}
+          }
+        }
+      };
+
+      const onEnded = () => {
+        console.debug('video ended event');
+        if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
+          try { this.audioElements[this.activeAudioIndex].pause(); } catch(e){}
+        }
+        this.isPlaying = false;
+      };
+
+      // Store handlers to remove later
+      this._videoSyncHandlers = { onPlay, onPause, onSeeked, onTime };
+      videoElement.addEventListener('play', onPlay);
+      videoElement.addEventListener('pause', onPause);
+      videoElement.addEventListener('seeked', onSeeked);
+      videoElement.addEventListener('timeupdate', onTime);
+      videoElement.addEventListener('ended', onEnded);
+      // include ended handler in stored handlers for cleanup
+      this._videoSyncHandlers.onEnded = onEnded;
+    },
+
+    cleanupTracks() {
+      const videoElement = this.$refs.videoPlayer;
+      if (videoElement && this._videoSyncHandlers) {
+        try {
+          videoElement.removeEventListener('play', this._videoSyncHandlers.onPlay);
+          videoElement.removeEventListener('pause', this._videoSyncHandlers.onPause);
+          videoElement.removeEventListener('seeked', this._videoSyncHandlers.onSeeked);
+          videoElement.removeEventListener('timeupdate', this._videoSyncHandlers.onTime);
+          if (this._videoSyncHandlers.onEnded) videoElement.removeEventListener('ended', this._videoSyncHandlers.onEnded);
+        } catch (e) {}
+        this._videoSyncHandlers = null;
+      }
+
+      (this.audioElements || []).forEach(a => {
+        try { a.pause(); a.src = ''; } catch(e){}
+      });
+      this.audioElements = [];
+      // remove track elements
+      if (videoElement) {
+        const existing = videoElement.querySelectorAll('track');
+        existing.forEach(t => t.remove());
+      }
+      // revoke any created object URLs
+      if (this._createdObjectUrls && this._createdObjectUrls.length) {
+        this._createdObjectUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch(e){} });
+      }
+      this._createdObjectUrls = [];
+    },
+
+    onAudioChange() {
+      console.debug('onAudioChange ->', this.activeAudioIndex);
+      this.changeAudioTrack(this.activeAudioIndex);
+    },
+
+    onSubtitleChange() {
+      console.debug('onSubtitleChange ->', this.activeSubtitleIndex);
+      this.changeSubtitleTrack(this.activeSubtitleIndex);
+    },
+
+    changeAudioTrack(index) {
+      console.debug('changeAudioTrack requested', index, 'audioTracks length', (this.audioTracks||[]).length);
+      const videoElement = this.$refs.videoPlayer;
+      // stop previous
+      (this.audioElements || []).forEach((a, idx) => {
+        if (!a) return;
+        try { if (idx !== index) a.pause(); } catch(e){}
+      });
+
+      if (index === -1) {
+        // use video's internal audio
+        if (videoElement) { videoElement.muted = false; this.isMuted = false; }
+        this.activeAudioIndex = -1;
+        return;
+      }
+
+      const chosen = this.audioElements[index];
+      if (!chosen) { console.warn('chosen audio element not found for index', index); return; }
+      this.activeAudioIndex = index;
+      if (videoElement) {
+        try { chosen.currentTime = videoElement.currentTime; } catch(e){}
+        chosen.play().then(() => {
+          console.debug('chosen audio playing');
+          try { videoElement.muted = true; this.isMuted = true; } catch(e){}
+        }).catch(err => {
+          console.error('chosen audio play error', err);
+          // fallback
+          try { videoElement.muted = false; this.isMuted = false; } catch(e){}
+        });
+      }
+    },
+
+    changeSubtitleTrack(index) {
+      const videoElement = this.$refs.videoPlayer;
+      if (!videoElement) return;
+      const applyMode = () => {
+        const textTracks = videoElement.textTracks || [];
+        if (!textTracks || textTracks.length === 0) return false;
+        for (let i = 0; i < textTracks.length; i++) {
+          try {
+            textTracks[i].mode = (i === index) ? 'showing' : 'disabled';
+          } catch (e) {}
+        }
+        console.debug('applyMode set textTracks modes, count=', textTracks.length, 'active=', index);
+        return true;
+      };
+
+      // try immediate, otherwise retry shortly after load
+      if (!applyMode()) {
+        console.debug('textTracks empty, will retry shortly');
+        setTimeout(() => { const ok = applyMode(); console.debug('retry applyMode ok=', ok); }, 300);
+      }
+      this.activeSubtitleIndex = index;
+    },
+
+    getBlobUrlIfNeeded(src) {
+      if (!src || typeof src !== 'string') return src;
+      if (!src.startsWith('data:')) return src;
+      try {
+        const parts = src.split(',');
+        const meta = parts[0];
+        const isBase64 = meta.indexOf(';base64') !== -1;
+        const mime = meta.split(':')[1].split(';')[0] || 'application/octet-stream';
+        const data = parts[1] || '';
+        let byteString;
+        if (isBase64) {
+          byteString = atob(data);
+        } else {
+          byteString = decodeURIComponent(data);
+        }
+        const ia = new Uint8Array(byteString.length);
+        for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+        const blob = new Blob([ia], { type: mime });
+        const url = URL.createObjectURL(blob);
+        return url;
+      } catch (e) {
+        console.error('getBlobUrlIfNeeded failed', e);
+        return src;
+      }
+    },
+
     formatTime(seconds) {
       if (isNaN(seconds)) return '00:00';
       
@@ -1111,37 +1290,8 @@ export default {
     },
 
     saveCurrentVideo() {
-      if (!this.localVideoUrl) {
-        alert('No hay video para guardar');
-        return;
-      }
-      
-      const videoName = prompt('Nombre para el video:', this.uploadedVideoInfo?.name || 'Mi video JDM');
-      if (!videoName) return;
-      
-      const videoElement = this.$refs.videoPlayer;
-      if (!videoElement) return;
-      
-      const videoData = {
-        id: this.currentVideoId || Date.now().toString(),
-        name: videoName,
-        type: this.localVideoUrl.startsWith('blob:') || this.localVideoUrl.startsWith('data:') ? 'local' : 'url',
-        timestamp: new Date().toISOString(),
-        date: new Date().toISOString(),
-        duration: this.duration
-      };
-      
-      if (videoData.type === 'local' && this.localVideoUrl.startsWith('blob:')) {
-        videoData.dataUrl = this.localVideoUrl;
-        videoData.size = this.uploadedVideoInfo?.size || 0;
-      } else {
-        videoData.url = this.localVideoUrl;
-      }
-      
-      this.saveVideoToLocalStorage(videoData);
-      this.saveVideoToList(videoData);
-      
-      alert(`Video "${videoName}" guardado correctamente`);
+      // Guardado desde la vista pública está deshabilitado. Usar ConfigAdmin.
+      alert('Guardar videos está deshabilitado en la vista pública. Usa Admin → Gestión de Videos.');
     },
 
     saveVideoToLocalStorage(videoData) {
@@ -1183,25 +1333,111 @@ export default {
       }
     },
 
+    applyDefaultVideo() {
+      const defId = localStorage.getItem('jdmDefaultVideoId');
+      if (!defId) return;
+      const all = localStorage.getItem('jdmTuningVideos');
+      if (!all) return;
+      try {
+        const videos = JSON.parse(all);
+        const found = videos.find(v => v.id === defId);
+        if (found) {
+          // Preferir videoUrl/dataUrl/url
+          const url = found.videoUrl || found.url || found.dataUrl || null;
+          if (url) {
+            this.currentVideoObj = found;
+            console.debug('applyDefaultVideo loaded video', found.id, 'audioTracks', (found.audioTracks||[]).length, 'subtitles', (found.subtitles||[]).length);
+            this.localVideoUrl = url;
+            this.uploadedVideoInfo = { name: found.title || found.name || 'Video predeterminado', size: found.size || 0, lastLoaded: new Date().toISOString() };
+            this.currentVideoId = found.id;
+            this.audioTracks = found.audioTracks || [];
+            this.subtitleTracks = found.subtitles || [];
+            this.activeAudioIndex = -1;
+            this.activeSubtitleIndex = -1;
+            this.$nextTick(() => {
+              const videoElement = this.$refs.videoPlayer;
+              if (videoElement) videoElement.volume = this.volume;
+              this.setupTracks();
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Error al aplicar video por defecto:', e);
+      }
+    },
+
+    loadVideosFromAdmin() {
+      // Cargar videos subidos desde el panel de admin (configadmin.vue)
+      const saved = localStorage.getItem('jdmTuningVideos');
+      if (saved) {
+        try {
+          const videos = JSON.parse(saved);
+          // Mantener la misma estructura local usada por about.vue
+          this.savedVideos = videos.map(v => ({
+            id: v.id,
+            name: v.title || v.name || 'Video',
+            type: v.type || (v.videoUrl ? 'local' : 'url'),
+            url: v.url || v.videoUrl || v.dataUrl || null,
+            size: v.size || 0,
+            timestamp: v.uploadDate || v.timestamp || new Date().toISOString()
+          }));
+        } catch (e) {
+          console.error('Error al cargar videos desde admin:', e);
+          this.savedVideos = [];
+        }
+      } else {
+        // Si no hay videos desde admin, no modificar lista local existente
+        // pero aseguramos que savedVideos esté inicializado
+        this.savedVideos = this.savedVideos || [];
+      }
+    },
+
     loadSavedVideoItem(video) {
+      // Buscar objeto completo en jdmTuningVideos (guardado por admin)
+      const all = localStorage.getItem('jdmTuningVideos');
+      let foundFull = null;
+      if (all) {
+        try {
+          const vids = JSON.parse(all);
+          foundFull = vids.find(v => v.id === video.id) || null;
+        } catch (e) {
+          console.error('Error al buscar video completo:', e);
+        }
+      }
+
+      if (foundFull) {
+        const url = foundFull.videoUrl || foundFull.url || foundFull.dataUrl || null;
+        if (url) {
+          this.currentVideoObj = foundFull;
+          this.localVideoUrl = url;
+          this.uploadedVideoInfo = { name: foundFull.title || foundFull.name || video.name, size: foundFull.size || 0, lastLoaded: new Date().toISOString() };
+          this.audioTracks = foundFull.audioTracks || [];
+          this.subtitleTracks = foundFull.subtitles || [];
+          this.activeAudioIndex = -1;
+          this.activeSubtitleIndex = -1;
+          this.currentVideoId = foundFull.id;
+          localStorage.setItem('jdmLastVideo', JSON.stringify(foundFull));
+          this.$nextTick(() => {
+            const videoElement = this.$refs.videoPlayer;
+            if (videoElement) videoElement.volume = this.volume;
+            this.setupTracks();
+          });
+          return;
+        }
+      }
+
+      // Fallback si no está en jdmTuningVideos
       if (video.type === 'local' && video.dataUrl) {
         this.localVideoUrl = video.dataUrl;
-        this.uploadedVideoInfo = {
-          name: video.name,
-          size: video.size || 0,
-          lastLoaded: new Date().toISOString()
-        };
+        this.uploadedVideoInfo = { name: video.name, size: video.size || 0, lastLoaded: new Date().toISOString() };
       } else if (video.type === 'url' && video.url) {
         this.localVideoUrl = video.url;
-        this.uploadedVideoInfo = {
-          name: video.name,
-          lastLoaded: new Date().toISOString()
-        };
+        this.uploadedVideoInfo = { name: video.name, lastLoaded: new Date().toISOString() };
       }
-      
+
       this.currentVideoId = video.id;
       localStorage.setItem('jdmLastVideo', JSON.stringify(video));
-      
+
       this.$nextTick(() => {
         const videoElement = this.$refs.videoPlayer;
         if (videoElement) {
@@ -1211,18 +1447,8 @@ export default {
     },
 
     deleteSavedVideo(videoId) {
-      if (!confirm('¿Eliminar este video de la lista?')) return;
-      
-      // Filtrar la lista
-      this.savedVideos = this.savedVideos.filter(v => v.id !== videoId);
-      localStorage.setItem('jdmSavedVideos', JSON.stringify(this.savedVideos));
-      
-      // Si el video eliminado es el que se está reproduciendo, limpiar
-      if (this.currentVideoId === videoId) {
-        this.removeVideo();
-      }
-      
-      alert('Video eliminado de la lista');
+      // Eliminación desde la vista pública está deshabilitada. Usar ConfigAdmin.
+      alert('Eliminar videos está deshabilitado en la vista pública. Usa Admin → Gestión de Videos.');
     },
 
     formatDate(dateString) {
@@ -1234,6 +1460,22 @@ export default {
         hour: '2-digit',
         minute: '2-digit'
       });
+    }
+
+    ,availableAudioOptions() {
+      const res = [];
+      (this.audioTracks || []).forEach((t, i) => {
+        if (t) res.push({ index: i, label: `Pista ${i + 1}` });
+      });
+      return res;
+    },
+
+    availableSubtitleOptions() {
+      const res = [];
+      (this.subtitleTracks || []).forEach((t, i) => {
+        if (t) res.push({ index: i, label: `Sub ${i + 1}` });
+      });
+      return res;
     }
   }
 }

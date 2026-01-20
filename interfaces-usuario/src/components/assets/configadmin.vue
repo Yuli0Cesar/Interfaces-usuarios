@@ -314,6 +314,33 @@
               </div>
             </div>
           </div>
+          <!-- Selección de video por defecto para About -->
+          <div class="default-video-section color-sidebar">
+            <h3>Video por defecto (About)</h3>
+            <div v-if="storedVideos.length === 0" class="empty-videos">No hay videos subidos aún</div>
+            <div v-else class="default-list-container">
+              <div class="default-list">
+                <label v-for="video in storedVideos" :key="video.id" class="default-item">
+                  <input type="radio" name="defaultVideo" :value="video.id" v-model="defaultVideoId" @change="previewDefaultVideo(video)">
+                  {{ video.title }}
+                </label>
+              </div>
+
+              <div v-if="defaultPreview" class="default-preview color-sidebar">
+                <h4>Previsualización</h4>
+                <div v-if="defaultPreview.url">
+                  <video :src="defaultPreview.url" controls :poster="defaultPreview.thumbnail || ''" width="480"></video>
+                </div>
+                <div v-else>
+                  <p>No es posible previsualizar este video (archivo demasiado grande o no almacenado localmente).</p>
+                </div>
+                <div class="default-actions">
+                  <button @click="saveDefaultVideo" class="action-btn">💾 Guardar como predeterminado</button>
+                  <button @click="clearDefaultVideo" class="action-btn secondary">❌ Quitar predeterminado</button>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- Modal de previsualización -->
           <div v-if="showPreviewModal" class="modal-overlay" @click="closePreviewModal">
@@ -854,6 +881,10 @@ export default {
       previewVideo: null,
       activeVideos: {}, // Para rastrear estado de reproducción
       storedVideos: []  // Videos almacenados en localStorage
+      ,
+      // Video por defecto para la sección About
+      defaultVideoId: null,
+      defaultPreview: null
     }
   },
   computed: {
@@ -939,6 +970,7 @@ export default {
     this.loadGlobalStyles();
     this.applyStylesToGlobal();
     this.loadVideosFromStorage();
+    this.loadDefaultVideoFromStorage();
     this.$nextTick(() => {
       this.initializeDataTable();
     });
@@ -1689,13 +1721,23 @@ export default {
         // Simular subida al servidor (en producción, usar API real)
         const videoId = Date.now().toString();
         
-        // Convertir archivos a URLs de datos para simulación
-        const videoUrl = await this.fileToDataURL(this.newVideo.videoFile);
+        // Convertir archivos a URLs de datos para simulación cuando sea razonable
+        // Para evitar exceder localStorage, solo guardamos el video como dataURL si es pequeño (<=5MB)
+        const MAX_VIDEO_STORE = 5 * 1024 * 1024; // 5MB
+        const MAX_ASSET_STORE = 2 * 1024 * 1024; // 2MB para pistas/subs
+
+        let videoUrl = null;
+        if (this.newVideo.videoFile.size <= MAX_VIDEO_STORE) {
+          videoUrl = await this.fileToDataURL(this.newVideo.videoFile);
+        } else {
+          this.showNotification('Video demasiado grande para almacenarse en localStorage; se guardará metadata y miniatura.', 'warning');
+        }
+
         const audioUrls = await Promise.all(
-          this.newVideo.audioTracks.map(track => track ? this.fileToDataURL(track) : null)
+          this.newVideo.audioTracks.map(track => track && track.size <= MAX_ASSET_STORE ? this.fileToDataURL(track) : null)
         );
         const subtitleUrls = await Promise.all(
-          this.newVideo.subtitles.map(sub => sub ? this.fileToDataURL(sub) : null)
+          this.newVideo.subtitles.map(sub => sub && sub.size <= MAX_ASSET_STORE ? this.fileToDataURL(sub) : null)
         );
         
         const videoData = {
@@ -1716,10 +1758,33 @@ export default {
         // Guardar en localStorage
         this.storedVideos.unshift(videoData);
         this.saveVideosToStorage();
-        
+
+        // Generar miniatura desde el video y añadir al carrusel de imágenes
+        try {
+          // Usar ObjectURL para generar miniatura (más fiable para blobs grandes)
+          const blobUrl = URL.createObjectURL(this.newVideo.videoFile);
+          const thumbnail = await this.generateVideoThumbnail(blobUrl);
+          URL.revokeObjectURL(blobUrl);
+
+          const storedImgs = localStorage.getItem('admin_carousel_images');
+          const imgs = storedImgs ? JSON.parse(storedImgs) : [];
+          imgs.push(thumbnail);
+          localStorage.setItem('admin_carousel_images', JSON.stringify(imgs));
+          window.dispatchEvent(new Event('carousel-updated'));
+
+          // Guardar miniatura dentro del objeto de video (si existe en la lista)
+          const idx = this.storedVideos.findIndex(v => v.id === videoId);
+          if (idx !== -1) {
+            this.storedVideos[idx].thumbnail = thumbnail;
+            this.saveVideosToStorage();
+          }
+        } catch (e) {
+          console.error('Error al generar miniatura del video:', e);
+        }
+
         // Resetear formulario
         this.resetUploadForm();
-        
+
         this.showNotification('Video subido exitosamente', 'success');
         
       } catch (error) {
@@ -1767,9 +1832,86 @@ export default {
         }
       }
     },
+
+    loadDefaultVideoFromStorage() {
+      const def = localStorage.getItem('jdmDefaultVideoId');
+      if (def) {
+        this.defaultVideoId = def;
+        const found = this.storedVideos.find(v => v.id === def);
+        if (found) this.defaultPreview = { url: found.videoUrl || found.url || found.dataUrl || null, thumbnail: found.thumbnail || null };
+      }
+    },
+
+    previewDefaultVideo(video) {
+      // Preparar preview si existe URL almacenada
+      const url = video.videoUrl || video.url || video.dataUrl || null;
+      this.defaultPreview = { url, thumbnail: null };
+    },
+
+    saveDefaultVideo() {
+      if (!this.defaultVideoId) {
+        this.showNotification('Selecciona un video primero', 'error');
+        return;
+      }
+      localStorage.setItem('jdmDefaultVideoId', this.defaultVideoId);
+      window.dispatchEvent(new Event('default-video-updated'));
+      this.showNotification('Video predeterminado guardado', 'success');
+    },
+
+    clearDefaultVideo() {
+      this.defaultVideoId = null;
+      this.defaultPreview = null;
+      localStorage.removeItem('jdmDefaultVideoId');
+      window.dispatchEvent(new Event('default-video-updated'));
+      this.showNotification('Video predeterminado eliminado', 'info');
+    },
     
     saveVideosToStorage() {
       localStorage.setItem('jdmTuningVideos', JSON.stringify(this.storedVideos));
+      // Notificar a otras partes de la app que la lista de videos cambió
+      window.dispatchEvent(new Event('videos-updated'));
+    },
+
+    async generateVideoThumbnail(dataUrl) {
+      return new Promise((resolve, reject) => {
+        try {
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.muted = true;
+          video.src = dataUrl;
+          video.crossOrigin = 'anonymous';
+
+          const cleanup = () => {
+            try { video.removeAttribute('src'); video.load(); } catch(e) {}
+          };
+
+          const onLoaded = () => {
+            try { video.currentTime = 0; } catch (err) {}
+          };
+
+          const onSeeked = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = video.videoWidth || 640;
+              canvas.height = video.videoHeight || 360;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const imgData = canvas.toDataURL('image/jpeg', 0.75);
+              cleanup();
+              resolve(imgData);
+            } catch (err) {
+              cleanup();
+              reject(err);
+            }
+          };
+
+          video.addEventListener('loadeddata', onLoaded, { once: true });
+          video.addEventListener('seeked', onSeeked, { once: true });
+          video.addEventListener('error', (e) => { cleanup(); reject(e); }, { once: true });
+        } catch (e) {
+          reject(e);
+        }
+      });
     },
     
     formatFileSize(bytes) {
@@ -3387,6 +3529,91 @@ input:checked + .toggle-slider:before {
 
 .upload-btn.loading {
   opacity: 0.8;
+}
+
+/* Estilos para el submenú de Video por defecto */
+.default-video-section {
+  margin-top: 20px;
+  background: var(--accent, #ffffff);
+  padding: 16px;
+  border-radius: var(--border-radius, 12px);
+  box-shadow: var(--shadow, 0 6px 20px rgba(0,0,0,0.08));
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.default-video-section h3 {
+  margin: 0 0 12px 0;
+  color: var(--primary, #2c3e50);
+  font-size: 1.2rem;
+  font-family: var(--font-family, 'Segoe UI', sans-serif);
+  border-bottom: 2px solid var(--background, #f8f9fa);
+  padding-bottom: 8px;
+}
+
+.default-list-container {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 18px;
+  align-items: start;
+}
+
+.default-list {
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--background, #f8f9fa);
+  border: 1px solid rgba(0,0,0,0.03);
+}
+
+.default-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: var(--secondary-font, Arial, sans-serif);
+}
+
+.default-item input[type="radio"] {
+  accent-color: var(--secondary, #e74c3c);
+}
+
+.default-item:hover {
+  background: rgba(0,0,0,0.03);
+}
+
+.default-preview {
+  background: var(--accent, #ffffff);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.04);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.default-preview h4 { margin: 0 0 8px 0; color: var(--primary); }
+
+.default-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.default-actions .action-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--accent);
+}
+
+.default-actions .action-btn.secondary {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.08);
+  color: var(--text);
 }
 
 /* ===== LISTA DE VIDEOS ===== */
