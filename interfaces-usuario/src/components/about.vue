@@ -265,6 +265,14 @@
                   @pause="isPlaying = false"
                   @ended="isPlaying = false"
                 >
+                  <track
+                    v-for="(t, idx) in subtitleTrackUrls"
+                    :key="idx"
+                    kind="subtitles"
+                    :srclang="t.lang || 'es'"
+                    :label="t.label || ('Sub ' + (idx+1))"
+                    :src="t.url"
+                  />
                   Tu navegador no soporta el elemento de video.
                 </video>
                 <div v-else class="video-placeholder">
@@ -276,65 +284,7 @@
                 </div>
               </div>
               
-              <!-- Controles adicionales -->
-              <div class="video-controls" v-if="localVideoUrl">
-                <div class="control-buttons">
-                  <button @click="togglePlayPause" class="video-control-btn">
-                    {{ isPlaying ? '⏸️ Pausar' : '▶️ Reproducir' }}
-                  </button>
-                  <button @click="stopVideo" class="video-control-btn">
-                    ⏹️ Detener
-                  </button>
-                  <button @click="toggleMute" class="video-control-btn">
-                    {{ isMuted ? '🔇 Silenciado' : '🔊 Sonido' }}
-                  </button>
-                  <!-- Guardar/Eliminar deshabilitados en vista pública -->
-                </div>
-                <div class="track-controls" style="display:flex;gap:0.75rem;justify-content:center;margin-bottom:1rem;">
-                  <label style="color:var(--accent);font-family:var(--secondary-font);">
-                    Audio:
-                    <select v-model.number="activeAudioIndex" @change="onAudioChange" style="margin-left:0.5rem;padding:0.25rem;border-radius:6px;">
-                      <option :value="-1">Usar audio del video</option>
-                      <option v-for="opt in availableAudioOptions" :key="opt.index" :value="opt.index">{{ opt.label }}</option>
-                    </select>
-                  </label>
-                  <label style="color:var(--accent);font-family:var(--secondary-font);">
-                    Subtítulos:
-                    <select v-model.number="activeSubtitleIndex" @change="onSubtitleChange" style="margin-left:0.5rem;padding:0.25rem;border-radius:6px;">
-                      <option :value="-1">Sin subtítulos</option>
-                      <option v-for="opt in availableSubtitleOptions" :key="opt.index" :value="opt.index">{{ opt.label }}</option>
-                    </select>
-                  </label>
-                </div>
-                <div class="video-progress">
-                  <input 
-                    type="range" 
-                    v-model="videoProgress"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                    @input="seekVideo"
-                    @change="seekVideo"
-                    class="video-progress-bar"
-                  >
-                  <div class="video-time-display">
-                    <span class="video-time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
-                    <span class="video-volume">Volumen: {{ Math.round(volume * 100) }}%</span>
-                  </div>
-                  <div class="volume-control">
-                    <span class="volume-icon">{{ isMuted ? '🔇' : '🔊' }}</span>
-                    <input 
-                      type="range" 
-                      v-model="volume"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      @input="changeVolume"
-                      class="volume-slider"
-                    >
-                  </div>
-                </div>
-              </div>
+              <!-- Custom controls removed; native <video> element only -->
             </div>
           </div>
         </div>
@@ -574,6 +524,8 @@ export default {
       currentVideoObj: null,
       audioTracks: [],
       subtitleTracks: [],
+      subtitleTrackUrls: [],
+      audioTrackUrls: [],
       activeAudioIndex: -1,
       activeSubtitleIndex: -1,
       audioElements: [],
@@ -650,6 +602,11 @@ export default {
         setTimeout(() => { try { this.setupTracks(); } catch(e){ console.error('setupTracks watcher error', e); } }, 250);
       }
     }
+  },
+  created() {
+    // prepare containers
+    this.audioElements = [];
+    this._createdObjectUrls = [];
   },
   beforeUnmount() {
     window.removeEventListener('videos-updated', this.loadVideosFromAdmin);
@@ -1015,9 +972,9 @@ export default {
           track.kind = 'subtitles';
           track.label = `Sub ${idx + 1}`;
           track.srclang = 'es';
-          const real = this.getBlobUrlIfNeeded(subSrc);
+          const real = this.convertSubtitleToVttUrl(subSrc);
           track.src = real;
-          if (real !== subSrc) this._createdObjectUrls.push(real);
+          if (real && real !== subSrc) this._createdObjectUrls.push(real);
           track.default = false;
           track.mode = 'disabled';
           videoElement.appendChild(track);
@@ -1054,7 +1011,9 @@ export default {
         console.warn('Unable to reload video for tracks:', e);
       }
 
-      // Setup audio elements for external audio tracks
+      // For now, do not create external Audio objects — only present selection UI
+      console.debug('audioTracks available count=', (this.audioTracks||[]).filter(Boolean).length);
+      // Create external Audio elements to allow switching (will be synced to video)
       try {
         this.audioElements = (this.audioTracks || []).map(src => {
           if (!src) return null;
@@ -1068,11 +1027,11 @@ export default {
           return a;
         });
         console.debug('audioElements created count=', (this.audioElements||[]).filter(Boolean).length);
-        console.debug('createdObjectUrls=', this._createdObjectUrls);
       } catch (e) {
         console.error('Error al crear pistas de audio:', e);
         this.audioElements = [];
       }
+      console.debug('createdObjectUrls=', this._createdObjectUrls);
 
       // Sync handlers
       const onPlay = () => {
@@ -1234,6 +1193,8 @@ export default {
       this.activeSubtitleIndex = index;
     },
 
+    // keyboard-based cycling removed — native controls will be used
+
     getBlobUrlIfNeeded(src) {
       if (!src || typeof src !== 'string') return src;
       if (!src.startsWith('data:')) return src;
@@ -1256,6 +1217,39 @@ export default {
         return url;
       } catch (e) {
         console.error('getBlobUrlIfNeeded failed', e);
+        return src;
+      }
+    },
+    convertSubtitleToVttUrl(src) {
+      // If it's already a remote URL, return as-is
+      if (!src || typeof src !== 'string') return src;
+      if (!src.startsWith('data:')) return src;
+      try {
+        // decode data URL
+        const comma = src.indexOf(',');
+        const meta = src.substring(5, comma); // after data:
+        const isBase64 = meta.indexOf(';base64') !== -1;
+        const data = src.substring(comma + 1);
+        let text;
+        if (isBase64) text = atob(data);
+        else text = decodeURIComponent(data);
+
+        // detect SRT by timestamp pattern with commas
+        const srtPattern = /\d{2}:\d{2}:\d{2},\d{3}/;
+        let vttText = text;
+        if (srtPattern.test(text) && !/^WEBVTT/m.test(text)) {
+          // convert SRT -> VTT header and commas to dots in timestamps
+          vttText = 'WEBVTT\n\n' + text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+        } else if (!/^WEBVTT/m.test(text)) {
+          // still ensure VTT header
+          vttText = 'WEBVTT\n\n' + text;
+        }
+
+        const blob = new Blob([vttText], { type: 'text/vtt' });
+        const url = URL.createObjectURL(blob);
+        return url;
+      } catch (e) {
+        console.error('convertSubtitleToVttUrl failed', e);
         return src;
       }
     },
@@ -1352,6 +1346,22 @@ export default {
             this.currentVideoId = found.id;
             this.audioTracks = found.audioTracks || [];
             this.subtitleTracks = found.subtitles || [];
+            // prepare object URLs for tracks (revoke any previous)
+            try {
+              // revoke old
+              if (this.subtitleTrackUrls && this.subtitleTrackUrls.length) {
+                this.subtitleTrackUrls.forEach(t => { try { URL.revokeObjectURL(t.url); } catch(e){} });
+              }
+              if (this.audioTrackUrls && this.audioTrackUrls.length) {
+                this.audioTrackUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch(e){} });
+              }
+            } catch (e) {}
+            this.subtitleTrackUrls = (this.subtitleTracks || []).map((s, i) => {
+              if (!s) return null;
+              const url = this.convertSubtitleToVttUrl(s);
+              return { url, label: s.name || (`Sub ${i+1}`), lang: s.lang || 'es' };
+            }).filter(Boolean);
+            this.audioTrackUrls = (this.audioTracks || []).map(a => a ? this.getBlobUrlIfNeeded(a) : null).filter(Boolean);
             this.activeAudioIndex = -1;
             this.activeSubtitleIndex = -1;
             this.$nextTick(() => {
@@ -1413,6 +1423,21 @@ export default {
           this.uploadedVideoInfo = { name: foundFull.title || foundFull.name || video.name, size: foundFull.size || 0, lastLoaded: new Date().toISOString() };
           this.audioTracks = foundFull.audioTracks || [];
           this.subtitleTracks = foundFull.subtitles || [];
+          // prepare object URLs for tracks (revoke any previous)
+          try {
+            if (this.subtitleTrackUrls && this.subtitleTrackUrls.length) {
+              this.subtitleTrackUrls.forEach(t => { try { URL.revokeObjectURL(t.url); } catch(e){} });
+            }
+            if (this.audioTrackUrls && this.audioTrackUrls.length) {
+              this.audioTrackUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch(e){} });
+            }
+          } catch (e) {}
+          this.subtitleTrackUrls = (this.subtitleTracks || []).map((s, i) => {
+            if (!s) return null;
+            const url = this.convertSubtitleToVttUrl(s);
+            return { url, label: s.name || (`Sub ${i+1}`), lang: s.lang || 'es' };
+          }).filter(Boolean);
+          this.audioTrackUrls = (this.audioTracks || []).map(a => a ? this.getBlobUrlIfNeeded(a) : null).filter(Boolean);
           this.activeAudioIndex = -1;
           this.activeSubtitleIndex = -1;
           this.currentVideoId = foundFull.id;
