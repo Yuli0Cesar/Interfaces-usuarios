@@ -840,7 +840,7 @@ export default {
       notificationMessage: '',
       notificationClass: 'success',
 
-      currentAdminSection: 'users',
+      // Sección de videos
       newVideo: {
         title: '',
         description: '',
@@ -908,6 +908,7 @@ export default {
     currentUser() {
       return this.user;
     },
+    
     totalVideos() {
       return this.storedVideos.length;
     },

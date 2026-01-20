@@ -249,11 +249,138 @@
             </div>
           </div>
           <div class="about-image">
-            <div class="image-placeholder">
-              <div class="placeholder-content">
-                <span class="car-icon">🏎️</span>
-                <p>Colección JDM Tuning</p>
-                <small>Nissan Skyline • Toyota Supra • Mazda RX-7</small>
+            <!-- Reproductor de video local -->
+            <div class="video-player-section">
+              <div class="video-player-container">
+                <video 
+                  v-if="localVideoUrl"
+                  ref="videoPlayer"
+                  :src="localVideoUrl"
+                  controls
+                  class="jdm-video-player"
+                  poster="https://via.placeholder.com/400x300/2c3e50/ecf0f1?text=JDM+Tuning+Video"
+                  @timeupdate="updateVideoProgress"
+                  @loadedmetadata="updateVideoDuration"
+                  @play="isPlaying = true"
+                  @pause="isPlaying = false"
+                  @ended="isPlaying = false"
+                >
+                  Tu navegador no soporta el elemento de video.
+                </video>
+                <div v-else class="video-placeholder">
+                  <div class="video-placeholder-content">
+                    <span class="video-icon">🎬</span>
+                    <p>Reproductor JDM Tuning</p>
+                    <small>Sube un video local para verlo aquí</small>
+                    
+                    <!-- Botón para cargar video local -->
+                    <div class="video-upload-container">
+                      <label for="localVideoUpload" class="video-upload-btn">
+                        📁 Subir Video Local
+                      </label>
+                      <input 
+                        type="file" 
+                        id="localVideoUpload" 
+                        accept="video/*"
+                        @change="handleVideoUpload"
+                        style="display: none;"
+                      >
+                      
+                      <!-- Botón para cargar video por URL -->
+                      <div class="url-upload-section">
+                        <input 
+                          type="text" 
+                          v-model="videoUrlInput"
+                          placeholder="O pega una URL de video"
+                          class="video-url-input"
+                          @keyup.enter="loadVideoFromUrl"
+                        >
+                        <button @click="loadVideoFromUrl" class="url-load-btn">
+                          Cargar
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div v-if="uploadedVideoInfo" class="video-info">
+                      <small>📼 Video cargado: {{ uploadedVideoInfo.name }}</small>
+                      <small>📏 Tamaño: {{ formatFileSize(uploadedVideoInfo.size) }}</small>
+                      <small v-if="uploadedVideoInfo.lastLoaded">🕒 Última carga: {{ formatDate(uploadedVideoInfo.lastLoaded) }}</small>
+                    </div>
+                    
+                    <!-- Mostrar videos guardados -->
+                    <div v-if="savedVideos.length > 0" class="saved-videos">
+                      <p class="saved-videos-title">Videos Guardados:</p>
+                      <div class="saved-videos-list">
+                        <div 
+                          v-for="video in savedVideos" 
+                          :key="video.id"
+                          class="saved-video-item"
+                          @click="loadSavedVideoItem(video)"
+                        >
+                          <span class="saved-video-icon">📹</span>
+                          <span class="saved-video-name">{{ video.name || 'Video sin nombre' }}</span>
+                          <span class="saved-video-date">{{ formatDate(video.date) }}</span>
+                          <button 
+                            @click.stop="deleteSavedVideo(video.id)" 
+                            class="delete-video-btn"
+                            title="Eliminar video"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Controles adicionales -->
+              <div class="video-controls" v-if="localVideoUrl">
+                <div class="control-buttons">
+                  <button @click="togglePlayPause" class="video-control-btn">
+                    {{ isPlaying ? '⏸️ Pausar' : '▶️ Reproducir' }}
+                  </button>
+                  <button @click="stopVideo" class="video-control-btn">
+                    ⏹️ Detener
+                  </button>
+                  <button @click="toggleMute" class="video-control-btn">
+                    {{ isMuted ? '🔇 Silenciado' : '🔊 Sonido' }}
+                  </button>
+                  <button @click="saveCurrentVideo" class="video-control-btn save-btn">
+                    💾 Guardar Video
+                  </button>
+                  <button @click="removeVideo" class="video-control-btn remove-btn">
+                    🗑️ Eliminar
+                  </button>
+                </div>
+                <div class="video-progress">
+                  <input 
+                    type="range" 
+                    v-model="videoProgress"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    @input="seekVideo"
+                    @change="seekVideo"
+                    class="video-progress-bar"
+                  >
+                  <div class="video-time-display">
+                    <span class="video-time">{{ formatTime(currentTime) }} / {{ formatTime(duration) }}</span>
+                    <span class="video-volume">Volumen: {{ Math.round(volume * 100) }}%</span>
+                  </div>
+                  <div class="volume-control">
+                    <span class="volume-icon">{{ isMuted ? '🔇' : '🔊' }}</span>
+                    <input 
+                      type="range" 
+                      v-model="volume"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      @input="changeVolume"
+                      class="volume-slider"
+                    >
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -486,7 +613,19 @@ export default {
           title: "Cultura Global",
           description: "El JDM se convierte en un fenómeno mundial con eventos internacionales y una comunidad online masiva."
         }
-      ]
+      ],
+      // Datos para el reproductor de video
+      localVideoUrl: null,
+      videoUrlInput: '',
+      uploadedVideoInfo: null,
+      isPlaying: false,
+      isMuted: false,
+      currentTime: 0,
+      duration: 0,
+      videoProgress: 0,
+      volume: 1,
+      savedVideos: [],
+      currentVideoId: null
     }
   },
   computed: {
@@ -519,6 +658,9 @@ export default {
     this.initializeSampleUsers();
     this.checkStoredAuth();
     this.loadGlobalStyles(); // Cargar estilos guardados al iniciar
+    
+    // Inicializar el reproductor de video
+    this.initializeVideoPlayer();
   },
   methods: {
     setActiveView(view) {
@@ -739,14 +881,359 @@ export default {
         }
       }
     },
-    watch: {
-      '$root.globalStyles': {
-        handler() {
-          if (this.isLoading) {
+
+    // Métodos para el reproductor de video
+    initializeVideoPlayer() {
+      this.loadSavedVideosList();
+      
+      // Cargar el último video visto
+      const lastVideo = localStorage.getItem('jdmLastVideo');
+      if (lastVideo) {
+        try {
+          const videoData = JSON.parse(lastVideo);
+          if (videoData.type === 'local' && videoData.dataUrl) {
+            this.localVideoUrl = videoData.dataUrl;
+            this.uploadedVideoInfo = {
+              name: videoData.name || 'Video guardado',
+              size: videoData.size || 0,
+              lastLoaded: new Date().toISOString()
+            };
+            this.currentVideoId = videoData.id;
+            
+            // Cargar después de que el DOM se actualice
+            this.$nextTick(() => {
+              const videoElement = this.$refs.videoPlayer;
+              if (videoElement) {
+                videoElement.volume = this.volume;
+              }
+            });
+          } else if (videoData.type === 'url') {
+            this.localVideoUrl = videoData.url;
+            this.uploadedVideoInfo = {
+              name: videoData.name || 'Video desde URL',
+              lastLoaded: new Date().toISOString()
+            };
           }
-        },
-        deep: true
+        } catch (e) {
+          console.error('Error al cargar el último video:', e);
+        }
       }
+    },
+
+    handleVideoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Verificar que sea un video
+      if (!file.type.startsWith('video/')) {
+        alert('Por favor, selecciona un archivo de video válido');
+        return;
+      }
+      
+      // Limitar tamaño (opcional, 50MB máximo)
+      const maxSize = 50 * 1024 * 1024; // 50MB
+      if (file.size > maxSize) {
+        alert('El video es demasiado grande. Máximo 50MB.');
+        return;
+      }
+      
+      // Crear URL local para el video
+      const videoUrl = URL.createObjectURL(file);
+      this.localVideoUrl = videoUrl;
+      
+      // Guardar información del video
+      this.uploadedVideoInfo = {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastLoaded: new Date().toISOString()
+      };
+      
+      // Guardar en localStorage
+      const videoData = {
+        id: Date.now().toString(),
+        name: file.name,
+        type: 'local',
+        dataUrl: videoUrl,
+        size: file.size,
+        timestamp: new Date().toISOString(),
+        date: new Date().toISOString()
+      };
+      
+      this.saveVideoToLocalStorage(videoData);
+      this.saveVideoToList(videoData);
+      
+      // Limpiar input
+      event.target.value = '';
+      
+      // Inicializar controles
+      this.$nextTick(() => {
+        const videoElement = this.$refs.videoPlayer;
+        if (videoElement) {
+          videoElement.volume = this.volume;
+        }
+      });
+    },
+
+    loadVideoFromUrl() {
+      if (!this.videoUrlInput.trim()) {
+        alert('Por favor, introduce una URL de video');
+        return;
+      }
+      
+      // Validar URL
+      try {
+        new URL(this.videoUrlInput);
+      } catch (e) {
+        alert('Por favor, introduce una URL válida');
+        return;
+      }
+      
+      this.localVideoUrl = this.videoUrlInput;
+      
+      // Guardar información
+      this.uploadedVideoInfo = {
+        name: 'Video desde URL',
+        source: this.videoUrlInput,
+        lastLoaded: new Date().toISOString()
+      };
+      
+      // Guardar en localStorage
+      const videoData = {
+        id: Date.now().toString(),
+        name: 'Video desde URL',
+        type: 'url',
+        url: this.videoUrlInput,
+        timestamp: new Date().toISOString(),
+        date: new Date().toISOString()
+      };
+      
+      this.saveVideoToLocalStorage(videoData);
+      this.saveVideoToList(videoData);
+      
+      this.videoUrlInput = '';
+    },
+
+    togglePlayPause() {
+      const videoElement = this.$refs.videoPlayer;
+      if (!videoElement) return;
+      
+      if (videoElement.paused) {
+        videoElement.play();
+        this.isPlaying = true;
+      } else {
+        videoElement.pause();
+        this.isPlaying = false;
+      }
+    },
+
+    stopVideo() {
+      const videoElement = this.$refs.videoPlayer;
+      if (videoElement) {
+        videoElement.pause();
+        videoElement.currentTime = 0;
+        this.isPlaying = false;
+        this.currentTime = 0;
+        this.videoProgress = 0;
+      }
+    },
+
+    toggleMute() {
+      const videoElement = this.$refs.videoPlayer;
+      if (videoElement) {
+        videoElement.muted = !videoElement.muted;
+        this.isMuted = videoElement.muted;
+      }
+    },
+
+    changeVolume() {
+      const videoElement = this.$refs.videoPlayer;
+      if (videoElement) {
+        videoElement.volume = this.volume;
+        this.isMuted = this.volume === 0;
+      }
+    },
+
+    updateVideoProgress() {
+      const videoElement = this.$refs.videoPlayer;
+      if (videoElement) {
+        this.currentTime = videoElement.currentTime;
+        this.duration = videoElement.duration;
+        
+        if (this.duration > 0) {
+          this.videoProgress = (this.currentTime / this.duration) * 100;
+        }
+      }
+    },
+
+    updateVideoDuration() {
+      const videoElement = this.$refs.videoPlayer;
+      if (videoElement) {
+        this.duration = videoElement.duration;
+      }
+    },
+
+    seekVideo() {
+      const videoElement = this.$refs.videoPlayer;
+      if (videoElement && this.duration > 0) {
+        const seekTime = (this.duration * this.videoProgress) / 100;
+        videoElement.currentTime = seekTime;
+      }
+    },
+
+    formatTime(seconds) {
+      if (isNaN(seconds)) return '00:00';
+      
+      const minutes = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    },
+
+    formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+
+    removeVideo() {
+      this.localVideoUrl = null;
+      this.uploadedVideoInfo = null;
+      this.isPlaying = false;
+      this.currentTime = 0;
+      this.duration = 0;
+      this.videoProgress = 0;
+      this.currentVideoId = null;
+      
+      // Remover del localStorage
+      localStorage.removeItem('jdmLastVideo');
+    },
+
+    saveCurrentVideo() {
+      if (!this.localVideoUrl) {
+        alert('No hay video para guardar');
+        return;
+      }
+      
+      const videoName = prompt('Nombre para el video:', this.uploadedVideoInfo?.name || 'Mi video JDM');
+      if (!videoName) return;
+      
+      const videoElement = this.$refs.videoPlayer;
+      if (!videoElement) return;
+      
+      const videoData = {
+        id: this.currentVideoId || Date.now().toString(),
+        name: videoName,
+        type: this.localVideoUrl.startsWith('blob:') || this.localVideoUrl.startsWith('data:') ? 'local' : 'url',
+        timestamp: new Date().toISOString(),
+        date: new Date().toISOString(),
+        duration: this.duration
+      };
+      
+      if (videoData.type === 'local' && this.localVideoUrl.startsWith('blob:')) {
+        videoData.dataUrl = this.localVideoUrl;
+        videoData.size = this.uploadedVideoInfo?.size || 0;
+      } else {
+        videoData.url = this.localVideoUrl;
+      }
+      
+      this.saveVideoToLocalStorage(videoData);
+      this.saveVideoToList(videoData);
+      
+      alert(`Video "${videoName}" guardado correctamente`);
+    },
+
+    saveVideoToLocalStorage(videoData) {
+      localStorage.setItem('jdmLastVideo', JSON.stringify(videoData));
+      this.currentVideoId = videoData.id;
+    },
+
+    saveVideoToList(videoData) {
+      // Cargar lista existente
+      this.loadSavedVideosList();
+      
+      // Evitar duplicados
+      const existingIndex = this.savedVideos.findIndex(v => v.id === videoData.id);
+      if (existingIndex !== -1) {
+        this.savedVideos[existingIndex] = videoData;
+      } else {
+        this.savedVideos.unshift(videoData);
+      }
+      
+      // Guardar lista actualizada
+      localStorage.setItem('jdmSavedVideos', JSON.stringify(this.savedVideos));
+      
+      // Limitar a 10 videos
+      if (this.savedVideos.length > 10) {
+        this.savedVideos = this.savedVideos.slice(0, 10);
+        localStorage.setItem('jdmSavedVideos', JSON.stringify(this.savedVideos));
+      }
+    },
+
+    loadSavedVideosList() {
+      const saved = localStorage.getItem('jdmSavedVideos');
+      if (saved) {
+        try {
+          this.savedVideos = JSON.parse(saved);
+        } catch (e) {
+          console.error('Error al cargar videos guardados:', e);
+          this.savedVideos = [];
+        }
+      }
+    },
+
+    loadSavedVideoItem(video) {
+      if (video.type === 'local' && video.dataUrl) {
+        this.localVideoUrl = video.dataUrl;
+        this.uploadedVideoInfo = {
+          name: video.name,
+          size: video.size || 0,
+          lastLoaded: new Date().toISOString()
+        };
+      } else if (video.type === 'url' && video.url) {
+        this.localVideoUrl = video.url;
+        this.uploadedVideoInfo = {
+          name: video.name,
+          lastLoaded: new Date().toISOString()
+        };
+      }
+      
+      this.currentVideoId = video.id;
+      localStorage.setItem('jdmLastVideo', JSON.stringify(video));
+      
+      this.$nextTick(() => {
+        const videoElement = this.$refs.videoPlayer;
+        if (videoElement) {
+          videoElement.volume = this.volume;
+        }
+      });
+    },
+
+    deleteSavedVideo(videoId) {
+      if (!confirm('¿Eliminar este video de la lista?')) return;
+      
+      // Filtrar la lista
+      this.savedVideos = this.savedVideos.filter(v => v.id !== videoId);
+      localStorage.setItem('jdmSavedVideos', JSON.stringify(this.savedVideos));
+      
+      // Si el video eliminado es el que se está reproduciendo, limpiar
+      if (this.currentVideoId === videoId) {
+        this.removeVideo();
+      }
+      
+      alert('Video eliminado de la lista');
+    },
+
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     }
   }
 }
@@ -1133,40 +1620,320 @@ input[type="checkbox"] {
   font-family: var(--secondary-font);
 }
 
-/* Estilos para el placeholder de imagen */
-.image-placeholder {
+/* Estilos para el reproductor de video */
+.video-player-section {
+  width: 100%;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  background: var(--accent);
+}
+
+.video-player-container {
+  position: relative;
+  width: 100%;
+  background: var(--background);
+}
+
+.jdm-video-player {
+  width: 100%;
+  height: 300px;
+  display: block;
+  background: #000;
+}
+
+.video-placeholder {
   width: 100%;
   height: 300px;
   background: linear-gradient(135deg, var(--accent) 0%, var(--background) 100%);
-  border-radius: var(--border-radius);
   display: flex;
   align-items: center;
   justify-content: center;
   border: 2px dashed var(--primary);
-  box-shadow: var(--shadow);
 }
 
-.placeholder-content {
+.video-placeholder-content {
   text-align: center;
   color: var(--text);
+  padding: 2rem;
+  max-width: 90%;
 }
 
-.car-icon {
+.video-icon {
   font-size: 3rem;
   display: block;
   margin-bottom: 1rem;
+  color: var(--secondary);
 }
 
-.placeholder-content p {
+.video-placeholder-content p {
   font-size: 1.2rem;
   font-weight: bold;
   margin-bottom: 0.5rem;
   font-family: var(--font-family);
 }
 
-.placeholder-content small {
+.video-placeholder-content small {
   opacity: 0.8;
   font-family: var(--secondary-font);
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
+.video-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.video-upload-btn {
+  background: var(--secondary);
+  color: var(--accent);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  font-family: var(--font-family);
+  text-align: center;
+  border: none;
+}
+
+.video-upload-btn:hover {
+  background: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.url-upload-section {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.video-url-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid var(--primary);
+  border-radius: var(--border-radius);
+  background: var(--accent);
+  color: var(--text);
+  font-family: var(--secondary-font);
+}
+
+.url-load-btn {
+  background: var(--primary);
+  color: var(--accent);
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  font-family: var(--font-family);
+}
+
+.url-load-btn:hover {
+  background: var(--secondary);
+  transform: translateY(-2px);
+}
+
+.video-info {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(0,0,0,0.05);
+  border-radius: var(--border-radius);
+  text-align: left;
+}
+
+.video-info small {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  opacity: 0.9;
+}
+
+.saved-videos {
+  margin-top: 1.5rem;
+  text-align: left;
+}
+
+.saved-videos-title {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--primary);
+  font-family: var(--font-family);
+}
+
+.saved-videos-list {
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
+}
+
+.saved-video-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background: var(--accent);
+  border-radius: calc(var(--border-radius) - 2px);
+  cursor: pointer;
+  transition: all 0.3s;
+  border-left: 3px solid var(--secondary);
+}
+
+.saved-video-item:hover {
+  background: var(--background);
+  transform: translateX(5px);
+}
+
+.saved-video-icon {
+  font-size: 1.2rem;
+}
+
+.saved-video-name {
+  flex: 1;
+  font-weight: 500;
+  color: var(--text);
+  font-family: var(--secondary-font);
+  font-size: 0.9rem;
+}
+
+.saved-video-date {
+  font-size: 0.75rem;
+  color: var(--text);
+  opacity: 0.7;
+  font-family: var(--secondary-font);
+}
+
+.delete-video-btn {
+  background: transparent;
+  border: none;
+  color: #e74c3c;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+.delete-video-btn:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.video-controls {
+  background: var(--primary);
+  padding: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.control-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.video-control-btn {
+  background: var(--accent);
+  color: var(--text);
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.video-control-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.video-control-btn.save-btn {
+  background: #27ae60;
+  color: white;
+}
+
+.video-control-btn.remove-btn {
+  background: #e74c3c;
+  color: white;
+}
+
+.video-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.video-progress-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.video-progress-bar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--secondary);
+  cursor: pointer;
+  border: 2px solid white;
+}
+
+.video-time-display {
+  display: flex;
+  justify-content: space-between;
+  color: var(--accent);
+  font-family: var(--secondary-font);
+  font-size: 0.9rem;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.volume-icon {
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.volume-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
 }
 
 /* HERO SECTION */
@@ -1586,6 +2353,25 @@ footer {
   .section {
     padding: 2rem 0;
   }
+
+  /* Responsive para reproductor de video */
+  .jdm-video-player,
+  .video-placeholder {
+    height: 250px;
+  }
+  
+  .control-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .video-control-btn {
+    justify-content: center;
+  }
+  
+  .url-upload-section {
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1601,18 +2387,6 @@ footer {
     border-radius: 8px;
   }
   
-  .image-placeholder {
-    height: 250px;
-  }
-  
-  .car-icon {
-    font-size: 2rem;
-  }
-  
-  .placeholder-content p {
-    font-size: 1rem;
-  }
-
   .stats {
     gap: 1rem;
   }
@@ -1627,6 +2401,24 @@ footer {
 
   .mobile-menu a {
     padding: 0.75rem 1.5rem;
+  }
+
+  /* Responsive para reproductor de video */
+  .jdm-video-player,
+  .video-placeholder {
+    height: 200px;
+  }
+  
+  .video-placeholder-content {
+    padding: 1rem;
+  }
+  
+  .video-icon {
+    font-size: 2rem;
+  }
+  
+  .video-placeholder-content p {
+    font-size: 1rem;
   }
 }
 
@@ -1666,253 +2458,5 @@ footer {
   .brand-btn {
     border-width: 3px;
   }
-}
-header {
-  background-color: var(--primary);
-  padding: 1rem 0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: var(--text);
-  text-decoration: none;
-  font-family: var(--font-family);
-}
-
-
-.nav-links {
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-}
-
-.nav-links a {
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.3s;
-  font-family: var(--font-family);
-  font-size: var(--paragraph-size);
-}
-
-.nav-links a:hover,
-.nav-links a.active {
-  color: var(--secondary);
-}
-
-.mobile-menu-btn {
-  display: none;
-  background: none;
-  border: none;
-  color: var(--text);
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: color 0.3s;
-}
-
-.mobile-menu-btn:hover {
-  color: var(--secondary);
-}
-
-.mobile-menu {
-  display: none;
-  flex-direction: column;
-  background-color: var(--primary);
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 99;
-  transform: translateY(-100%);
-  opacity: 0;
-  transition: all 0.3s ease;
-}
-
-.mobile-menu.active {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-.mobile-menu a {
-  color: var(--text);
-  text-decoration: none;
-  padding: 1rem 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.3s;
-  font-family: var(--font-family);
-}
-
-.mobile-menu a:hover,
-.mobile-menu a.active {
-  background-color: rgba(0, 0, 0, 0.2);
-  color: var(--secondary);
-}
-
-/* Panel de usuario - Texto con Color 4, Hovers con Color 2 */
-.user-panel {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-left: 2rem;
-}
-
-.user-greeting {
-  color: var(--text);
-  font-size: 0.9rem;
-  font-family: var(--secondary-font);
-}
-
-.admin-badge {
-  background: var(--secondary);
-  color: var(--accent);
-  padding: 0.2rem 0.5rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: bold;
-  margin-left: 0.5rem;
-  transition: background-color 0.3s;
-}
-
-.admin-badge:hover {
-  background: var(--accent);
-  color: var(--secondary);
-}
-
-.logout-btn {
-  background: transparent;
-  border: 1px solid var(--text);
-  color: var(--text);
-  padding: 0.4rem 0.8rem;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.3s;
-  font-family: var(--secondary-font);
-}
-
-.logout-btn:hover {
-  background: var(--secondary);
-  border-color: var(--secondary);
-  color: var(--accent);
-}
-
-.auth-buttons {
-  display: flex;
-  gap: 0.5rem;
-  margin-left: 2rem;
-}
-
-.login-btn,
-.register-btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: var(--border-radius);
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.3s;
-  font-family: var(--font-family);
-}
-
-.login-btn {
-  background: transparent;
-  border: 1px solid var(--text);
-  color: var(--text);
-}
-
-.login-btn:hover {
-  background: var(--secondary);
-  border-color: var(--secondary);
-  color: var(--accent);
-}
-
-.register-btn {
-  background: var(--secondary);
-  color: var(--accent);
-  transition: all 0.3s;
-}
-
-.register-btn:hover {
-  background: var(--primary);
-  color: var(--accent);
-  transform: translateY(-2px);
-}
-
-/* Estilos para móvil - Hovers con Color 2 */
-.mobile-user-panel {
-  padding: 1rem 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.mobile-user-panel .user-info {
-  color: var(--text);
-  margin-bottom: 0.5rem;
-  font-family: var(--secondary-font);
-}
-
-.mobile-user-panel .logout-btn {
-  width: 100%;
-  text-align: center;
-}
-
-.mobile-user-panel .logout-btn:hover {
-  background: var(--secondary);
-  border-color: var(--secondary);
-  color: var(--accent);
-}
-
-.mobile-auth-buttons {
-  padding: 1rem 2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.mobile-auth-buttons .login-btn,
-.mobile-auth-buttons .register-btn {
-  width: 100%;
-  text-align: center;
-  padding: 0.75rem;
-}
-
-.mobile-auth-buttons .login-btn:hover {
-  background: var(--secondary);
-  border-color: var(--secondary);
-  color: var(--accent);
-}
-
-.mobile-auth-buttons .register-btn:hover {
-  background: var(--primary);
-  color: var(--accent);
-}
-
-/* Admin nav link - Hover con Color 2 */
-.admin-nav-link {
-  color: var(--secondary) !important;
-  font-weight: bold;
-  border: 1px solid var(--secondary);
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius);
-  margin-left: 1rem;
-  transition: all 0.3s;
-}
-
-.admin-nav-link:hover {
-  background-color: var(--secondary);
-  color: var(--primary) !important;
-  transform: translateY(-2px);
 }
 </style>
