@@ -12,6 +12,8 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   font-weight: 400;
+  /* Tamaño de tipografía configurable */
+  --text-font-size: 1.1rem;
 
   /* Configuración general */
   color-scheme: dark;
@@ -67,7 +69,7 @@ h4 {
 
 p {
   margin-bottom: 1rem;
-  font-size: 1.1rem;
+  font-size: var(--text-font-size);
 }
 
 /* Enlaces globales */
@@ -87,7 +89,7 @@ button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
-  font-size: 1em;
+  font-size: var(--text-font-size);
   font-weight: 500;
   font-family: inherit;
   background-color: var(--accent);
@@ -215,4 +217,23 @@ button:focus-visible {
   width: 100%;
   margin: 0 auto;
   text-align: left;
+}
+
+/* Forzar tamaño de fuente de botones y elementos con rol botón
+   Esto ayuda a sobreescribir estilos scoped que definen tamaños específicos */
+button,
+[role="button"],
+.btn,
+.brand-btn,
+.login-btn,
+.register-btn,
+.logout-btn,
+.submit-btn,
+.video-control-btn,
+.video-upload-btn,
+.url-load-btn,
+.delete-video-btn,
+.mobile-menu-btn,
+.control-buttons button {
+  font-size: var(--text-font-size) !important;
 }

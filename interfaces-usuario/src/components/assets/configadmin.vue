@@ -159,6 +159,16 @@
                 </select>
               </div>
 
+              <div class="form-group">
+                <label style="display:flex; align-items:center; gap:10px; user-select:none;">
+                  <input type="checkbox" v-model="newVideo.addToCarousel">
+                  Mostrar este video en el carrusel de videos (Galería)
+                </label>
+                <small style="opacity:0.8; display:block; margin-top:6px;">
+                  Nota: solo se puede agregar si el video queda guardado con URL reproducible.
+                </small>
+              </div>
+
               <!-- Archivo principal del video -->
               <div class="file-upload-group">
                 <label class="file-label">
@@ -232,13 +242,12 @@
                 <div v-if="!isUploadValid" class="validation-error">
                   <span>⚠️ Para subir el video necesitas:</span>
                   <ul>
-                    <li v-if="!newVideo.videoFile">- Archivo de video principal</li>
-                    <li v-if="newVideo.audioTracks.filter(track => track).length < 2">- 2 pistas de audio ({{ newVideo.audioTracks.filter(track => track).length }}/2)</li>
-                    <li v-if="newVideo.subtitles.filter(sub => sub).length < 2">- 2 archivos de subtítulos ({{ newVideo.subtitles.filter(sub => sub).length }}/2)</li>
+                    <li v-if="newVideo.title.trim() === ''">- Título del video</li>
+                    <li v-if="!newVideo.videoFile && !editingVideoId">- Archivo de video principal</li>
                   </ul>
                 </div>
                 <div v-else class="validation-success">
-                  ✅ Todos los archivos están listos para subir
+                  ✅ Datos listos para {{ editingVideoId ? 'guardar cambios' : 'subir el video' }}
                 </div>
               </div>
 
@@ -249,7 +258,7 @@
                 class="upload-btn"
                 :class="{ 'loading': isUploading }"
               >
-                <span v-if="!isUploading">⬆️ Subir Video</span>
+                <span v-if="!isUploading">{{ isEditingVideo ? '💾 Guardar cambios' : '⬆️ Subir Video' }}</span>
                 <span v-else>⏳ Subiendo...</span>
               </button>
             </div>
@@ -268,6 +277,7 @@
                     <th>Subtítulos</th>
                     <th>Tamaño</th>
                     <th>Fecha</th>
+                    <th>Carrusel</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
@@ -294,6 +304,15 @@
                     <td>{{ formatFileSize(video.size) }}</td>
                     <td>{{ formatDate(video.uploadDate) }}</td>
                     <td>
+                      <input
+                        type="checkbox"
+                        :checked="isInVideoCarousel(video.id)"
+                        @change="toggleVideoCarousel(video)"
+                        :disabled="!getPlayableVideoUrl(video)"
+                        :title="getPlayableVideoUrl(video) ? 'Mostrar en carrusel de videos' : 'No se puede: el video no tiene URL reproducible (demasiado grande)'"
+                      >
+                    </td>
+                    <td>
                       <div class="video-actions">
                         <button @click="previewVideo(video)" class="action-btn preview-btn" title="Previsualizar">
                           👁️
@@ -314,29 +333,35 @@
               </div>
             </div>
           </div>
-          <!-- Selección de video por defecto para About -->
-          <div class="default-video-section color-sidebar">
-            <h3>Video por defecto (About)</h3>
-            <div v-if="storedVideos.length === 0" class="empty-videos">No hay videos subidos aún</div>
-            <div v-else class="default-list-container">
-              <div class="default-list">
-                <label v-for="video in storedVideos" :key="video.id" class="default-item">
-                  <input type="radio" name="defaultVideo" :value="video.id" v-model="defaultVideoId" @change="previewDefaultVideo(video)">
-                  {{ video.title }}
-                </label>
-              </div>
 
-              <div v-if="defaultPreview" class="default-preview color-sidebar">
-                <h4>Previsualización</h4>
-                <div v-if="defaultPreview.url">
-                  <video :src="defaultPreview.url" controls :poster="defaultPreview.thumbnail || ''" width="480"></video>
+          <!-- Configuración del carrusel de videos (Galería) -->
+          <div class="default-video-section color-sidebar" style="margin-top: 1.5rem;">
+            <h3>🎞️ Carrusel de Videos (Galería)</h3>
+            <p style="margin: 0.25rem 0 1rem 0; opacity: 0.85;">
+              Activa la casilla “Carrusel” en la tabla y ordena aquí.
+            </p>
+
+            <div v-if="carouselVideoItems.length === 0" class="empty-videos">
+              No hay videos seleccionados para el carrusel.
+            </div>
+
+            <div v-else style="display:flex; flex-direction:column; gap:10px;">
+              <div
+                v-for="(v, idx) in carouselVideoItems"
+                :key="v.id"
+                style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px; border:1px solid rgba(0,0,0,0.1); border-radius: var(--border-radius);"
+              >
+                <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+                  <img v-if="v.thumbnail" :src="v.thumbnail" alt="thumb" style="width:64px; height:40px; object-fit:cover; border-radius:6px;" />
+                  <div style="min-width:0;">
+                    <div style="font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ v.title }}</div>
+                    <small style="opacity:0.75;">{{ formatFileSize(v.size || 0) }}</small>
+                  </div>
                 </div>
-                <div v-else>
-                  <p>No es posible previsualizar este video (archivo demasiado grande o no almacenado localmente).</p>
-                </div>
-                <div class="default-actions">
-                  <button @click="saveDefaultVideo" class="action-btn">💾 Guardar como predeterminado</button>
-                  <button @click="clearDefaultVideo" class="action-btn secondary">❌ Quitar predeterminado</button>
+                <div style="display:flex; gap:6px;">
+                  <button class="action-btn" @click="moveVideoInCarousel(v.id, -1)" :disabled="idx === 0" title="Subir">⬆️</button>
+                  <button class="action-btn" @click="moveVideoInCarousel(v.id, 1)" :disabled="idx === carouselVideoItems.length - 1" title="Bajar">⬇️</button>
+                  <button class="action-btn delete-btn" @click="removeVideoFromCarousel(v.id)" title="Quitar del carrusel">🗑️</button>
                 </div>
               </div>
             </div>
@@ -511,6 +536,7 @@
                 <option value="Arial, sans-serif">Arial</option>
                 <option value="Georgia, serif">Georgia</option>
                 <option value="'Courier New', monospace">Courier New</option>
+                <option v-for="f in customFonts" :key="'p-'+f.name" :value="`'${f.name}', sans-serif`">{{ f.name }}</option>
               </select>
             </div>
 
@@ -522,7 +548,29 @@
                 <option value="Georgia, serif">Georgia</option>
                 <option value="'Courier New', monospace">Courier New</option>
                 <option value="'Times New Roman', serif">Times New Roman</option>
+                <option v-for="f in customFonts" :key="'s-'+f.name" :value="`'${f.name}', sans-serif`">{{ f.name }}</option>
               </select>
+            </div>
+            <!-- Cargar fuentes personalizadas -->
+            <div class="option-group">
+              <label class="option-label">Cargar Fuente (woff/woff2/ttf/otf)</label>
+              <label class="file-label">
+                <span class="file-icon">📁</span>
+                <span class="file-text">Seleccionar archivo de fuente</span>
+                <input type="file" accept=".woff,.woff2,.ttf,.otf" @change="handleFontUpload($event, 'primary')" class="file-input">
+              </label>
+              <small>La fuente cargada quedará disponible en el listado para asignarla como principal o secundaria.</small>
+            </div>
+
+            <div class="option-group">
+              <label class="option-label">Fuentes Cargadas</label>
+              <ul class="custom-font-list">
+                <li v-for="(f, idx) in customFonts" :key="f.name">
+                  <span>{{ f.name }}</span>
+                  <button class="remove-font-btn" @click="removeCustomFont(idx)">Eliminar</button>
+                </li>
+                <li v-if="customFonts.length === 0"><small>No hay fuentes cargadas</small></li>
+              </ul>
             </div>
           </div>
 
@@ -743,8 +791,8 @@
                 No hay configuraciones guardadas
               </div>
               <div v-else>
-                <div v-for="config in filteredConfigs" :key="config.id" 
-                     class="config-item" @click="loadConfig(config.id)" @contextmenu.prevent="deleteConfig(config.id)">
+                 <div v-for="config in filteredConfigs" :key="config.id" 
+                   class="config-item" @click="loadConfig(config.id)" @contextmenu.prevent="showConfigContextMenu(config, $event)">
                   <div class="config-item-info">
                     <div class="config-item-colors">
                       <div v-for="color in Object.values(config.colors).slice(0, 5)" :key="color" 
@@ -757,6 +805,11 @@
                   </div>
                 </div>
               </div>
+            </div>
+            <!-- Menú contextual para editar/eliminar configuraciones -->
+            <div v-if="configContextMenu.visible" class="context-menu" :style="{ left: configContextMenu.x + 'px', top: configContextMenu.y + 'px' }" @click.stop>
+              <button class="context-menu-btn" @click="editConfig(configContextMenu.configId)">✏️ Editar</button>
+              <button class="context-menu-btn" @click="deleteConfig(configContextMenu.configId)">🗑️ Eliminar</button>
             </div>
           </div>
 
@@ -778,11 +831,11 @@
     <!-- Modal de guardar -->
     <div class="modal-overlay" v-if="showSaveModal" @click="closeSaveModal">
       <div class="modal-content" @click.stop>
-        <h3 class="modal-title">Guardar Configuración</h3>
+        <h3 class="modal-title">{{ editMode ? 'Editar Configuración' : 'Guardar Configuración' }}</h3>
         <input type="text" class="modal-input" v-model="configName" placeholder="Nombre de la configuración" maxlength="30" @keypress.enter="saveCurrentConfig">
         <div class="modal-actions">
           <button class="modal-btn secondary" @click="closeSaveModal">Cancelar</button>
-          <button class="modal-btn primary" @click="saveCurrentConfig">Guardar</button>
+          <button class="modal-btn primary" @click="saveCurrentConfig">{{ editMode ? 'Guardar cambios' : 'Guardar' }}</button>
         </div>
       </div>
     </div>
@@ -799,7 +852,7 @@
       </div>
     </div>
 
-    <div id="notification" class="notification" :class="notificationClass" v-if="showNotification">
+    <div id="notification" class="notification" :class="notificationClass" v-if="notificationVisible">
       {{ notificationMessage }}
     </div>
   </section>
@@ -810,6 +863,7 @@ import $ from 'jquery';
 import 'datatables.net';
 import 'datatables.net-dt';
 import CarouselManager from '../CarouselManager.vue';
+import * as VideoStore from '../../videoIndexedDB';
 
 export default {
   name: 'ConfigAdmin',
@@ -846,6 +900,8 @@ export default {
       titleSize: 24,
       selectedFont: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
       selectedSecondaryFont: "Arial, sans-serif",
+      // Fuentes personalizadas cargadas por el admin
+      customFonts: [],
       
       // Accesibilidad
       colorBlindMode: 'none',
@@ -863,15 +919,26 @@ export default {
       configName: '',
       
       // Notificaciones
-      showNotification: false,
+      notificationVisible: false,
       notificationMessage: '',
       notificationClass: 'success',
+      // Context menu for configs
+      configContextMenu: {
+        visible: false,
+        x: 0,
+        y: 0,
+        configId: null
+      },
+      // Edit mode for saving configs
+      editMode: false,
+      editTargetId: null,
 
       // Sección de videos
       newVideo: {
         title: '',
         description: '',
         category: 'tutorial',
+        addToCarousel: false,
         videoFile: null,
         audioTracks: [null, null], // 2 pistas requeridas
         subtitles: [null, null]    // 2 subtítulos requeridos
@@ -882,9 +949,13 @@ export default {
       activeVideos: {}, // Para rastrear estado de reproducción
       storedVideos: []  // Videos almacenados en localStorage
       ,
-      // Video por defecto para la sección About
-      defaultVideoId: null,
-      defaultPreview: null
+
+      // Estado de edición de videos
+      editingVideoId: null,
+      isEditingVideo: false,
+
+      // Carrusel de videos (Galería)
+      carouselVideoIds: []
     }
   },
   computed: {
@@ -897,6 +968,7 @@ export default {
         '--preview-text': this.color4,
         '--preview-accent': this.color5,
         '--preview-paragraph-size': this.paragraphSize + 'px',
+        '--preview-text-font-size': this.paragraphSize + 'px',
         '--preview-title-size': this.titleSize + 'px',
         '--preview-font-family': this.selectedFont,
         '--preview-secondary-font': this.selectedSecondaryFont,
@@ -955,14 +1027,21 @@ export default {
       const totalBytes = this.storedVideos.reduce((sum, video) => sum + video.size, 0);
       return this.formatFileSize(totalBytes);
     },
+
+    carouselVideoItems() {
+      const byId = new Map((this.storedVideos || []).map(v => [v.id, v]));
+      return (this.carouselVideoIds || [])
+        .map(id => byId.get(id))
+        .filter(Boolean);
+    },
     
     isUploadValid() {
-      return (
-        this.newVideo.title.trim() !== '' &&
-        this.newVideo.videoFile &&
-        this.newVideo.audioTracks.filter(track => track).length === 2 &&
-        this.newVideo.subtitles.filter(sub => sub).length === 2
-      );
+      // Solo obligamos título y archivo de video en nuevas subidas.
+      // En modo edición permitimos guardar sin volver a subir el archivo.
+      const hasTitle = this.newVideo.title.trim() !== '';
+      const hasVideoFile = !!this.newVideo.videoFile;
+      const isEditing = !!this.editingVideoId;
+      return hasTitle && (hasVideoFile || isEditing);
     }
   },
   mounted() {
@@ -970,7 +1049,7 @@ export default {
     this.loadGlobalStyles();
     this.applyStylesToGlobal();
     this.loadVideosFromStorage();
-    this.loadDefaultVideoFromStorage();
+    this.loadVideoCarouselFromStorage();
     this.$nextTick(() => {
       this.initializeDataTable();
     });
@@ -1083,7 +1162,23 @@ export default {
           }
         ],
         language: {
-          url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+          decimal: ',',
+          thousands: '.',
+          processing: 'Procesando...',
+          search: 'Buscar:',
+          lengthMenu: 'Mostrar _MENU_ registros',
+          info: 'Mostrando _START_ a _END_ de _TOTAL_ usuarios',
+          infoEmpty: 'Mostrando 0 a 0 de 0 usuarios',
+          infoFiltered: '(filtrado de _MAX_ usuarios totales)',
+          loadingRecords: 'Cargando...',
+          zeroRecords: 'No se encontraron usuarios',
+          emptyTable: 'No hay usuarios registrados',
+          paginate: {
+            first: 'Primero',
+            previous: 'Anterior',
+            next: 'Siguiente',
+            last: 'Último'
+          }
         },
         pageLength: parseInt(this.tablePageSize),
         responsive: true,
@@ -1133,6 +1228,39 @@ export default {
         const user = self.allUsers.find(u => u.id === userId);
         if (user) self.showDeleteConfirmation(user);
       });
+    },
+
+    // Context menu handlers for configs
+    showConfigContextMenu(config, event) {
+      // posicionar el menú y mostrar
+      this.configContextMenu.visible = true;
+      // ajustar para viewport
+      const padding = 8;
+      const x = event.clientX + window.scrollX;
+      const y = event.clientY + window.scrollY;
+      const maxX = window.innerWidth - 160; // menu width estimate
+      const maxY = window.innerHeight - 80;
+      this.configContextMenu.x = Math.min(x, maxX) + padding;
+      this.configContextMenu.y = Math.min(y, maxY) + padding;
+      this.configContextMenu.configId = config.id;
+
+      // cerrar al hacer clic fuera
+      const onDocClick = (e) => {
+        this.configContextMenu.visible = false;
+        document.removeEventListener('click', onDocClick);
+      };
+      document.addEventListener('click', onDocClick);
+    },
+
+    editConfig(configId) {
+      // Abrir modal de edición para permitir cambiar el nombre antes de sobrescribir
+      const cfg = this.savedConfigs.find(c => c.id === configId);
+      if (!cfg) return;
+      this.editMode = true;
+      this.editTargetId = configId;
+      this.configName = cfg.name || '';
+      this.showSaveModal = true;
+      this.configContextMenu.visible = false;
     },
 
     refreshUsersTable() {
@@ -1415,6 +1543,7 @@ export default {
         '--text': this.color4,
         '--accent': this.color5,
         '--paragraph-size': this.paragraphSize + 'px',
+        '--text-font-size': this.paragraphSize + 'px',
         '--title-size': this.titleSize + 'px',
         '--font-family': this.selectedFont,
         '--secondary-font': this.selectedSecondaryFont,
@@ -1435,7 +1564,16 @@ export default {
         document.head.appendChild(styleElement);
       }
       
-      let css = ':root {\n';
+      // Incluir @font-face para fuentes personalizadas cargadas
+      let fontCss = '';
+      if (this.customFonts && this.customFonts.length) {
+        this.customFonts.forEach(f => {
+          // f: { name, dataUrl, format }
+          fontCss += `@font-face { font-family: '${f.name}'; src: url(${f.dataUrl}) format('${f.format}'); font-weight: normal; font-style: normal; }\n`;
+        });
+      }
+
+      let css = fontCss + ':root {\n';
       Object.entries(styles).forEach(([key, value]) => {
         css += `  ${key}: ${value};\n`;
       });
@@ -1461,6 +1599,7 @@ export default {
     saveGlobalStyles(styles) {
       localStorage.setItem('jdmGlobalStyles', JSON.stringify({
         styles,
+        customFonts: this.customFonts || [],
         timestamp: new Date().toISOString()
       }));
     },
@@ -1469,8 +1608,12 @@ export default {
       const saved = localStorage.getItem('jdmGlobalStyles');
       if (saved) {
         try {
-          const { styles } = JSON.parse(saved);
-          
+          const parsed = JSON.parse(saved);
+          const styles = parsed.styles || {};
+          const fonts = parsed.customFonts || [];
+
+          this.customFonts = Array.isArray(fonts) ? fonts : [];
+
           this.color1 = styles['--primary'] || this.color1;
           this.color2 = styles['--secondary'] || this.color2;
           this.color3 = styles['--background'] || this.color3;
@@ -1483,13 +1626,56 @@ export default {
           this.borderRadius = parseInt(styles['--border-radius']) || this.borderRadius;
           this.highContrast = styles['--high-contrast'] === '1';
           this.largeText = styles['--large-text'] === '1.2';
-          
+
           this.applyStylesToGlobal();
-          
+
         } catch (e) {
           console.error('Error al cargar estilos globales:', e);
         }
       }
+    },
+
+    // Manejo de fuentes personalizadas
+    handleFontUpload(event, target) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const ext = (file.name.match(/\.([^.]+)$/) || [])[1] || '';
+      let format = 'truetype';
+      const t = file.type || ext.toLowerCase();
+      if (t.includes('woff2') || ext === 'woff2') format = 'woff2';
+      else if (t.includes('woff') || ext === 'woff') format = 'woff';
+      else if (t.includes('ttf') || ext === 'ttf') format = 'truetype';
+      else if (t.includes('otf') || ext === 'otf') format = 'opentype';
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9\-]/g, '_');
+        const fontObj = { name: baseName, dataUrl, format };
+        this.customFonts = this.customFonts || [];
+        // evitar duplicados por nombre
+        const exists = this.customFonts.find(f => f.name === baseName);
+        if (!exists) this.customFonts.push(fontObj);
+
+        // asignar automáticamente según target
+        if (target === 'primary') {
+          this.selectedFont = `'${baseName}', sans-serif`;
+        } else if (target === 'secondary') {
+          this.selectedSecondaryFont = `'${baseName}', sans-serif`;
+        }
+
+        this.applyStylesToGlobal();
+      };
+      reader.readAsDataURL(file);
+      // limpiar input
+      event.target.value = '';
+    },
+
+    removeCustomFont(idx) {
+      if (!confirm('Eliminar esta fuente personalizada?')) return;
+      this.customFonts.splice(idx, 1);
+      this.applyStylesToGlobal();
     },
     
     getCurrentConfig() {
@@ -1529,9 +1715,29 @@ export default {
       }
       
       const config = this.getCurrentConfig();
-      this.savedConfigs.unshift(config);
-      this.saveConfigsToStorage();
-      this.showNotification('Configuración guardada correctamente', 'success');
+      if (this.editMode && this.editTargetId) {
+        // sobrescribir la configuración existente
+        const idx = this.savedConfigs.findIndex(c => c.id === this.editTargetId);
+        if (idx !== -1) {
+          config.id = this.editTargetId;
+          config.timestamp = new Date().toISOString();
+          this.savedConfigs.splice(idx, 1, config);
+          this.saveConfigsToStorage();
+          this.showNotification('Configuración actualizada correctamente', 'success');
+        } else {
+          // fallback: agregar nueva
+          this.savedConfigs.unshift(config);
+          this.saveConfigsToStorage();
+          this.showNotification('Configuración guardada correctamente', 'success');
+        }
+        this.editMode = false;
+        this.editTargetId = null;
+      } else {
+        this.savedConfigs.unshift(config);
+        this.saveConfigsToStorage();
+        this.showNotification('Configuración guardada correctamente', 'success');
+      }
+
       this.closeSaveModal();
     },
     
@@ -1569,6 +1775,8 @@ export default {
     openSaveModal() {
       this.showSaveModal = true;
       this.configName = '';
+      this.editMode = false;
+      this.editTargetId = null;
     },
     
     closeSaveModal() {
@@ -1644,10 +1852,10 @@ export default {
     showNotification(message, type = 'success') {
       this.notificationMessage = message;
       this.notificationClass = type;
-      this.showNotification = true;
+      this.notificationVisible = true;
       
       setTimeout(() => {
-        this.showNotification = false;
+        this.notificationVisible = false;
       }, 3000);
     },
     
@@ -1718,74 +1926,151 @@ export default {
       this.isUploading = true;
       
       try {
-        // Simular subida al servidor (en producción, usar API real)
-        const videoId = Date.now().toString();
-        
-        // Convertir archivos a URLs de datos para simulación cuando sea razonable
-        // Para evitar exceder localStorage, solo guardamos el video como dataURL si es pequeño (<=5MB)
-        const MAX_VIDEO_STORE = 5 * 1024 * 1024; // 5MB
-        const MAX_ASSET_STORE = 2 * 1024 * 1024; // 2MB para pistas/subs
+        const addToCarousel = !!this.newVideo.addToCarousel;
+        const isEditing = !!this.editingVideoId;
 
-        let videoUrl = null;
-        if (this.newVideo.videoFile.size <= MAX_VIDEO_STORE) {
-          videoUrl = await this.fileToDataURL(this.newVideo.videoFile);
-        } else {
-          this.showNotification('Video demasiado grande para almacenarse en localStorage; se guardará metadata y miniatura.', 'warning');
+        // Determinar ID y video existente (en caso de edición)
+        let videoId = this.editingVideoId || Date.now().toString();
+        let existingVideo = null;
+        let existingIndex = -1;
+
+        if (isEditing) {
+          existingIndex = this.storedVideos.findIndex(v => v.id === this.editingVideoId);
+          if (existingIndex !== -1) {
+            existingVideo = this.storedVideos[existingIndex];
+          } else {
+            // Si por alguna razón no encontramos el video, caemos a flujo de nueva subida
+            videoId = Date.now().toString();
+          }
         }
 
-        const audioUrls = await Promise.all(
-          this.newVideo.audioTracks.map(track => track && track.size <= MAX_ASSET_STORE ? this.fileToDataURL(track) : null)
-        );
-        const subtitleUrls = await Promise.all(
-          this.newVideo.subtitles.map(sub => sub && sub.size <= MAX_ASSET_STORE ? this.fileToDataURL(sub) : null)
-        );
-        
+        // 1) Guardar el archivo de video en IndexedDB
+        //    - En nueva subida: siempre
+        //    - En edición: solo si se seleccionó un nuevo archivo
+        if (!isEditing || this.newVideo.videoFile) {
+          try {
+            await VideoStore.saveVideoFile(videoId, this.newVideo.videoFile);
+          } catch (e) {
+            console.error('Error guardando video en IndexedDB:', e);
+            this.showNotification('No se pudo guardar el archivo de video en el navegador (IndexedDB).', 'error');
+          }
+        }
+
+        // 2) En localStorage solo guardamos metadatos + assets ligeros
+        const MAX_ASSET_STORE = 2 * 1024 * 1024; // 2MB para pistas/subs como dataURL si son pequeñas
+
+        let audioUrls;
+        let subtitleUrls;
+
+        if (!isEditing || !existingVideo) {
+          // Alta nueva: usamos solo los archivos seleccionados
+          audioUrls = await Promise.all(
+            this.newVideo.audioTracks.map(track =>
+              track && track.size <= MAX_ASSET_STORE ? this.fileToDataURL(track) : null
+            )
+          );
+          subtitleUrls = await Promise.all(
+            this.newVideo.subtitles.map(sub =>
+              sub && sub.size <= MAX_ASSET_STORE ? this.fileToDataURL(sub) : null
+            )
+          );
+        } else {
+          // Edición: mezclamos pistas nuevas con las existentes
+          const existingAudios = Array.isArray(existingVideo.audioTracks) ? existingVideo.audioTracks : [];
+          const existingSubs = Array.isArray(existingVideo.subtitles) ? existingVideo.subtitles : [];
+
+          audioUrls = await Promise.all(
+            [0, 1].map(async (index) => {
+              const file = this.newVideo.audioTracks[index];
+              if (file) {
+                if (file.size <= MAX_ASSET_STORE) {
+                  return this.fileToDataURL(file);
+                }
+                // Si es demasiado grande, conservar lo que hubiera antes
+                return existingAudios[index] || null;
+              }
+              return existingAudios[index] || null;
+            })
+          );
+
+          subtitleUrls = await Promise.all(
+            [0, 1].map(async (index) => {
+              const file = this.newVideo.subtitles[index];
+              if (file) {
+                if (file.size <= MAX_ASSET_STORE) {
+                  return this.fileToDataURL(file);
+                }
+                return existingSubs[index] || null;
+              }
+              return existingSubs[index] || null;
+            })
+          );
+        }
+
+        // Tamaño aproximado: para ediciones sin nuevo archivo mantenemos el existente
+        let size = existingVideo?.size || 0;
+        if (!isEditing) {
+          size = this.newVideo.videoFile.size +
+            this.newVideo.audioTracks.reduce((sum, track) => sum + (track?.size || 0), 0) +
+            this.newVideo.subtitles.reduce((sum, sub) => sum + (sub?.size || 0), 0);
+        } else if (this.newVideo.videoFile) {
+          size = this.newVideo.videoFile.size +
+            this.newVideo.audioTracks.reduce((sum, track) => sum + (track?.size || 0), 0) +
+            this.newVideo.subtitles.reduce((sum, sub) => sum + (sub?.size || 0), 0);
+        }
+
         const videoData = {
           id: videoId,
           title: this.newVideo.title,
           description: this.newVideo.description,
           category: this.newVideo.category,
-          videoUrl: videoUrl,
+          // El archivo de video completo se guarda en IndexedDB; aquí solo marcamos que existe
+          storage: existingVideo?.storage || 'indexeddb',
+          videoUrl: existingVideo?.videoUrl || null,
           audioTracks: audioUrls,
           subtitles: subtitleUrls,
-          size: this.newVideo.videoFile.size + 
-                this.newVideo.audioTracks.reduce((sum, track) => sum + (track?.size || 0), 0) +
-                this.newVideo.subtitles.reduce((sum, sub) => sum + (sub?.size || 0), 0),
-          uploadDate: new Date().toISOString(),
-          uploader: this.user.email
+          size,
+          uploadDate: existingVideo?.uploadDate || new Date().toISOString(),
+          uploader: existingVideo?.uploader || this.user.email,
+          thumbnail: existingVideo?.thumbnail || null
         };
         
-        // Guardar en localStorage
-        this.storedVideos.unshift(videoData);
+        // Guardar en localStorage (insertar o actualizar)
+        if (isEditing && existingIndex !== -1) {
+          this.storedVideos.splice(existingIndex, 1, videoData);
+        } else {
+          this.storedVideos.unshift(videoData);
+        }
         this.saveVideosToStorage();
 
-        // Generar miniatura desde el video y añadir al carrusel de imágenes
-        try {
-          // Usar ObjectURL para generar miniatura (más fiable para blobs grandes)
-          const blobUrl = URL.createObjectURL(this.newVideo.videoFile);
-          const thumbnail = await this.generateVideoThumbnail(blobUrl);
-          URL.revokeObjectURL(blobUrl);
-
-          const storedImgs = localStorage.getItem('admin_carousel_images');
-          const imgs = storedImgs ? JSON.parse(storedImgs) : [];
-          imgs.push(thumbnail);
-          localStorage.setItem('admin_carousel_images', JSON.stringify(imgs));
-          window.dispatchEvent(new Event('carousel-updated'));
-
-          // Guardar miniatura dentro del objeto de video (si existe en la lista)
-          const idx = this.storedVideos.findIndex(v => v.id === videoId);
-          if (idx !== -1) {
-            this.storedVideos[idx].thumbnail = thumbnail;
-            this.saveVideosToStorage();
-          }
-        } catch (e) {
-          console.error('Error al generar miniatura del video:', e);
+        // Gestionar pertenencia al carrusel de videos
+        if (addToCarousel) {
+          this.addVideoIdToCarousel(videoId);
+        } else if (this.isInVideoCarousel(videoId)) {
+          this.removeVideoFromCarousel(videoId);
         }
 
-        // Resetear formulario
+        // Generar miniatura desde el video (solo cuando hay archivo nuevo)
+        if (this.newVideo.videoFile) {
+          try {
+            const blobUrl = URL.createObjectURL(this.newVideo.videoFile);
+            const thumbnail = await this.generateVideoThumbnail(blobUrl);
+            URL.revokeObjectURL(blobUrl);
+
+            const idx = this.storedVideos.findIndex(v => v.id === videoId);
+            if (idx !== -1) {
+              this.storedVideos[idx].thumbnail = thumbnail;
+              this.saveVideosToStorage();
+            }
+          } catch (e) {
+            console.error('Error al generar miniatura del video:', e);
+          }
+        }
+
+        // Resetear formulario / estado de edición
         this.resetUploadForm();
 
-        this.showNotification('Video subido exitosamente', 'success');
+        this.showNotification(isEditing ? 'Video actualizado exitosamente' : 'Video subido exitosamente', 'success');
         
       } catch (error) {
         console.error('Error al subir video:', error);
@@ -1809,10 +2094,13 @@ export default {
         title: '',
         description: '',
         category: 'tutorial',
+        addToCarousel: false,
         videoFile: null,
         audioTracks: [null, null],
         subtitles: [null, null]
       };
+      this.editingVideoId = null;
+      this.isEditingVideo = false;
       
       // Limpiar inputs de archivos
       const fileInputs = document.querySelectorAll('.file-input');
@@ -1831,45 +2119,89 @@ export default {
           this.storedVideos = [];
         }
       }
+
+      // Mantener carrusel sincronizado con los videos existentes
+      this.loadVideoCarouselFromStorage();
     },
 
-    loadDefaultVideoFromStorage() {
-      const def = localStorage.getItem('jdmDefaultVideoId');
-      if (def) {
-        this.defaultVideoId = def;
-        const found = this.storedVideos.find(v => v.id === def);
-        if (found) this.defaultPreview = { url: found.videoUrl || found.url || found.dataUrl || null, thumbnail: found.thumbnail || null };
+    // ===== Carrusel de videos (Galería) =====
+    getPlayableVideoUrl(video) {
+      if (!video) return null;
+      // Si el video está marcado como almacenado en IndexedDB,
+      // lo consideramos siempre reproducible desde el navegador.
+      if (video.storage === 'indexeddb') return 'indexeddb:' + video.id;
+      return video.videoUrl || video.url || video.dataUrl || null;
+    },
+
+    loadVideoCarouselFromStorage() {
+      try {
+        const stored = localStorage.getItem('admin_carousel_videos');
+        const ids = stored ? JSON.parse(stored) : [];
+        const existing = new Set((this.storedVideos || []).map(v => v.id));
+        this.carouselVideoIds = Array.isArray(ids) ? ids.filter(id => existing.has(id)) : [];
+      } catch (e) {
+        this.carouselVideoIds = [];
       }
     },
 
-    previewDefaultVideo(video) {
-      // Preparar preview si existe URL almacenada
-      const url = video.videoUrl || video.url || video.dataUrl || null;
-      this.defaultPreview = { url, thumbnail: null };
+    saveVideoCarouselToStorage() {
+      localStorage.setItem('admin_carousel_videos', JSON.stringify(this.carouselVideoIds || []));
+      window.dispatchEvent(new Event('video-carousel-updated'));
     },
 
-    saveDefaultVideo() {
-      if (!this.defaultVideoId) {
-        this.showNotification('Selecciona un video primero', 'error');
+    isInVideoCarousel(videoId) {
+      return (this.carouselVideoIds || []).includes(videoId);
+    },
+
+    addVideoIdToCarousel(videoId) {
+      if (!videoId) return;
+      if (!this.carouselVideoIds) this.carouselVideoIds = [];
+      if (!this.carouselVideoIds.includes(videoId)) {
+        this.carouselVideoIds.push(videoId);
+        this.saveVideoCarouselToStorage();
+      }
+    },
+
+    toggleVideoCarousel(video) {
+      const id = video?.id;
+      if (!id) return;
+
+      if (this.isInVideoCarousel(id)) {
+        this.removeVideoFromCarousel(id);
         return;
       }
-      localStorage.setItem('jdmDefaultVideoId', this.defaultVideoId);
-      window.dispatchEvent(new Event('default-video-updated'));
-      this.showNotification('Video predeterminado guardado', 'success');
+
+      this.addVideoIdToCarousel(id);
     },
 
-    clearDefaultVideo() {
-      this.defaultVideoId = null;
-      this.defaultPreview = null;
-      localStorage.removeItem('jdmDefaultVideoId');
-      window.dispatchEvent(new Event('default-video-updated'));
-      this.showNotification('Video predeterminado eliminado', 'info');
+    removeVideoFromCarousel(videoId) {
+      this.carouselVideoIds = (this.carouselVideoIds || []).filter(id => id !== videoId);
+      this.saveVideoCarouselToStorage();
+    },
+
+    moveVideoInCarousel(videoId, dir) {
+      const ids = this.carouselVideoIds || [];
+      const from = ids.indexOf(videoId);
+      if (from === -1) return;
+      const to = from + dir;
+      if (to < 0 || to >= ids.length) return;
+      const next = [...ids];
+      const tmp = next[from];
+      next[from] = next[to];
+      next[to] = tmp;
+      this.carouselVideoIds = next;
+      this.saveVideoCarouselToStorage();
     },
     
     saveVideosToStorage() {
-      localStorage.setItem('jdmTuningVideos', JSON.stringify(this.storedVideos));
-      // Notificar a otras partes de la app que la lista de videos cambió
-      window.dispatchEvent(new Event('videos-updated'));
+      try {
+        localStorage.setItem('jdmTuningVideos', JSON.stringify(this.storedVideos));
+        // Notificar a otras partes de la app que la lista de videos cambió
+        window.dispatchEvent(new Event('videos-updated'));
+      } catch (e) {
+        console.error('Error al guardar videos en localStorage:', e);
+        this.showNotification('No se pudieron guardar más videos en este navegador (límite de almacenamiento).', 'error');
+      }
     },
 
     async generateVideoThumbnail(dataUrl) {
@@ -2064,7 +2396,23 @@ export default {
     },
     
     editVideo(video) {
-      // Implementar edición de video
+      if (!video) return;
+
+      this.editingVideoId = video.id;
+      this.isEditingVideo = true;
+
+      this.newVideo = {
+        title: video.title || '',
+        description: video.description || '',
+        category: video.category || 'tutorial',
+        // Sincronizamos con el estado actual del carrusel
+        addToCarousel: this.isInVideoCarousel(video.id),
+        // No podemos rellenar inputs de archivo por seguridad del navegador
+        videoFile: null,
+        audioTracks: [null, null],
+        subtitles: [null, null]
+      };
+
       this.showNotification(`Editando video: ${video.title}`, 'info');
     },
     
@@ -2072,6 +2420,12 @@ export default {
       if (confirm('¿Estás seguro de que quieres eliminar este video? Esta acción no se puede deshacer.')) {
         this.storedVideos = this.storedVideos.filter(video => video.id !== videoId);
         this.saveVideosToStorage();
+        if (this.isInVideoCarousel(videoId)) {
+          this.removeVideoFromCarousel(videoId);
+        }
+        if (this.editingVideoId === videoId) {
+          this.resetUploadForm();
+        }
         this.showNotification('Video eliminado exitosamente', 'success');
       }
     },
@@ -4011,3 +4365,31 @@ input:checked + .toggle-slider:before {
   }
 }
 </style>
+
+  <style>
+    .context-menu {
+      position: absolute;
+      z-index: 2000;
+      background: var(--accent, #fff);
+      border: 1px solid rgba(0,0,0,0.08);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      border-radius: 6px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 140px;
+    }
+
+    .context-menu-btn {
+      background: transparent;
+      border: none;
+      text-align: left;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-family: var(--font-family, Arial, sans-serif);
+      color: var(--text, #222);
+    }
+
+    .context-menu-btn:hover { background: rgba(0,0,0,0.04); }
+  </style>

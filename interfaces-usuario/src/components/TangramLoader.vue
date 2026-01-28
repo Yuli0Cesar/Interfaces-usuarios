@@ -61,8 +61,9 @@ export default {
       if (!this.canvas) return;
       
       this.context = this.canvas.getContext('2d');
-      this.canvas.width = 400;
-      this.canvas.height = 400;
+      // Usar un canvas interno más grande para dar más espacio sin escalar las piezas
+      this.canvas.width = 800;
+      this.canvas.height = 800;
 
       // Inicializar puntos con colores del CSS
       this.points = [
@@ -128,11 +129,11 @@ export default {
         figura2: [
             { translateX: 150, translateY: 152, rotation: -90, scaleX: 1, scaleY: 1 },
             { translateX: 45, translateY: 152, rotation: -180, scaleX: 1, scaleY: 1 },
-            { translateX: -18, translateY: 11, rotation: 45, scaleX: 1, scaleY: 1 },
+            { translateX: -14, translateY: 11, rotation: 45, scaleX: 1, scaleY: 1 },
             { translateX: -2, translateY: 1, rotation: 0, scaleX: 1, scaleY: 1 },
             { translateX: -53, translateY: 150, rotation: -90, scaleX: 1, scaleY: 1 },
             { translateX: 247, translateY: 50, rotation: 90, scaleX: 1, scaleY: 1 },
-            { translateX: 135, translateY: 435, rotation: -135, scaleX: 1, scaleY: 1 }
+            { translateX: 131, translateY: 435, rotation: -135, scaleX: 1, scaleY: 1 }
         ],
 
         figura3: [
@@ -186,8 +187,10 @@ export default {
     drawFigure(figure) {
       this.context.save();
       
-      // Centrar el tangram en el canvas
-      this.context.translate(this.canvas.width / 4, this.canvas.height / 4);
+      // Centrar el tangram en el canvas: desplazar al centro y compensar
+      // el origen lógico del tangram (las piezas usan coordenadas 0..200)
+      const tangramLogicalSize = 200;
+      this.context.translate(this.canvas.width / 2 - tangramLogicalSize / 2, this.canvas.height / 2 - tangramLogicalSize / 2);
       
       // Aplicar transformaciones individuales de cada figura
       this.context.translate(figure.transform.translateX, figure.transform.translateY);
@@ -336,10 +339,10 @@ export default {
 }
 
 .tangram-loader canvas {
-  width: 300px;
-  height: 300px;
-  max-width: 90vw;
-  max-height: 50vh;
+  width: 600px; /* aumentar espacio visible sin cambiar tamaño de piezas */
+  height: 600px;
+  max-width: 95vw;
+  max-height: 80vh;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
 }
 
@@ -371,8 +374,8 @@ export default {
 /* Responsive */
 @media (max-width: 768px) {
   .tangram-loader canvas {
-    width: 250px;
-    height: 250px;
+    width: 420px;
+    height: 420px;
   }
   
   .loader-text {
@@ -383,8 +386,8 @@ export default {
 
 @media (max-width: 480px) {
   .tangram-loader canvas {
-    width: 200px;
-    height: 200px;
+    width: 320px;
+    height: 320px;
   }
   
   .loader-text {

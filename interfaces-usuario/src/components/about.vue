@@ -249,43 +249,12 @@
             </div>
           </div>
           <div class="about-image">
-            <!-- Reproductor de video local -->
-            <div class="video-player-section">
-              <div class="video-player-container">
-                <video 
-                  v-if="localVideoUrl"
-                  ref="videoPlayer"
-                  :src="localVideoUrl"
-                  controls
-                  class="jdm-video-player"
-                  :poster="uploadedVideoInfo?.thumbnail || 'https://via.placeholder.com/400x300/2c3e50/ecf0f1?text=JDM+Tuning+Video'"
-                  @timeupdate="updateVideoProgress"
-                  @loadedmetadata="updateVideoDuration"
-                  @play="isPlaying = true"
-                  @pause="isPlaying = false"
-                  @ended="isPlaying = false"
-                >
-                  <track
-                    v-for="(t, idx) in subtitleTrackUrls"
-                    :key="idx"
-                    kind="subtitles"
-                    :srclang="t.lang || 'es'"
-                    :label="t.label || ('Sub ' + (idx+1))"
-                    :src="t.url"
-                  />
-                  Tu navegador no soporta el elemento de video.
-                </video>
-                <div v-else class="video-placeholder">
-                  <div class="video-placeholder-content">
-                    <span class="video-icon">🎬</span>
-                    <p>Reproductor JDM Tuning</p>
-                    <small>No hay videos para reproducir, en configadmin</small>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Custom controls removed; native <video> element only -->
-            </div>
+            <!-- Imagen estática en lugar de video en About -->
+            <img
+              src="https://via.placeholder.com/400x300/2c3e50/ecf0f1?text=JDM+Tuning"
+              alt="JDM Tuning"
+              class="about-static-image"
+            >
           </div>
         </div>
       </div>
@@ -305,7 +274,15 @@
           <h2>Galería JDM</h2>
         </div>
         <div class="gallery-content">
-          <CarouselPreview />
+          <div class="gallery-block">
+            <h3 class="gallery-subtitle">Carrusel de Imágenes</h3>
+            <CarouselPreview />
+          </div>
+
+          <div class="gallery-block">
+            <h3 class="gallery-subtitle">Carrusel de Videos</h3>
+            <VideoCarouselPreview />
+          </div>
         </div>
       </div>
     </section>
@@ -415,6 +392,7 @@ import ConfigAdmin from './assets/configadmin.vue';
 import UserCV from './UserCV.vue';
 // Preview carousel
 import CarouselPreview from './CarouselPreviewFixed.vue';
+import VideoCarouselPreview from './VideoCarouselPreviewFixed.vue';
 
 export default {
   name: 'AboutJdmTuning',
@@ -422,7 +400,8 @@ export default {
     TangramLoader,
     ConfigAdmin,
     UserCV,
-    CarouselPreview
+    CarouselPreview,
+    VideoCarouselPreview
   },
   data() {
     return {
@@ -526,17 +505,19 @@ export default {
       subtitleTracks: [],
       subtitleTrackUrls: [],
       audioTrackUrls: [],
-      activeAudioIndex: -1,
-      activeSubtitleIndex: -1,
       audioElements: [],
       isPlaying: false,
       isMuted: false,
+      externalVolume: 1,
       currentTime: 0,
       duration: 0,
       videoProgress: 0,
       volume: 1,
       savedVideos: [],
-      currentVideoId: null
+      currentVideoId: null,
+      activeAudioIndex: -1,
+      activeSubtitleIndex: -1,
+      syncInterval: null
     }
   },
   computed: {
@@ -559,23 +540,7 @@ export default {
       getComputedStyle(document.documentElement).getPropertyValue('--primary').trim(),
       getComputedStyle(document.documentElement).getPropertyValue('--secondary').trim()
     ];
-  },
-    availableAudioOptions() {
-      const res = [];
-      (this.audioTracks || []).forEach((t, i) => {
-        if (t) res.push({ index: i, label: `Pista ${i + 1}` });
-      });
-      return res;
-    },
-    
-    availableSubtitleOptions() {
-      const res = [];
-      (this.subtitleTracks || []).forEach((t, i) => {
-        if (t) res.push({ index: i, label: `Sub ${i + 1}` });
-      });
-      return res;
-    }
-    
+  }
   },
   mounted() {
     setTimeout(() => {
@@ -587,11 +552,8 @@ export default {
     
     // Escuchar actualizaciones de videos desde el admin
     window.addEventListener('videos-updated', this.loadVideosFromAdmin);
-    window.addEventListener('default-video-updated', this.applyDefaultVideo);
     // Cargar videos subidos desde el admin
     this.loadVideosFromAdmin();
-    // Aplicar video por defecto (si existe)
-    this.applyDefaultVideo();
     // Inicializar el reproductor de video
     this.initializeVideoPlayer();
   },
@@ -599,7 +561,13 @@ export default {
     localVideoUrl(newVal) {
       if (newVal) {
         // small delay to ensure DOM updated
-        setTimeout(() => { try { this.setupTracks(); } catch(e){ console.error('setupTracks watcher error', e); } }, 250);
+        setTimeout(() => { 
+          try { 
+            this.setupTracks(); 
+          } catch(e){ 
+            console.error('setupTracks watcher error', e); 
+          } 
+        }, 250);
       }
     }
   },
@@ -610,9 +578,9 @@ export default {
   },
   beforeUnmount() {
     window.removeEventListener('videos-updated', this.loadVideosFromAdmin);
-    window.removeEventListener('default-video-updated', this.applyDefaultVideo);
     try {
       this.cleanupTracks();
+      this.stopSyncInterval();
     } catch (e) {}
   },
   methods: {
@@ -811,8 +779,10 @@ export default {
       const saved = localStorage.getItem('jdmGlobalStyles');
       if (saved) {
         try {
-          const { styles } = JSON.parse(saved);
-          
+          const parsed = JSON.parse(saved);
+          const styles = parsed.styles || {};
+          const fonts = parsed.customFonts || [];
+
           // Aplicar estilos al documento
           let styleElement = document.getElementById('jdm-global-styles');
           if (!styleElement) {
@@ -820,13 +790,21 @@ export default {
             styleElement.id = 'jdm-global-styles';
             document.head.appendChild(styleElement);
           }
-          
-          let css = ':root {\n';
+
+          // Incluir @font-face para fuentes personalizadas
+          let fontCss = '';
+          if (fonts && fonts.length) {
+            fonts.forEach(f => {
+              fontCss += `@font-face { font-family: '${f.name}'; src: url(${f.dataUrl}) format('${f.format}'); font-weight: normal; font-style: normal; }\n`;
+            });
+          }
+
+          let css = fontCss + ':root {\n';
           Object.entries(styles).forEach(([key, value]) => {
             css += `  ${key}: ${value};\n`;
           });
           css += '}\n';
-          
+
           styleElement.textContent = css;
           
         } catch (e) {
@@ -853,6 +831,9 @@ export default {
             };
             this.currentVideoId = videoData.id;
             
+            // Cargar audio tracks para este video
+            this.loadAudioTracksFromStorage(videoData.id);
+            
             // Cargar después de que el DOM se actualice
             this.$nextTick(() => {
               const videoElement = this.$refs.videoPlayer;
@@ -866,6 +847,7 @@ export default {
               name: videoData.name || 'Video desde URL',
               lastLoaded: new Date().toISOString()
             };
+            this.loadAudioTracksFromStorage(videoData.id);
           }
         } catch (e) {
           console.error('Error al cargar el último video:', e);
@@ -886,43 +868,71 @@ export default {
       this.videoUrlInput = '';
     },
 
-    togglePlayPause() {
-      const videoElement = this.$refs.videoPlayer;
-      if (!videoElement) return;
-      
-      if (videoElement.paused) {
-        videoElement.play();
-        this.isPlaying = true;
-      } else {
-        videoElement.pause();
-        this.isPlaying = false;
+    // Métodos para eventos del video
+    onVideoPlay() {
+      this.isPlaying = true;
+      if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
+        const audioElement = this.audioElements[this.activeAudioIndex];
+        audioElement.currentTime = this.$refs.videoPlayer.currentTime;
+        audioElement.play().catch(e => {
+          console.error('Error al reproducir audio externo:', e);
+        });
+      }
+      this.startSyncInterval();
+    },
+
+    onVideoPause() {
+      this.isPlaying = false;
+      if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
+        this.audioElements[this.activeAudioIndex].pause();
+      }
+      this.stopSyncInterval();
+    },
+
+    onVideoEnded() {
+      this.isPlaying = false;
+      if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
+        this.audioElements[this.activeAudioIndex].pause();
+        this.audioElements[this.activeAudioIndex].currentTime = 0;
+      }
+      this.stopSyncInterval();
+    },
+
+    // Sincronización de audio
+    startSyncInterval() {
+      this.stopSyncInterval();
+      this.syncInterval = setInterval(() => {
+        this.syncAudioWithVideo();
+      }, 100);
+    },
+
+    stopSyncInterval() {
+      if (this.syncInterval) {
+        clearInterval(this.syncInterval);
+        this.syncInterval = null;
       }
     },
 
-    stopVideo() {
+    syncAudioWithVideo() {
       const videoElement = this.$refs.videoPlayer;
-      if (videoElement) {
-        videoElement.pause();
-        videoElement.currentTime = 0;
-        this.isPlaying = false;
-        this.currentTime = 0;
-        this.videoProgress = 0;
+      if (!videoElement || this.activeAudioIndex === -1 || !this.audioElements[this.activeAudioIndex]) {
+        return;
       }
-    },
 
-    toggleMute() {
-      const videoElement = this.$refs.videoPlayer;
-      if (videoElement) {
-        videoElement.muted = !videoElement.muted;
-        this.isMuted = videoElement.muted;
+      const audioElement = this.audioElements[this.activeAudioIndex];
+      const videoTime = videoElement.currentTime;
+      const audioTime = audioElement.currentTime;
+
+      // Sincronizar si hay una diferencia significativa
+      if (Math.abs(videoTime - audioTime) > 0.1) {
+        audioElement.currentTime = videoTime;
       }
-    },
 
-    changeVolume() {
-      const videoElement = this.$refs.videoPlayer;
-      if (videoElement) {
-        videoElement.volume = this.volume;
-        this.isMuted = this.volume === 0;
+      // Si el video está reproduciéndose pero el audio no, intentar reanudar
+      if (!videoElement.paused && audioElement.paused) {
+        audioElement.play().catch(e => {
+          console.debug('Audio sync play failed (might be expected):', e);
+        });
       }
     },
 
@@ -945,14 +955,6 @@ export default {
       }
     },
 
-    seekVideo() {
-      const videoElement = this.$refs.videoPlayer;
-      if (videoElement && this.duration > 0) {
-        const seekTime = (this.duration * this.videoProgress) / 100;
-        videoElement.currentTime = seekTime;
-      }
-    },
-
     // --- Audio/Subtitles support ---
     setupTracks() {
       console.debug('setupTracks called', 'audioTracks.len=', (this.audioTracks||[]).length, 'subtitleTracks.len=', (this.subtitleTracks||[]).length);
@@ -960,7 +962,7 @@ export default {
       const videoElement = this.$refs.videoPlayer;
       if (!videoElement) return;
 
-      // Add subtitle <track> elements
+      // Configurar subtítulos
       try {
         // remove any existing track elements
         const existing = videoElement.querySelectorAll('track');
@@ -978,152 +980,86 @@ export default {
           track.default = false;
           track.mode = 'disabled';
           videoElement.appendChild(track);
-          track.addEventListener && track.addEventListener('load', () => {
-            console.debug('track loaded', idx, track.src);
-          });
         });
       } catch (e) {
         console.error('Error al configurar subtítulos:', e);
       }
-      // Force the browser to load newly appended tracks and poll for textTracks
+
+      // Configurar pistas de audio
+      try {
+        this.audioElements = (this.audioTracks || []).map((audioSrc, index) => {
+          if (!audioSrc) return null;
+          
+          try {
+            let realSrc = audioSrc;
+            if (audioSrc.startsWith('data:audio/')) {
+              realSrc = this.getBlobUrlIfNeeded(audioSrc);
+              if (realSrc !== audioSrc) {
+                this._createdObjectUrls.push(realSrc);
+              }
+            }
+            
+            const audioElement = new Audio();
+            audioElement.src = realSrc;
+            audioElement.preload = 'metadata';
+            audioElement.crossOrigin = 'anonymous';
+            audioElement.volume = this.externalVolume;
+            
+            audioElement.addEventListener('loadeddata', () => {
+              console.debug(`Audio track ${index} loaded:`, audioSrc.substring(0, 50));
+            });
+            
+            audioElement.addEventListener('error', (e) => {
+              console.error(`Error loading audio track ${index}:`, e, audioSrc.substring(0, 50));
+            });
+            
+            return audioElement;
+          } catch (error) {
+            console.error(`Failed to create audio element for track ${index}:`, error);
+            return null;
+          }
+        }).filter(Boolean);
+        
+        console.debug('Audio elements created:', this.audioElements.length);
+        
+      } catch (error) {
+        console.error('Error setting up audio tracks:', error);
+        this.audioElements = [];
+      }
+
+      // Recargar video para aplicar tracks
       try {
         videoElement.load();
-        const maxRetries = 15;
-        let attempts = 0;
-        const poll = () => {
-          const tt = videoElement.textTracks || [];
-          if (tt && tt.length > 0) {
-            console.debug('textTracks populated, count=', tt.length);
-            for (let i = 0; i < tt.length; i++) {
-              try { tt[i].mode = 'disabled'; } catch(e) {}
-            }
-            return;
-          }
-          attempts++;
-          if (attempts < maxRetries) {
-            setTimeout(poll, 200);
-          } else {
-            console.warn('textTracks did not populate after polling');
-          }
-        };
-        setTimeout(poll, 200);
       } catch (e) {
         console.warn('Unable to reload video for tracks:', e);
       }
-
-      // For now, do not create external Audio objects — only present selection UI
-      console.debug('audioTracks available count=', (this.audioTracks||[]).filter(Boolean).length);
-      // Create external Audio elements to allow switching (will be synced to video)
-      try {
-        this.audioElements = (this.audioTracks || []).map(src => {
-          if (!src) return null;
-          const realSrc = this.getBlobUrlIfNeeded(src);
-          if (realSrc !== src) this._createdObjectUrls.push(realSrc);
-          const a = new Audio(realSrc);
-          a.preload = 'auto';
-          a.crossOrigin = 'anonymous';
-          a.addEventListener && a.addEventListener('canplaythrough', () => { console.debug('audio canplaythrough', realSrc); });
-          a.addEventListener && a.addEventListener('error', (ev) => { console.error('audio element error', realSrc, ev); });
-          return a;
-        });
-        console.debug('audioElements created count=', (this.audioElements||[]).filter(Boolean).length);
-      } catch (e) {
-        console.error('Error al crear pistas de audio:', e);
-        this.audioElements = [];
-      }
-      console.debug('createdObjectUrls=', this._createdObjectUrls);
-
-      // Sync handlers
-      const onPlay = () => {
-        console.debug('video play event, activeAudioIndex=', this.activeAudioIndex);
-        if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
-          const a = this.audioElements[this.activeAudioIndex];
-          try { a.currentTime = videoElement.currentTime; } catch(e){}
-          if (videoElement.paused === false) {
-            a.play().then(() => {
-              console.debug('external audio playing');
-              videoElement.muted = true;
-              this.isMuted = true;
-            }).catch(err => {
-              console.error('external audio play failed', err);
-              // fallback: unmute video
-              videoElement.muted = false;
-              this.isMuted = false;
-            });
-          }
-        }
-      };
-
-      const onPause = () => {
-        console.debug('video pause event');
-        if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
-          const a = this.audioElements[this.activeAudioIndex];
-          a.pause();
-        }
-      };
-
-      const onSeeked = () => {
-        if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
-          const a = this.audioElements[this.activeAudioIndex];
-          try { a.currentTime = videoElement.currentTime; } catch(e){}
-        }
-      };
-
-      const onTime = () => {
-        const idx = this.activeAudioIndex;
-        if (idx !== -1 && this.audioElements[idx]) {
-          const a = this.audioElements[idx];
-          const diff = Math.abs((a.currentTime || 0) - (videoElement.currentTime || 0));
-          if (diff > 0.3) {
-            try { a.currentTime = videoElement.currentTime; } catch(e){}
-          }
-        }
-      };
-
-      const onEnded = () => {
-        console.debug('video ended event');
-        if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
-          try { this.audioElements[this.activeAudioIndex].pause(); } catch(e){}
-        }
-        this.isPlaying = false;
-      };
-
-      // Store handlers to remove later
-      this._videoSyncHandlers = { onPlay, onPause, onSeeked, onTime };
-      videoElement.addEventListener('play', onPlay);
-      videoElement.addEventListener('pause', onPause);
-      videoElement.addEventListener('seeked', onSeeked);
-      videoElement.addEventListener('timeupdate', onTime);
-      videoElement.addEventListener('ended', onEnded);
-      // include ended handler in stored handlers for cleanup
-      this._videoSyncHandlers.onEnded = onEnded;
     },
 
     cleanupTracks() {
+      this.stopSyncInterval();
+      
       const videoElement = this.$refs.videoPlayer;
-      if (videoElement && this._videoSyncHandlers) {
-        try {
-          videoElement.removeEventListener('play', this._videoSyncHandlers.onPlay);
-          videoElement.removeEventListener('pause', this._videoSyncHandlers.onPause);
-          videoElement.removeEventListener('seeked', this._videoSyncHandlers.onSeeked);
-          videoElement.removeEventListener('timeupdate', this._videoSyncHandlers.onTime);
-          if (this._videoSyncHandlers.onEnded) videoElement.removeEventListener('ended', this._videoSyncHandlers.onEnded);
-        } catch (e) {}
-        this._videoSyncHandlers = null;
-      }
-
+      
+      // Limpiar elementos de audio
       (this.audioElements || []).forEach(a => {
-        try { a.pause(); a.src = ''; } catch(e){}
+        try { 
+          a.pause(); 
+          a.src = ''; 
+        } catch(e){}
       });
       this.audioElements = [];
-      // remove track elements
+      
+      // Limpiar tracks de subtítulos
       if (videoElement) {
         const existing = videoElement.querySelectorAll('track');
         existing.forEach(t => t.remove());
       }
-      // revoke any created object URLs
+      
+      // Revocar URLs creadas
       if (this._createdObjectUrls && this._createdObjectUrls.length) {
-        this._createdObjectUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch(e){} });
+        this._createdObjectUrls.forEach(u => { 
+          try { URL.revokeObjectURL(u); } catch(e){} 
+        });
       }
       this._createdObjectUrls = [];
     },
@@ -1133,68 +1069,75 @@ export default {
       this.changeAudioTrack(this.activeAudioIndex);
     },
 
-    onSubtitleChange() {
-      console.debug('onSubtitleChange ->', this.activeSubtitleIndex);
-      this.changeSubtitleTrack(this.activeSubtitleIndex);
-    },
-
     changeAudioTrack(index) {
-      console.debug('changeAudioTrack requested', index, 'audioTracks length', (this.audioTracks||[]).length);
+      console.debug('changeAudioTrack requested', index);
+      
+      // Detener audio anterior
+      if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
+        try {
+          this.audioElements[this.activeAudioIndex].pause();
+        } catch (e) {}
+      }
+      
       const videoElement = this.$refs.videoPlayer;
-      // stop previous
-      (this.audioElements || []).forEach((a, idx) => {
-        if (!a) return;
-        try { if (idx !== index) a.pause(); } catch(e){}
-      });
-
+      this.activeAudioIndex = index;
+      
       if (index === -1) {
-        // use video's internal audio
-        if (videoElement) { videoElement.muted = false; this.isMuted = false; }
-        this.activeAudioIndex = -1;
+        // Usar audio del video
+        if (videoElement) {
+          videoElement.muted = false;
+          this.isMuted = false;
+        }
+        this.stopSyncInterval();
         return;
       }
-
-      const chosen = this.audioElements[index];
-      if (!chosen) { console.warn('chosen audio element not found for index', index); return; }
-      this.activeAudioIndex = index;
+      
+      // Usar audio externo
+      const chosenAudio = this.audioElements[index];
+      if (!chosenAudio) {
+        console.warn('Audio track not found for index', index);
+        return;
+      }
+      
+      // Configurar volumen
+      chosenAudio.volume = this.externalVolume;
+      
+      // Silenciar audio del video
       if (videoElement) {
-        try { chosen.currentTime = videoElement.currentTime; } catch(e){}
-        chosen.play().then(() => {
-          console.debug('chosen audio playing');
-          try { videoElement.muted = true; this.isMuted = true; } catch(e){}
-        }).catch(err => {
-          console.error('chosen audio play error', err);
-          // fallback
-          try { videoElement.muted = false; this.isMuted = false; } catch(e){}
+        videoElement.muted = true;
+        this.isMuted = true;
+      }
+      
+      // Sincronizar y reproducir si el video está reproduciéndose
+      if (videoElement && !videoElement.paused) {
+        chosenAudio.currentTime = videoElement.currentTime;
+        chosenAudio.play().catch(e => {
+          console.error('Error al iniciar audio externo:', e);
         });
+        this.startSyncInterval();
+      }
+    },
+
+    changeExternalVolume() {
+      if (this.activeAudioIndex !== -1 && this.audioElements[this.activeAudioIndex]) {
+        this.audioElements[this.activeAudioIndex].volume = this.externalVolume;
       }
     },
 
     changeSubtitleTrack(index) {
       const videoElement = this.$refs.videoPlayer;
       if (!videoElement) return;
-      const applyMode = () => {
-        const textTracks = videoElement.textTracks || [];
-        if (!textTracks || textTracks.length === 0) return false;
-        for (let i = 0; i < textTracks.length; i++) {
-          try {
-            textTracks[i].mode = (i === index) ? 'showing' : 'disabled';
-          } catch (e) {}
-        }
-        console.debug('applyMode set textTracks modes, count=', textTracks.length, 'active=', index);
-        return true;
-      };
-
-      // try immediate, otherwise retry shortly after load
-      if (!applyMode()) {
-        console.debug('textTracks empty, will retry shortly');
-        setTimeout(() => { const ok = applyMode(); console.debug('retry applyMode ok=', ok); }, 300);
+      
+      const textTracks = videoElement.textTracks || [];
+      for (let i = 0; i < textTracks.length; i++) {
+        try {
+          textTracks[i].mode = (i === index) ? 'showing' : 'disabled';
+        } catch (e) {}
       }
       this.activeSubtitleIndex = index;
     },
 
-    // keyboard-based cycling removed — native controls will be used
-
+    // Métodos de utilidad para tracks
     getBlobUrlIfNeeded(src) {
       if (!src || typeof src !== 'string') return src;
       if (!src.startsWith('data:')) return src;
@@ -1220,28 +1163,24 @@ export default {
         return src;
       }
     },
+    
     convertSubtitleToVttUrl(src) {
-      // If it's already a remote URL, return as-is
       if (!src || typeof src !== 'string') return src;
       if (!src.startsWith('data:')) return src;
       try {
-        // decode data URL
         const comma = src.indexOf(',');
-        const meta = src.substring(5, comma); // after data:
+        const meta = src.substring(5, comma);
         const isBase64 = meta.indexOf(';base64') !== -1;
         const data = src.substring(comma + 1);
         let text;
         if (isBase64) text = atob(data);
         else text = decodeURIComponent(data);
 
-        // detect SRT by timestamp pattern with commas
         const srtPattern = /\d{2}:\d{2}:\d{2},\d{3}/;
         let vttText = text;
         if (srtPattern.test(text) && !/^WEBVTT/m.test(text)) {
-          // convert SRT -> VTT header and commas to dots in timestamps
           vttText = 'WEBVTT\n\n' + text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
         } else if (!/^WEBVTT/m.test(text)) {
-          // still ensure VTT header
           vttText = 'WEBVTT\n\n' + text;
         }
 
@@ -1251,6 +1190,29 @@ export default {
       } catch (e) {
         console.error('convertSubtitleToVttUrl failed', e);
         return src;
+      }
+    },
+
+    // Método para cargar audio tracks desde localStorage
+    loadAudioTracksFromStorage(videoId) {
+      try {
+        // Intentar cargar desde la clave específica de audio
+        const audioKey = `jdmAudioTracks_${videoId}`;
+        const savedAudio = localStorage.getItem(audioKey);
+        
+        if (savedAudio) {
+          const audioData = JSON.parse(savedAudio);
+          console.debug('Audio tracks loaded from storage:', audioData);
+          
+          // Si hay audio tracks guardados, combinarlos con los existentes
+          if (audioData.audioTracks && audioData.audioTracks.length > 0) {
+            // Limpiar tracks existentes y usar los nuevos
+            this.audioTracks = [...audioData.audioTracks];
+            console.debug('Loaded audio tracks:', this.audioTracks.length);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading audio tracks from storage:', error);
       }
     },
 
@@ -1278,6 +1240,8 @@ export default {
       this.duration = 0;
       this.videoProgress = 0;
       this.currentVideoId = null;
+      this.audioTracks = [];
+      this.cleanupTracks();
       
       // Remover del localStorage
       localStorage.removeItem('jdmLastVideo');
@@ -1332,6 +1296,7 @@ export default {
       if (!defId) return;
       const all = localStorage.getItem('jdmTuningVideos');
       if (!all) return;
+      
       try {
         const videos = JSON.parse(all);
         const found = videos.find(v => v.id === defId);
@@ -1342,10 +1307,18 @@ export default {
             this.currentVideoObj = found;
             console.debug('applyDefaultVideo loaded video', found.id, 'audioTracks', (found.audioTracks||[]).length, 'subtitles', (found.subtitles||[]).length);
             this.localVideoUrl = url;
-            this.uploadedVideoInfo = { name: found.title || found.name || 'Video predeterminado', size: found.size || 0, lastLoaded: new Date().toISOString() };
+            this.uploadedVideoInfo = { 
+              name: found.title || found.name || 'Video predeterminado', 
+              size: found.size || 0, 
+              lastLoaded: new Date().toISOString() 
+            };
             this.currentVideoId = found.id;
             this.audioTracks = found.audioTracks || [];
             this.subtitleTracks = found.subtitles || [];
+            
+            // **CRÍTICO: Cargar audio tracks desde localStorage**
+            this.loadAudioTracksFromStorage(found.id);
+            
             // prepare object URLs for tracks (revoke any previous)
             try {
               // revoke old
@@ -1356,14 +1329,17 @@ export default {
                 this.audioTrackUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch(e){} });
               }
             } catch (e) {}
+            
             this.subtitleTrackUrls = (this.subtitleTracks || []).map((s, i) => {
               if (!s) return null;
               const url = this.convertSubtitleToVttUrl(s);
               return { url, label: s.name || (`Sub ${i+1}`), lang: s.lang || 'es' };
             }).filter(Boolean);
+            
             this.audioTrackUrls = (this.audioTracks || []).map(a => a ? this.getBlobUrlIfNeeded(a) : null).filter(Boolean);
             this.activeAudioIndex = -1;
             this.activeSubtitleIndex = -1;
+            
             this.$nextTick(() => {
               const videoElement = this.$refs.videoPlayer;
               if (videoElement) videoElement.volume = this.volume;
@@ -1423,6 +1399,10 @@ export default {
           this.uploadedVideoInfo = { name: foundFull.title || foundFull.name || video.name, size: foundFull.size || 0, lastLoaded: new Date().toISOString() };
           this.audioTracks = foundFull.audioTracks || [];
           this.subtitleTracks = foundFull.subtitles || [];
+          
+          // Cargar audio tracks específicos para este video
+          this.loadAudioTracksFromStorage(foundFull.id);
+          
           // prepare object URLs for tracks (revoke any previous)
           try {
             if (this.subtitleTrackUrls && this.subtitleTrackUrls.length) {
@@ -1432,16 +1412,19 @@ export default {
               this.audioTrackUrls.forEach(u => { try { URL.revokeObjectURL(u); } catch(e){} });
             }
           } catch (e) {}
+          
           this.subtitleTrackUrls = (this.subtitleTracks || []).map((s, i) => {
             if (!s) return null;
             const url = this.convertSubtitleToVttUrl(s);
             return { url, label: s.name || (`Sub ${i+1}`), lang: s.lang || 'es' };
           }).filter(Boolean);
+          
           this.audioTrackUrls = (this.audioTracks || []).map(a => a ? this.getBlobUrlIfNeeded(a) : null).filter(Boolean);
           this.activeAudioIndex = -1;
           this.activeSubtitleIndex = -1;
           this.currentVideoId = foundFull.id;
           localStorage.setItem('jdmLastVideo', JSON.stringify(foundFull));
+          
           this.$nextTick(() => {
             const videoElement = this.$refs.videoPlayer;
             if (videoElement) videoElement.volume = this.volume;
@@ -1462,11 +1445,15 @@ export default {
 
       this.currentVideoId = video.id;
       localStorage.setItem('jdmLastVideo', JSON.stringify(video));
+      
+      // Cargar audio tracks para este video
+      this.loadAudioTracksFromStorage(video.id);
 
       this.$nextTick(() => {
         const videoElement = this.$refs.videoPlayer;
         if (videoElement) {
           videoElement.volume = this.volume;
+          this.setupTracks();
         }
       });
     },
@@ -1486,27 +1473,148 @@ export default {
         minute: '2-digit'
       });
     }
-
-    ,availableAudioOptions() {
-      const res = [];
-      (this.audioTracks || []).forEach((t, i) => {
-        if (t) res.push({ index: i, label: `Pista ${i + 1}` });
-      });
-      return res;
-    },
-
-    availableSubtitleOptions() {
-      const res = [];
-      (this.subtitleTracks || []).forEach((t, i) => {
-        if (t) res.push({ index: i, label: `Sub ${i + 1}` });
-      });
-      return res;
-    }
   }
 }
 </script>
 
 <style scoped>
+/* Añade estos estilos al final del bloque de estilos existente */
+
+/* Galería */
+.gallery-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.gallery-block {
+  background: var(--accent);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.25rem;
+}
+
+.gallery-subtitle {
+  margin: 0 0 0.75rem 0;
+  color: var(--primary);
+  font-family: var(--font-family);
+  font-size: 1.2rem;
+}
+
+/* Controles de audio */
+.audio-controls {
+  background: var(--primary);
+  padding: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  margin-top: 1rem;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
+.audio-selection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.audio-selection label {
+  color: var(--accent);
+  font-weight: 500;
+  font-family: var(--font-family);
+  white-space: nowrap;
+}
+
+.audio-select {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.5rem;
+  border: 2px solid var(--accent);
+  border-radius: var(--border-radius);
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--secondary-font);
+  cursor: pointer;
+}
+
+.audio-select:focus {
+  outline: none;
+  border-color: var(--secondary);
+}
+
+.external-audio-controls {
+  border-top: 1px solid rgba(255,255,255,0.2);
+  padding-top: 1rem;
+}
+
+.external-audio-controls .volume-control {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.external-audio-controls .volume-icon {
+  color: var(--accent);
+  font-size: 1.2rem;
+  min-width: 30px;
+}
+
+.external-audio-controls .volume-slider {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.2);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.external-audio-controls .volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--secondary);
+  cursor: pointer;
+  border: 2px solid var(--accent);
+}
+
+.external-audio-controls .volume-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--secondary);
+  cursor: pointer;
+  border: 2px solid var(--accent);
+}
+
+/* Responsive para controles de audio */
+@media (max-width: 768px) {
+  .audio-selection {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .audio-select {
+    min-width: 100%;
+  }
+  
+  .external-audio-controls .volume-control {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  
+  .external-audio-controls .volume-icon {
+    text-align: center;
+  }
+}
+
+/* Resto del CSS existente se mantiene igual... */
+/* ... [todo el CSS existente se mantiene igual] ... */
+
 #app {
   position: relative;
 }
@@ -2152,10 +2260,12 @@ input[type="checkbox"] {
   background: rgba(255,255,255,0.1);
   outline: none;
   cursor: pointer;
+  appearance: none;
   -webkit-appearance: none;
 }
 
 .video-progress-bar::-webkit-slider-thumb {
+  appearance: none;
   -webkit-appearance: none;
   width: 18px;
   height: 18px;
@@ -2191,10 +2301,12 @@ input[type="checkbox"] {
   background: rgba(255,255,255,0.1);
   outline: none;
   cursor: pointer;
+  appearance: none;
   -webkit-appearance: none;
 }
 
 .volume-slider::-webkit-slider-thumb {
+  appearance: none;
   -webkit-appearance: none;
   width: 16px;
   height: 16px;

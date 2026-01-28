@@ -134,11 +134,21 @@
 
                   <div class="form-grid">
                     <div class="form-group">
-                      <label>Nombre Completo *</label>
+                      <label>Nombre *</label>
                       <input
                         type="text"
-                        v-model="formData.personalInfo.fullName"
-                        placeholder="Ej: Alejandro Torres"
+                        v-model="formData.personalInfo.firstName"
+                        placeholder="Ej: Juan"
+                        required
+                      >
+                    </div>
+
+                    <div class="form-group">
+                      <label>Apellido *</label>
+                      <input
+                        type="text"
+                        v-model="formData.personalInfo.lastName"
+                        placeholder="Ej: Torres"
                         required
                       >
                     </div>
@@ -276,12 +286,27 @@
 
                         <div class="form-group">
                           <label>Período *</label>
-                          <input
-                            type="text"
-                            v-model="exp.period"
-                            placeholder="Ej: 2019 - 2023"
-                            required
-                          >
+                          <div class="date-range">
+                            <input
+                              type="number"
+                              v-model.number="exp.startYear"
+                              :min="1900"
+                              :max="currentYear"
+                              @change="exp.periodError = ''; validateExpPeriod(index)"
+                              placeholder="Ej: 2019"
+                              required
+                            />
+                            <span class="date-sep">—</span>
+                            <input
+                              type="number"
+                              v-model.number="exp.endYear"
+                              :min="1900"
+                              :max="currentYear"
+                              @change="exp.periodError = ''; validateExpPeriod(index)"
+                              placeholder="(Opcional)"
+                            />
+                          </div>
+                          <small v-if="exp.periodError" style="color: #c0392b; display:block; margin-top:6px;">{{ exp.periodError }}</small>
                         </div>
 
                         <div class="form-group full-width">
@@ -338,11 +363,26 @@
 
                         <div class="form-group">
                           <label>Período</label>
-                          <input
-                            type="text"
-                            v-model="edu.period"
-                            placeholder="Ej: 2018 - 2023"
-                          >
+                          <div class="date-range">
+                            <input
+                              type="number"
+                              v-model.number="edu.startYear"
+                              :min="1900"
+                              :max="currentYear"
+                              @change="edu.periodError = ''; validateEduPeriod(index)"
+                              placeholder="Ej: 2018"
+                            />
+                            <span class="date-sep">—</span>
+                            <input
+                              type="number"
+                              v-model.number="edu.endYear"
+                              :min="1900"
+                              :max="currentYear"
+                              @change="edu.periodError = ''; validateEduPeriod(index)"
+                              placeholder="(Opcional)"
+                            />
+                          </div>
+                          <small v-if="edu.periodError" style="color: #c0392b; display:block; margin-top:6px;">{{ edu.periodError }}</small>
                         </div>
 
                         <div class="form-group full-width">
@@ -425,10 +465,7 @@
                               <option value="4">⭐⭐⭐⭐ (4 - Avanzado)</option>
                               <option value="5">⭐⭐⭐⭐⭐ (5 - Experto)</option>
                             </select>
-                            <div class="rating-preview">
-                              <span class="stars-preview">{{ '⭐'.repeat(skill.rating) }}{{ '☆'.repeat(5 - skill.rating) }}</span>
-                              <span class="rating-text">({{ skill.rating }}/5)</span>
-                            </div>
+                            <!-- rating preview removed per user request -->
                           </div>
                         </div>
                       </div>
@@ -489,7 +526,19 @@
           <div class="preview-column">
             <div class="preview-container">
               <div class="preview-header">
-                <h2>Vista Previa - {{ selectedTemplate === 1 ? 'Plantilla Clásica' : 'Plantilla Moderna' }}</h2>
+                <!-- Título removido para dar más espacio a la barra WYSIWYG -->
+                <div class="cv-format-toolbar">
+                  <div class="format-buttons" role="toolbar" aria-label="Formato CV">
+                    <button type="button" class="fmt-btn" title="Negrita" @click.prevent="toggleBoldAll">B</button>
+                    <button type="button" class="fmt-btn" title="Cursiva" @click.prevent="toggleItalicAll">I</button>
+                    <button type="button" class="fmt-btn" title="Subrayado" @click.prevent="toggleUnderlineAll">U</button>
+                    <button type="button" class="fmt-btn" title="Lista ordenada" @click.prevent="toggleOrderedList">1.</button>
+                    <button type="button" class="fmt-btn" title="Lista con viñetas" @click.prevent="toggleBulletList">•</button>
+                  </div>
+                  <div class="format-controls">
+                    <label>Interlineado: <select @change="setPreviewLineHeight($event)"><option value="1.2">1.2</option><option value="1.4" selected>1.4</option><option value="1.6">1.6</option><option value="1.8">1.8</option></select></label>
+                  </div>
+                </div>
                 <div class="preview-actions">
                   <button class="preview-btn" @click="downloadCV" :disabled="!isFormValid">
                     📄 Descargar PDF
@@ -497,7 +546,7 @@
                 </div>
               </div>
               
-              <div class="preview-content" ref="cvPreview">
+              <div class="preview-content" ref="cvPreview" contenteditable="true">
                 <!-- Plantilla 1: Clásica -->
                 <div v-if="selectedTemplate === 1" class="cv-template-custom" :style="cvStyles">
                   <!-- CABECERA CON PERFIL Y DATOS PERSONALES -->
@@ -509,7 +558,7 @@
                       </div>
                       <!-- Nombre y título centrados -->
                       <div class="header-text-center">
-                        <h1>{{ formData.personalInfo.fullName || 'Tu Nombre Completo' }}</h1>
+                        <h1>{{ (formData.personalInfo.firstName || '') + ' ' + (formData.personalInfo.lastName || '') || formData.personalInfo.fullName || 'Tu Nombre Completo' }}</h1>
                         <p class="cv-title-custom">{{ formData.personalInfo.title || 'Tu Profesión' }}</p>
                       </div>
                       <!-- Espacio vacío a la derecha para balance -->
@@ -520,7 +569,7 @@
                       <div class="header-left">
                         <div class="profile-section" v-if="formData.profile">
                           <h2 class="section-title-custom">Mi Perfil</h2>
-                          <p class="profile-text">{{ formData.profile }}</p>
+                          <p class="profile-text" v-html="formData.profile"></p>
                         </div>
                       </div>
                       <!-- Derecha: Datos personales -->
@@ -545,7 +594,7 @@
                               <span class="exp-check">✅</span>
                               <div class="exp-info">
                                 <h3 class="company-name">{{ exp.company }}</h3>
-                                <p class="exp-period">{{ exp.period }}</p>
+                                <p class="exp-period">{{ periodDisplay(exp) }}</p>
                               </div>
                             </div>
                             <p class="exp-description" v-if="exp.description">{{ exp.description }}</p>
@@ -562,7 +611,7 @@
                               <span class="edu-check">✅</span>
                               <div class="edu-info">
                                 <h3 class="edu-degree">{{ edu.degree }}</h3>
-                                <p class="edu-period" v-if="edu.period">{{ edu.period }}</p>
+                                <p class="edu-period" v-if="periodDisplay(edu)">{{ periodDisplay(edu) }}</p>
                               </div>
                             </div>
                             <p class="edu-institution" v-if="edu.institution">{{ edu.institution }}</p>
@@ -616,7 +665,7 @@
                     <div class="header-main-two">
                       <div class="cv-box" :style="{ backgroundColor: formData.selectedColor }">CV</div>
                       <div class="header-text-two">
-                        <h1>{{ formData.personalInfo.fullName || 'Tu Nombre Completo' }}</h1>
+                        <h1>{{ (formData.personalInfo.firstName || '') + ' ' + (formData.personalInfo.lastName || '') || formData.personalInfo.fullName || 'Tu Nombre Completo' }}</h1>
                         <p class="cv-title-two">{{ formData.personalInfo.title || 'Tu Profesión' }}</p>
                       </div>
                     </div>
@@ -628,8 +677,8 @@
                       <h2 class="section-title-two">Datos personales</h2>
                       <hr class="section-divider" />
                       <div class="personal-info-list">
-                        <p v-if="formData.personalInfo.fullName">
-                          <strong>Nombre</strong> {{ formData.personalInfo.fullName }}
+                        <p v-if="formData.personalInfo.firstName || formData.personalInfo.lastName || formData.personalInfo.fullName">
+                          <strong>Nombre</strong> {{ (formData.personalInfo.firstName || '') + ' ' + (formData.personalInfo.lastName || '') || formData.personalInfo.fullName }}
                         </p>
                         <p v-if="formData.personalInfo.email">
                           <strong>Correo electrónico</strong> {{ formData.personalInfo.email }}
@@ -816,6 +865,23 @@ const StarRating = {
   },
   emits: ["update:rating"],
   methods: {
+    syncNamesFromStorageOrFields() {
+      try {
+        // If formData already has first/last, ensure fullName updated
+        const p = this.formData.personalInfo || {};
+        if ((p.firstName || p.lastName) && !p.fullName) {
+          p.fullName = ((p.firstName || '') + ' ' + (p.lastName || '')).trim();
+        }
+        // If only fullName exists (loading old data), split it
+        if (!p.firstName && p.fullName) {
+          const parts = p.fullName.trim().split(/\s+/);
+          p.firstName = parts.shift() || '';
+          p.lastName = parts.join(' ') || '';
+        }
+      } catch (e) {
+        console.warn('syncNames error', e);
+      }
+    },
     setRating(val) {
       if (this.editable) this.$emit("update:rating", val);
     },
@@ -836,6 +902,8 @@ export default {
   },
   data() {
     return {
+      availablePreviewFonts: [],
+      selectedPreviewFont: '',
       user: null,
       currentStep: 1,
       selectedTemplate: 1, // 1: Clásica, 2: Moderna
@@ -853,6 +921,8 @@ export default {
         selectedColor: '#2c3e50', // Color por defecto
         personalInfo: {
           fullName: '',
+          firstName: '',
+          lastName: '',
           title: '',
           email: '',
           phone: '',
@@ -864,7 +934,9 @@ export default {
         experience: [
           {
             company: '',
-            period: '',
+            startYear: '',
+            endYear: '',
+            periodError: '',
             description: ''
           }
         ],
@@ -872,7 +944,9 @@ export default {
           {
             degree: '',
             institution: '',
-            period: '',
+            startYear: '',
+            endYear: '',
+            periodError: '',
             specialization: ''
           }
         ],
@@ -899,7 +973,9 @@ export default {
   computed: {
     isFormValid() {
       const personalInfo = this.formData.personalInfo;
-      return personalInfo.fullName && personalInfo.title && personalInfo.email && this.formData.selectedColor;
+      // Nombre para mostrar en el PDF (asegurarse de que sea string antes de usar toUpperCase())
+      const displayName = ((personalInfo.fullName || personalInfo.displayName || ((personalInfo.firstName || '') + ' ' + (personalInfo.lastName || ''))).trim()) || '';
+      return (personalInfo.firstName || personalInfo.lastName || personalInfo.fullName) && personalInfo.title && personalInfo.email && this.formData.selectedColor;
     },
     
     cvStyles() {
@@ -912,17 +988,182 @@ export default {
     
     hasPersonalInfo() {
       const info = this.formData.personalInfo;
-      return info.fullName || info.email || info.phone || info.location || info.website;
+        return (info.firstName || info.lastName || info.fullName) || info.email || info.phone || info.location || info.website;
+    }
+    ,
+    currentYear() {
+      return new Date().getFullYear();
     }
   },
   async mounted() {
+    // Cargar colores primero para que el selector siempre tenga opciones
+    this.loadAvailableColors();
     this.checkAuthentication();
     this.loadSavedCV();
-    this.loadAvailableColors();
     // Precargar fuentes al montar el componente
     await loadPdfFonts();
+    // Cargar fuentes configuradas desde el admin para el selector
+    this.loadPreviewFonts();
+    // Inicializar interlineado por defecto
+    if (this.$refs.cvPreview) this.$refs.cvPreview.style.setProperty('--cv-line-height', '1.4');
+    // Mantener fullName sincronizado con first/last
+    this.syncNamesFromStorageOrFields();
   },
   methods: {
+    loadPreviewFonts() {
+      try {
+        const saved = localStorage.getItem('jdmGlobalStyles');
+        const fonts = [];
+        // opción predeterminada (usar la fuente de la página/admin)
+        fonts.push({ label: '(predeterminada)', value: '' });
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          const styles = parsed.styles || {};
+          const custom = parsed.customFonts || [];
+          if (styles['--font-family']) {
+            fonts.push({ label: 'Fuente principal', value: styles['--font-family'] });
+          }
+          if (styles['--secondary-font']) {
+            fonts.push({ label: 'Fuente secundaria', value: styles['--secondary-font'] });
+          }
+          if (Array.isArray(custom)) {
+            custom.forEach(f => {
+              // f.name
+              fonts.push({ label: f.name, value: `'${f.name}', sans-serif` });
+            });
+          }
+        }
+        // genéricos
+        fonts.push({ label: 'Sans-serif', value: 'Helvetica, Arial, sans-serif' });
+        fonts.push({ label: 'Serif', value: 'Georgia, serif' });
+        this.availablePreviewFonts = fonts;
+      } catch (e) {
+        console.warn('Error cargando fuentes para preview:', e);
+      }
+    },
+    // Formato global del preview
+    setPreviewLineHeight(e) {
+      const val = e.target.value;
+      if (this.$refs.cvPreview) this.$refs.cvPreview.style.setProperty('--cv-line-height', val);
+    },
+    
+    toggleClassOnPreview(cls) {
+      if (!this.$refs.cvPreview) return;
+      this.$refs.cvPreview.classList.toggle(cls);
+    },
+    toggleBoldAll() { this.toggleClassOnPreview('cv-bold'); },
+    toggleItalicAll() { this.toggleClassOnPreview('cv-italic'); },
+    toggleUnderlineAll() { this.toggleClassOnPreview('cv-underline'); },
+    toggleOrderedList() { document.execCommand('insertOrderedList'); },
+    toggleBulletList() { document.execCommand('insertUnorderedList'); },
+
+    // Period parsing and validation helpers
+    parsePeriodString(str) {
+      // Keep for migration: parse legacy "2019 - 2023" strings
+      if (!str || typeof str !== 'string') return null;
+      const s = str.trim();
+      const m = s.match(/(\d{4})\s*[\-–—]\s*([a-zA-Z0-9]+)/);
+      if (m) {
+        const start = parseInt(m[1], 10);
+        let endRaw = m[2];
+        let end = null;
+        if (/^present$/i.test(endRaw) || /^actual$/i.test(endRaw)) {
+          end = new Date().getFullYear();
+        } else if (/^\d{4}$/.test(endRaw)) {
+          end = parseInt(endRaw, 10);
+        }
+        return { start, end };
+      }
+      const m2 = s.match(/^(\d{4})$/);
+      if (m2) return { start: parseInt(m2[1], 10), end: parseInt(m2[1], 10) };
+      return null;
+    },
+
+    periodDisplay(item) {
+      if (!item) return '';
+      // Prefer explicit year fields
+      if (item.startYear) {
+        const sy = Number(item.startYear);
+        if (item.endYear) {
+          const ey = Number(item.endYear);
+          return `${sy} - ${ey}`;
+        }
+        return `${sy} - Present`;
+      }
+      // Fallback: try legacy startDate/endDate or period string
+      if (item.startDate) {
+        try {
+          const s = new Date(item.startDate);
+          const sy = s.getFullYear();
+          if (item.endDate) {
+            const e = new Date(item.endDate);
+            const ey = e.getFullYear();
+            return `${sy} - ${ey}`;
+          }
+          return `${sy} - Present`;
+        } catch (e) {
+          return item.period || '';
+        }
+      }
+      return item.period || '';
+    },
+
+    validateExpPeriod(index) {
+      const exp = this.formData.experience[index];
+      if (!exp) return true;
+      const cy = new Date().getFullYear();
+      if (!exp.startYear && exp.startYear !== 0) {
+        exp.periodError = 'Selecciona el año de inicio.';
+        return false;
+      }
+      const s = Number(exp.startYear);
+      if (!Number.isInteger(s) || s < 1900 || s > cy) {
+        exp.periodError = `El año de inicio debe ser entre 1900 y ${cy}.`;
+        return false;
+      }
+      if (exp.endYear) {
+        const e = Number(exp.endYear);
+        if (!Number.isInteger(e) || e < 1900 || e > cy) {
+          exp.periodError = `El año final debe ser entre 1900 y ${cy}.`;
+          return false;
+        }
+        if (s > e) {
+          exp.periodError = 'El año inicial no puede ser posterior al año final.';
+          return false;
+        }
+      }
+      exp.periodError = '';
+      return true;
+    },
+
+    validateEduPeriod(index) {
+      const edu = this.formData.education[index];
+      if (!edu) return true;
+      const cy = new Date().getFullYear();
+      if (!edu.startYear && edu.startYear !== 0) {
+        edu.periodError = 'Selecciona el año de inicio.';
+        return false;
+      }
+      const s = Number(edu.startYear);
+      if (!Number.isInteger(s) || s < 1900 || s > cy) {
+        edu.periodError = `El año de inicio debe ser entre 1900 y ${cy}.`;
+        return false;
+      }
+      if (edu.endYear) {
+        const e = Number(edu.endYear);
+        if (!Number.isInteger(e) || e < 1900 || e > cy) {
+          edu.periodError = `El año final debe ser entre 1900 y ${cy}.`;
+          return false;
+        }
+        if (s > e) {
+          edu.periodError = 'El año inicial no puede ser posterior al año final.';
+          return false;
+        }
+      }
+      edu.periodError = '';
+      return true;
+    },
+  
     // Cargar colores disponibles desde la configuración del admin
     loadAvailableColors() {
       try {
@@ -947,8 +1188,10 @@ export default {
           ];
         }
         
-        // Establecer el primer color como seleccionado por defecto
-        if (this.availableColors.length > 0 && !this.formData.selectedColor) {
+        // Asegurar que el color seleccionado pertenezca a los colores disponibles.
+        // Si el color guardado no está en la lista, usar el primero disponible.
+        const availableValues = this.availableColors.map(c => c.value);
+        if (!this.formData.selectedColor || !availableValues.includes(this.formData.selectedColor)) {
           this.formData.selectedColor = this.availableColors[0].value;
         }
       } catch (error) {
@@ -961,6 +1204,10 @@ export default {
           { name: 'Naranja', value: '#f39c12' },
           { name: 'Morado', value: '#8e44ad' }
         ];
+        // Si por alguna razón el selectedColor no está definido, asignar el primero de respaldo
+        if (!this.formData.selectedColor) {
+          this.formData.selectedColor = this.availableColors[0].value;
+        }
       }
     },
     
@@ -1000,7 +1247,8 @@ export default {
           this.formData.personalInfo.email = this.user.email;
         }
       } else {
-        this.goToAbout();
+        // No redirigir si no hay usuario: permitir usar el editor sin autenticación
+        this.user = null;
       }
     },
 
@@ -1066,7 +1314,9 @@ export default {
     addExperience() {
       this.formData.experience.push({
         company: '',
-        period: '',
+        startYear: '',
+        endYear: '',
+        periodError: '',
         description: ''
       });
     },
@@ -1082,7 +1332,9 @@ export default {
       this.formData.education.push({
         degree: '',
         institution: '',
-        period: '',
+        startYear: '',
+        endYear: '',
+        periodError: '',
         specialization: ''
       });
     },
@@ -1162,6 +1414,20 @@ export default {
         lastUpdated: new Date().toISOString()
       };
 
+      // Ensure fullName is synchronized before saving
+      try {
+        const p = cvData.personalInfo || {};
+        p.fullName = ((p.firstName || '') + ' ' + (p.lastName || '')).trim();
+      } catch (e) { /* ignore */ }
+
+      // Validate all periods before saving
+      const expInvalid = this.formData.experience.some((e, idx) => !this.validateExpPeriod(idx));
+      const eduInvalid = this.formData.education.some((e, idx) => !this.validateEduPeriod(idx));
+      if (expInvalid || eduInvalid) {
+        alert('Hay errores en los periodos. Corrige los campos marcados antes de guardar.');
+        return;
+      }
+
       if (userCVIndex !== -1) {
         userCVs[userCVIndex] = cvData;
       } else {
@@ -1173,14 +1439,62 @@ export default {
 
     // Cargar CV guardado
     loadSavedCV() {
+      // Si no hay usuario autenticado, no intentar cargar CVs (evita errores en mounted)
+      if (!this.user) return;
+
       const userCVs = this.getStoredCVs();
       const userCV = userCVs.find(cv => cv.userId === this.user.id);
-      
+
       if (userCV) {
         this.formData = { ...userCV };
         if (userCV.selectedTemplate) {
           this.selectedTemplate = userCV.selectedTemplate;
         }
+        // migrate legacy period strings to startDate/endDate where needed
+        try {
+          if (Array.isArray(this.formData.experience)) {
+            this.formData.experience = this.formData.experience.map(exp => {
+              // migrate legacy period string
+              if (exp && !exp.startYear && exp.period) {
+                const parsed = this.parsePeriodString(exp.period);
+                if (parsed && parsed.start) {
+                  exp.startYear = parsed.start;
+                  exp.endYear = parsed.end || '';
+                }
+              }
+              // migrate startDate -> year
+              if (exp && !exp.startYear && exp.startDate) {
+                try { exp.startYear = new Date(exp.startDate).getFullYear(); } catch (e) {}
+              }
+              if (exp && !exp.endYear && exp.endDate) {
+                try { exp.endYear = new Date(exp.endDate).getFullYear(); } catch (e) {}
+              }
+              return exp;
+            });
+          }
+          if (Array.isArray(this.formData.education)) {
+            this.formData.education = this.formData.education.map(edu => {
+              if (edu && !edu.startYear && edu.period) {
+                const parsed = this.parsePeriodString(edu.period);
+                if (parsed && parsed.start) {
+                  edu.startYear = parsed.start;
+                  edu.endYear = parsed.end || '';
+                }
+              }
+              if (edu && !edu.startYear && edu.startDate) {
+                try { edu.startYear = new Date(edu.startDate).getFullYear(); } catch (e) {}
+              }
+              if (edu && !edu.endYear && edu.endDate) {
+                try { edu.endYear = new Date(edu.endDate).getFullYear(); } catch (e) {}
+              }
+              return edu;
+            });
+          }
+        } catch (e) {
+          console.warn('Error migrating periods on loadSavedCV', e);
+        }
+        // ensure name fields are normalized
+        this.syncNamesFromStorageOrFields();
       }
     },
 
@@ -1196,6 +1510,8 @@ export default {
           selectedColor: '#2c3e50',
           personalInfo: {
             fullName: '',
+            firstName: '',
+            lastName: '',
             title: '',
             email: this.user?.email || '',
             phone: '',
@@ -1207,7 +1523,8 @@ export default {
           experience: [
             {
               company: '',
-              period: '',
+              startYear: '',
+              endYear: '',
               description: ''
             }
           ],
@@ -1215,7 +1532,8 @@ export default {
             {
               degree: '',
               institution: '',
-              period: '',
+              startYear: '',
+              endYear: '',
               specialization: ''
             }
           ],
@@ -1267,7 +1585,8 @@ export default {
 
         console.log('Fuentes cargadas, generando documento...');
         const docDefinition = this.selectedTemplate === 1 ? this.buildPDFDocumentTemplate1() : this.buildPDFDocumentTemplate2();
-        const filename = `CV_${this.formData.personalInfo.fullName.replace(/\s+/g, '_')}.pdf`;
+        const safeName = ((this.formData.personalInfo.firstName || '') + ' ' + (this.formData.personalInfo.lastName || '')).trim() || this.formData.personalInfo.fullName || 'Curriculum';
+        const filename = `CV_${safeName.replace(/\s+/g, '_')}.pdf`;
         
         // Crear y descargar el PDF
         pdfMake.createPdf(docDefinition).download(filename);
@@ -1295,6 +1614,9 @@ export default {
       const highlightColor = secondaryColor;
 
       const personalInfo = this.formData.personalInfo;
+
+      // Nombre para mostrar en el PDF (asegurarse de que sea string antes de usar toUpperCase())
+      const displayName = ((personalInfo.fullName || personalInfo.displayName || ((personalInfo.firstName || '') + ' ' + (personalInfo.lastName || ''))).trim()) || '';
       
       // Función para crear secciones con títulos con fondo
       const createSection = (title, content, columnWidth) => {
@@ -1345,8 +1667,8 @@ export default {
                     style: 'itemTitle',
                     margin: [0, 0, 0, 2]
                   },
-                  exp.period ? {
-                    text: exp.period,
+                  this.periodDisplay(exp) ? {
+                    text: this.periodDisplay(exp),
                     style: 'itemSubtitle',
                     margin: [0, 0, 0, 2]
                   } : null,
@@ -1387,8 +1709,8 @@ export default {
                     style: 'body',
                     margin: [0, 0, 0, 2]
                   } : null,
-                  edu.period ? {
-                    text: edu.period,
+                  this.periodDisplay(edu) ? {
+                    text: this.periodDisplay(edu),
                     style: 'itemSubtitle',
                     margin: [0, 0, 0, 2]
                   } : null,
@@ -1507,7 +1829,7 @@ export default {
                     width: '50%',
                     stack: [
                       {
-                        text: personalInfo.fullName.toUpperCase() || 'NOMBRE COMPLETO',
+                        text: (displayName.toUpperCase() || 'NOMBRE COMPLETO'),
                         style: 'headerName',
                         alignment: 'center',
                         margin: [0, 30, 0, 3]
@@ -1771,7 +2093,7 @@ export default {
                     width: '*',
                     stack: [
                       {
-                        text: personalInfo.fullName.toUpperCase() || 'NOMBRE COMPLETO',
+                        text: (displayName.toUpperCase() || 'NOMBRE COMPLETO'),
                         style: 'headerName',
                         alignment: 'center',
                         margin: [0, 20, 0, 5]
@@ -1817,10 +2139,10 @@ export default {
                     {
                       width: '50%',
                       stack: [
-                        personalInfo.fullName ? {
+                        displayName ? {
                           text: [
                             { text: 'Nombre: ', style: 'label' },
-                            personalInfo.fullName
+                            displayName
                           ],
                           margin: [0, 0, 0, 5]
                         } : null,
@@ -2567,6 +2889,18 @@ nav {
   border: 1px solid var(--primary, #2c3e50);
 }
 
+/* Dentro de cada item, asegurar que los inputs respeten el margen interno
+   y que la columna de nivel sea de ancho fijo mientras el nombre ocupa el resto. */
+.form-item .form-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: center;
+}
+.form-item .form-group { margin: 0; display: flex; flex-direction: column; justify-content: center; }
+.rating-selector { align-items: flex-end; }
+.rating-dropdown { min-width: 160px; max-width: 220px; }
+
 .item-header {
   display: flex;
   justify-content: space-between;
@@ -2801,7 +3135,7 @@ nav {
 .profile-text {
   white-space: pre-line;
   word-break: break-word;
-  line-height: 1.6;
+  line-height: var(--cv-line-height, 1.4);
   text-align: justify;
   font-size: 0.95rem;
   color: #ecf0f1;
@@ -2886,7 +3220,7 @@ nav {
 .exp-description {
   white-space: pre-line;
   word-break: break-word;
-  line-height: 1.6;
+  line-height: var(--cv-line-height, 1.4);
   color: #34495e;
   margin-top: 0.5rem;
   padding-left: 1.5rem;
@@ -2896,7 +3230,7 @@ nav {
 .edu-specialization {
   white-space: pre-line;
   word-break: break-word;
-  line-height: 1.5;
+  line-height: var(--cv-line-height, 1.4);
   color: #34495e;
   margin-top: 0.25rem;
   padding-left: 1.5rem;
@@ -2973,7 +3307,7 @@ nav {
   padding: 2rem;
   border-radius: 8px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.5;
+  line-height: var(--cv-line-height, 1.4);
   min-height: 1000px;
 }
 
@@ -3171,26 +3505,7 @@ nav {
   box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
 }
 
-.rating-preview {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: var(--background, #f8f9fa);
-  border-radius: var(--border-radius, 4px);
-  font-size: 0.9rem;
-}
-
-.stars-preview {
-  color: #f39c12;
-  font-size: 1.1rem;
-}
-
-.rating-text {
-  color: var(--text, #666666);
-  font-size: 0.8rem;
-  font-family: var(--secondary-font, Arial, sans-serif);
-}
+/* rating preview styles removed */
 
 /* Photo Upload */
 .photo-upload-container {
@@ -3600,6 +3915,121 @@ nav {
   padding: 0 20px;
 }
 
+/* Date range inputs */
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.date-range input[type="date"] {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+.date-sep {
+  color: #666;
+  font-weight: 600;
+}
+
+/* Prevent inputs from overflowing their container in experience/education sections */
+.items-list,
+.form-item,
+.form-grid {
+  box-sizing: border-box;
+}
+
+.form-item {
+  overflow: hidden;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea,
+.form-item input,
+.form-item select,
+.form-item textarea {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+}
+
+.items-list {
+  overflow: visible;
+}
+
+/* Preview adjustments: make preview layout match PDF-like constraints and avoid overflow */
+.preview-content {
+  overflow: auto;
+  background: #fff;
+  padding: 1rem;
+}
+
+.cv-template-custom,
+.cv-template-two {
+  box-sizing: border-box;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+}
+
+.header-main-with-photo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-text-center,
+.header-main-two .header-text-two {
+  min-width: 0;
+}
+
+.header-text-center h1,
+.header-text-two h1 {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.exp-info,
+.edu-info,
+.personal-info-list {
+  min-width: 0;
+}
+
+.exp-info .company-name,
+.edu-info .edu-degree,
+.company-name-two,
+.edu-degree-two {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.exp-period,
+.edu-period,
+.exp-period-two,
+.edu-period-two {
+  white-space: normal;
+  overflow-wrap: break-word;
+  font-size: 0.95rem;
+  color: #7f8c8d;
+}
+
+.cv-left-column,
+.cv-right-column {
+  min-width: 0;
+}
+
+/* Ensure images scale inside preview */
+.profile-photo {
+  max-width: 140px;
+  width: 100%;
+  height: auto;
+}
+
 /* Print Styles */
 @media print {
   body, html, #app, .user-cv-container {
@@ -3646,4 +4076,43 @@ nav {
 }
 
 
+</style>
+<style>
+.quill-container {
+  margin: 0.5rem 0;
+}
+.quill-editor {
+  min-height: 120px;
+  background: #fff;
+}
+</style>
+<style>
+.cv-format-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  background: transparent;
+  padding: 6px;
+  border-radius: 6px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.format-buttons { display:flex; gap:0.4rem; flex-wrap:nowrap; overflow:auto; -webkit-overflow-scrolling:touch; }
+.format-buttons .fmt-btn {
+  padding: 6px 10px;
+  border: none;
+  background: var(--primary, #2c3e50);
+  color: var(--accent, #ffffff);
+  cursor: pointer;
+  border-radius: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.format-controls { margin-left: auto; display:flex; gap:0.6rem; align-items:center; }
+.format-controls label { font-size: 0.9rem; }
+.preview-content { font-size: var(--cv-font-size, 14px); line-height: var(--cv-line-height, 1.4); font-family: var(--cv-font-family, var(--font-family, inherit)); }
+.preview-content.cv-bold { font-weight: 700; }
+.preview-content.cv-italic { font-style: italic; }
+.preview-content.cv-underline { text-decoration: underline; }
 </style>

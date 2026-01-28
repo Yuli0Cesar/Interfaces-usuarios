@@ -42,6 +42,14 @@
               <div v-if="currentFileName" class="file-name-display">
                 📄 Archivo: <strong>{{ currentFileName }}</strong>
               </div>
+              <div class="image-name-input">
+                <label>Nombre para el carrusel</label>
+                <input
+                  type="text"
+                  v-model="newImageName"
+                  placeholder="Ej: Frontal JDM rojo"
+                />
+              </div>
             </div>
             <div class="crop-preview">
               <img ref="cropImg" :src="srcImage" alt="to-crop" />
@@ -92,10 +100,11 @@
                   </button>
                 </div>
                 <div class="thumb-image">
-                  <img :src="img" :alt="`Imagen ${idx + 1}`" />
+                  <img :src="getImageSrc(img)" :alt="getImageAlt(idx)" />
                 </div>
                 <div class="thumb-footer">
-                  <span class="size-info">{{ getImageSize(img) }}</span>
+                  <div class="thumb-name">📝 {{ getImageName(idx) }}</div>
+                  <span class="size-info">{{ getImageSize(getImageSrc(img)) }}</span>
                 </div>
               </div>
               
@@ -296,9 +305,11 @@ export default {
       srcImage: null,
       cropper: null,
       images: [],
+      imageNames: [],
       currentIndex: 0,
       autoPreviewInterval: null,
       currentFileName: '',
+      newImageName: '',
       slideWidth: 0,
       imagesPerView: 3,
       gap: 10,
@@ -388,6 +399,8 @@ export default {
       if (!file) return;
       
       this.currentFileName = file.name;
+      const baseName = file.name.replace(/\.[^/.]+$/, '');
+      this.newImageName = baseName;
       
       if (file.size > 5 * 1024 * 1024) {
         alert('⚠️ La imagen es demasiado grande. Máximo 5MB.');
@@ -439,11 +452,14 @@ export default {
         return;
       }
       
-      this.addImage(dataUrl);
+      const name = this.newImageName && this.newImageName.trim()
+        ? this.newImageName.trim()
+        : `Imagen ${this.images.length + 1}`;
+      this.addImage(dataUrl, name);
       this.clearCrop();
     },
     
-    addImage(dataUrl) {
+    addImage(dataUrl, name) {
       const maxImages = 6;
       if (this.images.length >= maxImages) {
         alert(`❌ Máximo ${maxImages} imágenes permitidas.`);
@@ -451,6 +467,9 @@ export default {
       }
       
       this.images.push(dataUrl);
+      const index = this.images.length - 1;
+      if (!this.imageNames) this.imageNames = [];
+      this.imageNames[index] = name || `Imagen ${index + 1}`;
       this.saveImages();
     },
     
@@ -462,6 +481,9 @@ export default {
       
       if (confirm('¿Eliminar esta imagen del carrusel?')) {
         this.images.splice(i, 1);
+        if (this.imageNames && this.imageNames.length > i) {
+          this.imageNames.splice(i, 1);
+        }
         if (this.normalizedCurrent >= this.images.length) {
           this.currentIndex = 0;
         }
@@ -476,6 +498,9 @@ export default {
     saveImages() {
       try {
         localStorage.setItem('admin_carousel_images', JSON.stringify(this.images));
+        if (this.imageNames && this.imageNames.length) {
+          localStorage.setItem('admin_carousel_image_names', JSON.stringify(this.imageNames));
+        }
         window.dispatchEvent(new Event('carousel-updated'));
       } catch (e) {
         alert('❌ Error al guardar imágenes. Límite de almacenamiento excedido.');
@@ -487,6 +512,19 @@ export default {
       try {
         const stored = localStorage.getItem('admin_carousel_images');
         this.images = stored ? JSON.parse(stored) : [];
+
+        const storedNames = localStorage.getItem('admin_carousel_image_names');
+        if (storedNames) {
+          this.imageNames = JSON.parse(storedNames) || [];
+        } else {
+          this.imageNames = this.images.map((_, idx) => `Imagen ${idx + 1}`);
+        }
+
+        if (this.imageNames.length < this.images.length) {
+          for (let i = this.imageNames.length; i < this.images.length; i++) {
+            this.imageNames[i] = `Imagen ${i + 1}`;
+          }
+        }
         if (this.images.length >= 3) {
           this.$nextTick(() => {
             this.computeSlideWidth();
@@ -496,6 +534,7 @@ export default {
       } catch (e) {
         console.error('Error al cargar imágenes:', e);
         this.images = [];
+        this.imageNames = [];
       }
     },
     
@@ -516,6 +555,7 @@ export default {
       }
       this.srcImage = null;
       this.currentFileName = '';
+      this.newImageName = '';
       const inputs = this.$el.querySelectorAll('input[type=file]');
       inputs.forEach(input => {
         if (input) input.value = '';
@@ -650,6 +690,21 @@ export default {
       if (this.images.length < 6) {
         this.$refs.fileInput.click();
       }
+    },
+    
+    getImageSrc(img) {
+      if (!img) return '';
+      return typeof img === 'string' ? img : img.src || '';
+    },
+
+    getImageAlt(idx) {
+      const name = this.getImageName(idx);
+      return name ? name : `Imagen ${idx + 1}`;
+    },
+
+    getImageName(idx) {
+      if (!this.imageNames || !this.imageNames.length) return `Imagen ${idx + 1}`;
+      return this.imageNames[idx] || `Imagen ${idx + 1}`;
     },
     
     getImageSize(dataUrl) {
